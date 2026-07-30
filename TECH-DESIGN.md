@@ -254,7 +254,8 @@ Más granulares que los del PRD; verificables uno a uno.
   ensayo debe ejecutar el procedimiento de contingencia de jornada completo (ADR-0013:
   restauración a mitad de votación, anulación de códigos, revotos, extensión de cierre y acta de
   incidencias), no solo la restauración técnica.
-- **Design.md desactualizado tras el ADR-0011**: la vista de selección de estudiante (`1d`), el
-  salto "votar por mi otro hijo" y el tweak `contextoPadre` del prototipo quedaron obsoletos; la
-  banda pasa a declarar la calidad ("Votando como padre de ▢"). Actualizar wireframes y
-  prototipo antes de implementar el flujo del votante.
+- **Prototipos HTML desactualizados tras el ADR-0011**: el `Design.md` ya refleja el flujo nuevo
+  (banda de calidad "Votando como padre de ▢", sin selección de estudiante ni salto multi-hijo,
+  tweak `calidadPadre`), pero los artefactos `SEEI Wireframes.dc.html` y `SEEI Votación.dc.html`
+  — que no están en este repositorio — aún muestran el flujo anterior; actualizarlos antes de
+  implementar el flujo del votante.

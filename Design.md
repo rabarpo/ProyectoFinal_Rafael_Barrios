@@ -35,7 +35,7 @@ Los tres cubren el requisito de "votación en 3 pasos" del PRD; hay que **elegir
 | `1b` | **Boleta compacta + ficha** | Lista de una línea por candidato con radio de selección; `›` abre la ficha completa en hoja inferior sin salir de la boleta. Paso 3 como revisión con cuenta regresiva. | Todo el cargo cabe sin scroll; comparar es inmediato; separa "elegir" de "informarse". | La foto se ve pequeña en la boleta; requiere un segundo toque para ver propuestas. |
 | `1c` | **Asistente por cargo** | Un cargo por pantalla con rejilla de fotos, indicador de progreso, y resumen final de los N cargos que se confirman en una sola transacción. | Ideal para municipio escolar con varios cargos; imposible saltarse un cargo por error. | Más pantallas; se siente largo cuando el proceso tiene un solo cargo. |
 
-**Decisión tomada: `1a` — boleta en tarjetas.** Es el enfoque más cercano a la papeleta física, lo que reduce la curva de aprendizaje en toda la comunidad educativa. Desarrollado en el turno 2 del lienzo (`2a`): banda fija de contexto del votante, tarjeta = lista con sus cargos, variante de consulta institucional con Opción A/B/C, y comprobante que enlaza al siguiente estudiante pendiente. `1b` y `1c` quedan archivados como referencia.
+**Decisión tomada: `1a` — boleta en tarjetas.** Es el enfoque más cercano a la papeleta física, lo que reduce la curva de aprendizaje en toda la comunidad educativa. Desarrollado en el turno 2 del lienzo (`2a`): banda fija de contexto del votante (desde el ADR-0011, banda de **calidad**: "Votando como padre/apoderado de ▢" cuando el derecho es del padre), tarjeta = lista con sus cargos, variante de consulta institucional con Opción A/B/C, y comprobante. El enlace del comprobante al siguiente estudiante pendiente quedó retirado (ADR-0011: un inicio de sesión por hijo). `1b` y `1c` quedan archivados como referencia.
 
 **Pantallas de rechazo y borde** (incluidas en `1c`, aplican a los tres enfoques):
 
@@ -49,7 +49,7 @@ Los tres cubren el requisito de "votación en 3 pasos" del PRD; hay que **elegir
 
 - **Inicio de sesión:** Google institucional como acción primaria; usuario/DNI/código + contraseña como alternativa; recuperación de contraseña; aviso de bloqueo por intentos fallidos.
 - **Mis votaciones:** procesos abiertos con cuenta regresiva y botón "Votar"; procesos ya votados con etiqueta `VOTADO` y acceso al comprobante; próximas y cerradas agrupadas aparte. Navegación inferior: Votar · Resultados · Perfil.
-- **Selección de estudiante representado:** lista de estudiantes con estado pendiente/votado por proceso, para el padre con varios hijos.
+- **Calidad del derecho (reemplaza a la selección de estudiante representado, ADR-0011):** no existe vista de selección de estudiante — el padre inicia sesión en la cuenta de cada hijo. En "Mis votaciones", una consulta a toda la comunidad muestra **dos entradas separadas** — el derecho propio del estudiante y el derecho "como padre/apoderado" — cada una con su estado pendiente/`VOTADO` y su comprobante.
 
 ### 2.3 Gestión — comité electoral y administración (escritorio)
 
@@ -70,7 +70,7 @@ Los tres cubren el requisito de "votación en 3 pasos" del PRD; hay que **elegir
 | Corte de conexión en el paso 3 | Pantalla "Sin conexión al confirmar" (`1c`) — reintentar, nunca voto a medias. |
 | Doble clic / doble envío | Nota de bloqueo del botón al primer toque (`1a` paso 3) + evento `RECHAZO` en auditoría (`1i`). |
 | Votante llega justo al cierre | Cuenta regresiva en el paso 3 (`1b`) con la regla explícita: vale la hora de la confirmación. |
-| Padre con varios hijos | Vista de selección de estudiante + banda fija de contexto (`1d`). |
+| Padre con varios hijos | Un inicio de sesión por hijo (ADR-0011); la banda fija declara la calidad "Votando como padre de ▢" y "Mis votaciones" separa el derecho del estudiante del derecho del padre (`1d`). |
 | Estudiante sin correo o correo inválido | Comprobante con estado de envío (`1a`) y evento `CORREO` fallido en auditoría (`1i`); contador de correos fallidos en el panel (`1e`). |
 | Empate | Nota en resultados: el sistema declara el empate en el acta, el comité resuelve (`1h`). |
 | Participación cero | El panel y las actas se generan igual; abstención total se lee en los contadores (`1e`, `1h`). |
@@ -97,7 +97,7 @@ Los tres cubren el requisito de "votación en 3 pasos" del PRD; hay que **elegir
 
 - **Enfoque de votación: `1a` / `2a`** — boleta en tarjetas.
 - **Municipio escolar: lista cerrada.** Un solo voto por lista cubre alcalde, teniente alcalde y regidores; la tarjeta enumera los tres cargos y el escrutinio se reporta por lista, no por cargo.
-- **Voto del padre: con la cuenta del estudiante (ADR-0011, fase de arquitectura).** Quedan obsoletos la vista de selección de estudiante representado (`1d`), el salto "votar por mi otro hijo" del comprobante y el tweak `contextoPadre` del prototipo de alta fidelidad. La banda fija pasa a declarar la calidad — "Votando como padre/apoderado de ▢ · 3° A" — y, en consultas a toda la comunidad, "Mis votaciones" muestra por separado el derecho propio del estudiante y el derecho en representación del padre. Un padre con N hijos inicia sesión en la cuenta de cada uno.
+- **Voto del padre: con la cuenta del estudiante (ADR-0011, fase de arquitectura).** Este documento ya está alineado a esa decisión: se retiraron la vista de selección de estudiante representado (`1d`), el salto "votar por mi otro hijo" del comprobante y el tweak `contextoPadre` (→ `calidadPadre`). La banda fija declara la calidad — "Votando como padre/apoderado de ▢ · 3° A" — y, en consultas a toda la comunidad, "Mis votaciones" muestra por separado el derecho propio del estudiante y el derecho en representación del padre. Un padre con N hijos inicia sesión en la cuenta de cada uno. **Pendiente:** reflejar el cambio en los artefactos HTML (`SEEI Wireframes.dc.html`, `SEEI Votación.dc.html`), que aún muestran el flujo anterior.
 
 ## 6. Decisiones pendientes
 
@@ -135,21 +135,21 @@ Prototipo **funcional** del enfoque `2a`, mobile-first: una columna de 430 px m�
 1. **Paso 1 · información** — kicker de tipo de proceso, título en serif a 31 px, bajada, y tres datos en filas con regla fina: cierre, votante y padrón. Aviso en tinte cian: "tu voto es único e inmodificable".
 2. **Paso 2 · boleta** — una tarjeta por lista con foto (hueco de imagen que el usuario rellena), número en recuadro, símbolo, título, lema, y los **tres cargos de la lista cerrada** listados bajo una regla fina. Enlaces a propuesta y plan de trabajo. El botón "Votar por la lista N" cambia a "✓ Elegida" y la tarjeta gana borde cian de 2 px. Voto en blanco como opción de borde discontinuo al final. "Continuar" deshabilitado hasta que haya selección.
 3. **Paso 3 · confirmación** — advertencia en tinte magenta ("este paso no tiene vuelta atrás"), resumen de la selección en marco de 2 px con enlace "cambiar mi elección", datos del proceso/votante/hora del servidor, y casilla de consentimiento de la copia por correo. El botón de emitir permanece deshabilitado hasta aceptar, y durante el registro muestra "Registrando tu voto…" ignorando toques repetidos.
-4. **Comprobante** — código de voto, hora del servidor, proceso y elección concreta; aviso de la copia por correo y de que un fallo de envío no invalida el voto; y salto directo a "votar por mi otro hijo (N pendiente)".
+4. **Comprobante** — código de voto, hora del servidor, proceso y elección concreta; aviso de la copia por correo y de que un fallo de envío no invalida el voto. Si la cuenta tiene otro derecho pendiente en la misma jornada (consulta a toda la comunidad: estudiante + padre), enlaza a ese derecho; para votar por otro hijo se cierra sesión y se entra con su cuenta (ADR-0011 — el salto "votar por mi otro hijo" quedó retirado).
 
 ### Estado y comportamiento
 
-- Banda superior fija en tinta con "Votando por ▢ · 4° B" y el cierre a la derecha; en el comprobante pasa a mostrar la hora de emisión.
+- Banda superior fija en tinta con la calidad del derecho — "Votando como padre/apoderado de ▢ · 4° B" cuando el derecho es del padre; en el voto propio del estudiante la banda muestra solo su nombre y aula — y el cierre a la derecha; en el comprobante pasa a mostrar la hora de emisión (ADR-0011).
 - Indicador de progreso de tres barras: paso actual en cian, pasos completados en cian claro.
 - El botón de emitir se bloquea al primer toque (estado `emitiendo`), cumpliendo la regla de doble envío.
-- Al pasar al siguiente hijo se reinician selección y consentimiento, y baja el contador de pendientes.
+- Al pasar al siguiente derecho pendiente de la misma cuenta (estudiante → como padre) se reinician selección y consentimiento; no hay contador de hijos pendientes (ADR-0011).
 
 ### Tweaks expuestos
 
 | Prop | Efecto |
 | --- | --- |
 | `tipoProceso` | Alterna entre municipio escolar (listas con foto y cargos) y consulta institucional (Opción A/B/C sin fotos), reescribiendo títulos, instrucciones y textos de botón. |
-| `contextoPadre` | Muestra u oculta la banda "Votando por" y el salto al siguiente hijo. |
+| `calidadPadre` | Muestra la banda "Votando como padre/apoderado de ▢" cuando el derecho votado es del padre; sin salto entre hijos (ADR-0011 — reemplaza al antiguo `contextoPadre`, obsoleto en el prototipo HTML). |
 | `horaCierre` | Hora de cierre en banda, paso 1 y comprobante. |
 | `votanteNombre` | Nombre y aula del votante. |
 
@@ -161,7 +161,7 @@ Ground `--color-bg` con la hoja sobre `--color-neutral-200`; tinta `--color-text
 
 - Pantallas de rechazo y borde (ya votó, fuera de horario, sin padrón, sin conexión, cuenta bloqueada) — wireframeadas en `1c`, aún sin versión final.
 - Ficha de candidato completa (propuesta y plan de trabajo): los enlaces existen pero no abren la hoja inferior.
-- Selección de estudiante representado antes del paso 1 (wireframe `1d`).
+- "Mis votaciones" con los dos derechos separados de una consulta a toda la comunidad — propio y "como padre/apoderado" — con estado y comprobante por derecho (ADR-0011; reemplaza a la antigua selección de estudiante representado de `1d`).
 - Ingreso con Google / credenciales.
 - Vistas del comité en alta fidelidad (`1e`–`1i`, `3a`–`3e`).
 
