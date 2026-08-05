@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "generar-backlog": {
+      "source": "adminoryslabs/Skills",
+      "sourceType": "github",
+      "skillPath": "skills/generar-backlog/SKILL.md",
+      "computedHash": "d224928e49ef42e394d1d8ef1e87bc62d785dab38386ec0a62c90b1b98b141b5"
+    },
     "generar-prd": {
       "source": "adminoryslabs/Skills",
       "sourceType": "github",

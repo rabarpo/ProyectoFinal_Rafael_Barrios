@@ -1,0 +1,67 @@
+schema: spec-driven
+
+context: |
+  Proyecto: SEEI (Sistema de Elecciones Electronicas para Instituciones Educativas)
+  Estado: greenfield, solo documentación (todavía no hay código fuente)
+  Stack técnico (planificado, según TECH-DESIGN.md / ADR-0001 y ADR-0002): monorepo TypeScript -
+    backend monolito modular NestJS, frontend React + Vite, worker Node.js
+  Datos: PostgreSQL (ADR-0003), Redis + BullMQ para la cola de trabajos del outbox (ADR-0012)
+  API: REST con contrato OpenAPI, tipos de cliente generados (ADR-0004)
+  Despliegue: VPS, Docker Compose, Caddy/Nginx con HTTPS (ADR-0007)
+  Arquitectura: monolito modular + worker en segundo plano, patrón outbox para trabajos de
+    correo/PDF/exportación
+  Testing: planificado/todavía no disponible - no hay test runner instalado
+  Idioma: los artefactos generados se escriben en español neutro y profesional; los identificadores
+    de código, comandos, rutas, claves de configuración y nombres de ADR se mantienen sin traducir.
+
+strict_tdd: true # Según la configuración global del usuario. Todavía no existe un test runner; TDD
+                  # aplica desde el primer change de implementación, una vez que se elija e instale
+                  # un runner.
+
+testing:
+  status: planned-not-available
+  test_command: "" # se definirá cuando se elijan el gestor de paquetes y el test runner (p. ej. vitest/jest)
+  build_command: ""
+  coverage_threshold: 0
+
+# Convención de idioma aplicable a todas las fases. Cada lista de reglas la referencia
+# explícitamente para que ninguna fase la pase por alto.
+language:
+  - Los artefactos generados se escriben en español neutro y profesional, sin regionalismos
+  - Los identificadores de código, comandos, rutas, claves de configuración y nombres de ADR se
+    mantienen sin traducir
+
+rules:
+  proposal:
+    - Aplicar la convención de idioma definida en `language`
+    - Incluir un plan de rollback para los cambios riesgosos
+    - Referenciar el o los ADR relevantes en adrs/ cuando la decisión ya esté tomada
+  specs:
+    - Aplicar la convención de idioma definida en `language`
+    - Usar Given/When/Then para los escenarios
+    - Usar las palabras clave de RFC 2119 (MUST, SHALL, SHOULD, MAY)
+    - Referenciar de forma cruzada las entidades y flujos de PRD.md y Design.md cuando corresponda
+  design:
+    - Aplicar la convención de idioma definida en `language`
+    - Incluir diagramas de secuencia para los flujos complejos
+    - Documentar las decisiones de arquitectura con su fundamento
+    - No contradecir los ADR existentes (adrs/0001-0013); proponer un ADR nuevo si una decisión debe cambiar
+  tasks:
+    - Aplicar la convención de idioma definida en `language`
+    - Agrupar por fase y usar numeración jerárquica
+    - Mantener las tareas completables en una sola sesión
+    - El primer change de implementación debe configurar el gestor de paquetes, el test runner y CI antes del trabajo de features
+  apply:
+    guidelines:
+      - Aplicar la convención de idioma definida en `language`
+      - Seguir los ADR existentes y las convenciones de TECH-DESIGN.md
+      - Mantener los límites entre frontend/backend/worker tal como se definen en TECH-DESIGN.md
+    tdd: true
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Aplicar la convención de idioma definida en `language`
+    - Advertir antes de fusionar deltas destructivos
