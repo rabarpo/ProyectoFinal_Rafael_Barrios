@@ -19,9 +19,9 @@ strict_tdd: true # Según la configuración global del usuario. Todavía no exis
                   # un runner.
 
 testing:
-  status: planned-not-available
-  test_command: "" # se definirá cuando se elijan el gestor de paquetes y el test runner (p. ej. vitest/jest)
-  build_command: ""
+  status: available
+  test_command: "pnpm turbo run test"
+  build_command: "pnpm turbo run build"
   coverage_threshold: 0
 
 # Convención de idioma aplicable a todas las fases. Cada lista de reglas la referencia
@@ -57,10 +57,10 @@ rules:
       - Seguir los ADR existentes y las convenciones de TECH-DESIGN.md
       - Mantener los límites entre frontend/backend/worker tal como se definen en TECH-DESIGN.md
     tdd: true
-    test_command: ""
+    test_command: "pnpm turbo run test"
   verify:
-    test_command: ""
-    build_command: ""
+    test_command: "pnpm turbo run test"
+    build_command: "pnpm turbo run build"
     coverage_threshold: 0
   archive:
     - Aplicar la convención de idioma definida en `language`

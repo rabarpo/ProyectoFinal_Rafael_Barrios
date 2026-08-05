@@ -66,12 +66,12 @@ main
 
 ## Fase 0: Herramental de monorepo (PR 1, base: rama tracker `system-scaffolding`)
 
-- [ ] 0.1 `(config)` Crear `package.json` raíz, `pnpm-workspace.yaml` (`apps/*`, `packages/*`), `.gitignore`. `[R1][R2]`
-- [ ] 0.2 `(config)` Crear `turbo.json` con las tareas `openapi:extract` (`dependsOn: []`), `generate:contracts`, `build`, `typecheck`, `lint`, `test`, `test:e2e`, `db:migrate`, `dev` según el grafo de `design.md`. `[R1]`
-- [ ] 0.3 `(config)` Crear `tsconfig.base.json` compartido; NO crear `packages/config`. `[R2]`
-- [ ] 0.4 `(config)` Crear los directorios vacíos `apps/backend`, `apps/frontend`, `apps/worker`, `packages/contracts`, `infra/docker` con `package.json` mínimo cada uno para que `pnpm install` resuelva el workspace. `[R1][R2]`
-- [ ] 0.5 `(config)` Actualizar `openspec/config.yaml`: `testing.status: available`, `testing.test_command`/`build_command`, `apply.test_command`, `verify.test_command`/`build_command` = `"pnpm turbo run test"` / `"pnpm turbo run build"`; `coverage_threshold` permanece `0`. `[R10]`
-- [ ] 0.6 Verificar `pnpm turbo run build` y `pnpm turbo run test` terminan en código 0 (no-op, sin paquetes con contenido todavía). `[R1]`
+- [x] 0.1 `(config)` Crear `package.json` raíz, `pnpm-workspace.yaml` (`apps/*`, `packages/*`), `.gitignore`. `[R1][R2]`
+- [x] 0.2 `(config)` Crear `turbo.json` con las tareas `openapi:extract` (`dependsOn: []`), `generate:contracts`, `build`, `typecheck`, `lint`, `test`, `test:e2e`, `db:migrate`, `dev` según el grafo de `design.md`. `[R1]`
+- [x] 0.3 `(config)` Crear `tsconfig.base.json` compartido; NO crear `packages/config`. `[R2]`
+- [x] 0.4 `(config)` Crear los directorios vacíos `apps/backend`, `apps/frontend`, `apps/worker`, `packages/contracts`, `infra/docker` con `package.json` mínimo cada uno para que `pnpm install` resuelva el workspace. `[R1][R2]`
+- [x] 0.5 `(config)` Actualizar `openspec/config.yaml`: `testing.status: available`, `testing.test_command`/`build_command`, `apply.test_command`, `verify.test_command`/`build_command` = `"pnpm turbo run test"` / `"pnpm turbo run build"`; `coverage_threshold` permanece `0`. `[R10]`
+- [x] 0.6 Verificar `pnpm turbo run build` y `pnpm turbo run test` terminan en código 0 (no-op, sin paquetes con contenido todavía). `[R1]`
 
 ## Fase 1: Esqueleto del backend NestJS
 

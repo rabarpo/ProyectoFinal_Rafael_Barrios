@@ -1,0 +1,12 @@
+{
+  "name": "@seei/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo \"@seei/contracts: nothing to build yet\"",
+    "test": "echo \"@seei/contracts: no tests yet\"",
+    "lint": "echo \"@seei/contracts: nothing to lint yet\"",
+    "typecheck": "echo \"@seei/contracts: nothing to typecheck yet\"",
+    "generate:contracts": "echo \"@seei/contracts: generation pipeline not implemented yet (PR4)\""
+  }
+}

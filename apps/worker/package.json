@@ -1,0 +1,11 @@
+{
+  "name": "@seei/worker",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo \"@seei/worker: nothing to build yet\"",
+    "test": "echo \"@seei/worker: no tests yet\"",
+    "lint": "echo \"@seei/worker: nothing to lint yet\"",
+    "typecheck": "echo \"@seei/worker: nothing to typecheck yet\""
+  }
+}

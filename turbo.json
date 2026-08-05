@@ -1,0 +1,21 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["tsconfig.base.json", "pnpm-lock.yaml"],
+  "globalEnv": ["NODE_ENV"],
+  "tasks": {
+    "openapi:extract": { "dependsOn": [], "inputs": ["src/**", "package.json"], "outputs": ["dist-openapi/openapi.json"] },
+    "generate:contracts": { "dependsOn": ["@seei/backend#openapi:extract"], "outputs": ["openapi.json", "src/generated/**"] },
+    "@seei/contracts#build": { "dependsOn": ["generate:contracts", "^build"], "outputs": ["dist/**"] },
+    "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
+    "typecheck": { "dependsOn": ["^build"] },
+    "lint": {},
+    "test": { "dependsOn": ["^build"], "outputs": ["coverage/**"] },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["DATABASE_URL", "MIGRATION_DATABASE_URL", "REDIS_URL"]
+    },
+    "db:migrate": { "cache": false, "env": ["MIGRATION_DATABASE_URL"] },
+    "dev": { "cache": false, "persistent": true }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "infra-docker",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Placeholder package so pnpm install resolves this directory; Docker/Caddy assets land here in PR8."
+}

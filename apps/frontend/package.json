@@ -1,0 +1,11 @@
+{
+  "name": "@seei/frontend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo \"@seei/frontend: nothing to build yet\"",
+    "test": "echo \"@seei/frontend: no tests yet\"",
+    "lint": "echo \"@seei/frontend: nothing to lint yet\"",
+    "typecheck": "echo \"@seei/frontend: nothing to typecheck yet\""
+  }
+}
