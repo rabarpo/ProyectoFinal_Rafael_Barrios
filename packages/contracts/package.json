@@ -4,9 +4,20 @@
   "private": true,
   "scripts": {
     "build": "echo \"@seei/contracts: nothing to build yet\"",
-    "test": "echo \"@seei/contracts: no tests yet\"",
+    "test": "vitest run",
     "lint": "echo \"@seei/contracts: nothing to lint yet\"",
-    "typecheck": "echo \"@seei/contracts: nothing to typecheck yet\"",
-    "generate:contracts": "echo \"@seei/contracts: generation pipeline not implemented yet (PR4)\""
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "generate:contracts": "tsx scripts/generate-contracts.ts",
+    "check:drift": "tsx scripts/check-drift.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "openapi-typescript": "^7.13.0",
+    "tsx": "^4.23.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
   }
 }

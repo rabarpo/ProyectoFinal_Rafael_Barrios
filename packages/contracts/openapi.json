@@ -1,0 +1,56 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "HealthController_obtenerHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Estado agregado del walking skeleton (puede ser \"degradado\")"
+          }
+        },
+        "summary": "Reporta el estado real de Postgres, Redis y el último heartbeat del worker",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/system/ping": {
+      "post": {
+        "description": "Ida y vuelta observable del walking skeleton [R5]. No toca PostgreSQL; el heartbeat se lee luego desde GET /health.",
+        "operationId": "SystemPingController_ping",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": "Trabajo encolado en la cola \"system\""
+          }
+        },
+        "summary": "Encola un trabajo \"system.ping\" procesado por el worker",
+        "tags": [
+          "system"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "SEEI API",
+    "description": "Walking skeleton del sistema SEEI (#1)",
+    "version": "0.0.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": ""
+    },
+    {
+      "name": "system",
+      "description": ""
+    }
+  ],
+  "servers": [],
+  "components": {
+    "schemas": {}
+  }
+}
