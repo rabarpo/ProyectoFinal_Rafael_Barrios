@@ -97,13 +97,13 @@ main
 
 ## Fase 2: Pipeline de contratos OpenAPI (PR 4, base: PR 3)
 
-- [ ] 2.1 `(config)` `packages/contracts`: script `generate:contracts` que corre `openapi-typescript` sobre `dist-openapi/openapi.json` del backend y emite `src/generated/api.d.ts`; registrar la tarea Turborepo con `dependsOn: ["@seei/backend#openapi:extract"]`.
-- [ ] 2.2 RED: test de `src/client.ts` (Vitest) que espera que el cliente `openapi-fetch` invoque `GET /api/health` con la URL base configurada.
-- [ ] 2.3 GREEN: implementar `src/client.ts` tipado sobre `api.d.ts`.
-- [ ] 2.4 RED `[TM1]`: test del script de verificación de deriva con un archivo sucio fuera de `packages/contracts` en el árbol de trabajo — el check debe pasar (pathspec `-- packages/contracts` explícito).
-- [ ] 2.5 RED `[TM2][R3b]`: test que agrega un endpoint nuevo al backend (produce un archivo generado nuevo y no rastreado) — el check debe fallar.
-- [ ] 2.6 GREEN: implementar el script de verificación de deriva (`pnpm turbo run generate:contracts --force` → `git add --intent-to-add -- packages/contracts` → `git diff --exit-code -- packages/contracts`). `[R3a][R3c][TM1][TM2][R3b]`
-- [ ] 2.7 Commitear `openapi.json` y `src/generated/api.d.ts` regenerados para que el árbol quede limpio tras 2.6.
+- [x] 2.1 `(config)` `packages/contracts`: script `generate:contracts` que corre `openapi-typescript` sobre `dist-openapi/openapi.json` del backend y emite `src/generated/api.d.ts`; registrar la tarea Turborepo con `dependsOn: ["@seei/backend#openapi:extract"]`.
+- [x] 2.2 RED: test de `src/client.ts` (Vitest) que espera que el cliente `openapi-fetch` invoque `GET /api/health` con la URL base configurada.
+- [x] 2.3 GREEN: implementar `src/client.ts` tipado sobre `api.d.ts`.
+- [x] 2.4 RED `[TM1]`: test del script de verificación de deriva con un archivo sucio fuera de `packages/contracts` en el árbol de trabajo — el check debe pasar (pathspec `-- packages/contracts` explícito).
+- [x] 2.5 RED `[TM2][R3b]`: test que agrega un endpoint nuevo al backend (produce un archivo generado nuevo y no rastreado) — el check debe fallar.
+- [x] 2.6 GREEN: implementar el script de verificación de deriva (`pnpm turbo run generate:contracts --force` → `git add --intent-to-add -- packages/contracts` → `git diff --exit-code -- packages/contracts`). `[R3a][R3c][TM1][TM2][R3b]`
+- [x] 2.7 Commitear `openapi.json` y `src/generated/api.d.ts` regenerados para que el árbol quede limpio tras 2.6.
 
 ## Fase 3: Frontend Vite+React (PR 5, base: PR 4)
 
