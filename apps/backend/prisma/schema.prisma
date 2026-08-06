@@ -1,0 +1,15 @@
+// Baseline vacía del walking skeleton (#1). Sin modelos de dominio: la migración inicial
+// (1.14) sirve como cimiento sobre el que #2 (base-schema-and-migrations) apila sus grupos
+// de migraciones. `directUrl` es el mecanismo de Prisma para que Migrate/Introspect usen el
+// rol propietario (`seei_migrator`) mientras el Client en runtime usa el rol de aplicación
+// (`seei_app`) — ver design.md, sección "Cadenas de conexión".
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("MIGRATION_DATABASE_URL")
+}
