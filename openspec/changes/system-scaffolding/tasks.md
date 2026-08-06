@@ -107,9 +107,9 @@ main
 
 ## Fase 3: Frontend Vite+React (PR 5, base: PR 4)
 
-- [ ] 3.1 `(config)` Bootstrap de Vite+React en `apps/frontend`, Vitest+RTL (bloque `test` en `vite.config.ts`, sin `globals: true`).
-- [ ] 3.2 RED: test de la página de health (RTL) que espera renderizar el `db.estado`/`redis.estado` devueltos por un mock del cliente generado, no un valor hardcodeado. `[R4c]`
-- [ ] 3.3 GREEN: implementar la página de health consumiendo `packages/contracts` `src/client.ts`. `[R4c]`
+- [x] 3.1 `(config)` Bootstrap de Vite+React en `apps/frontend`, Vitest+RTL (bloque `test` en `vite.config.ts`, sin `globals: true`).
+- [x] 3.2 RED: test de la página de health (RTL) que espera renderizar el `db.estado`/`redis.estado` devueltos por un mock del cliente generado, no un valor hardcodeado. `[R4c]`
+- [x] 3.3 GREEN: implementar la página de health consumiendo `packages/contracts` `src/client.ts`. `[R4c]`
 
 ## Fase 4: Worker Node.js + BullMQ (PR 6, base: PR 5)
 
