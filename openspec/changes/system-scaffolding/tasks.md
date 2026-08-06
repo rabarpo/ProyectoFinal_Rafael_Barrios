@@ -77,13 +77,13 @@ main
 
 ### PR 2 — Backend / health (base: PR 1)
 
-- [ ] 1.1 `(config)` Bootstrap de NestJS en `apps/backend` (`main.ts` con `setGlobalPrefix('api')`, `AppModule`), Jest + ts-jest (`jest.config.ts`, `test/jest-e2e.config.ts`).
-- [ ] 1.2 `(config)` `PrismaService` sin `$connect()` en `onModuleInit` (conexión perezosa) — gotcha D1 de `design.md`.
-- [ ] 1.3 `(config)` Cliente `ioredis` instanciado con `lazyConnect: true`.
-- [ ] 1.4 RED: test unitario de `HealthController` que espera `200` con `db.estado`/`redis.estado` `'ok'` cuando Prisma/Redis mockeados responden. `[R4a]`
-- [ ] 1.5 GREEN: implementar `HealthModule`/`HealthController` con `GET /health` ejecutando `SELECT 1` y `PING`, devolviendo `RespuestaHealth`. `[R4a]`
-- [ ] 1.6 RED: test unitario que espera `db.estado:'ok'`, `redis.estado:'error'` cuando el cliente Redis mockeado rechaza `PING`, sin devolver `200` genérico oculto. `[R4b]`
-- [ ] 1.7 GREEN: manejar el fallo de Redis en `HealthController` sin ocultar el estado real. `[R4b]`
+- [x] 1.1 `(config)` Bootstrap de NestJS en `apps/backend` (`main.ts` con `setGlobalPrefix('api')`, `AppModule`), Jest + ts-jest (`jest.config.ts`, `test/jest-e2e.config.ts`).
+- [x] 1.2 `(config)` `PrismaService` sin `$connect()` en `onModuleInit` (conexión perezosa) — gotcha D1 de `design.md`.
+- [x] 1.3 `(config)` Cliente `ioredis` instanciado con `lazyConnect: true`.
+- [x] 1.4 RED: test unitario de `HealthController` que espera `200` con `db.estado`/`redis.estado` `'ok'` cuando Prisma/Redis mockeados responden. `[R4a]`
+- [x] 1.5 GREEN: implementar `HealthModule`/`HealthController` con `GET /health` ejecutando `SELECT 1` y `PING`, devolviendo `RespuestaHealth`. `[R4a]`
+- [x] 1.6 RED: test unitario que espera `db.estado:'ok'`, `redis.estado:'error'` cuando el cliente Redis mockeado rechaza `PING`, sin devolver `200` genérico oculto. `[R4b]`
+- [x] 1.7 GREEN: manejar el fallo de Redis en `HealthController` sin ocultar el estado real. `[R4b]`
 
 ### PR 3 — Backend / ping, extractor OpenAPI y Prisma (base: PR 2)
 
