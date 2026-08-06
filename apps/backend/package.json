@@ -8,13 +8,17 @@
     "test": "jest --config jest.config.ts",
     "test:e2e": "jest --config test/jest-e2e.config.ts",
     "lint": "echo \"@seei/backend: nothing to lint yet\"",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "openapi:extract": "tsx src/openapi.ts",
+    "postinstall": "prisma generate --allow-no-models"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
     "@nestjs/core": "^10.4.15",
     "@nestjs/platform-express": "^10.4.15",
+    "@nestjs/swagger": "^8.1.1",
     "@prisma/client": "^5.22.0",
+    "bullmq": "^5.34.5",
     "ioredis": "^5.4.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
@@ -28,6 +32,7 @@
     "prisma": "^5.22.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
 }

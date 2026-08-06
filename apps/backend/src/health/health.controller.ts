@@ -1,4 +1,5 @@
 import { Controller, Get, Inject } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.provider';
@@ -10,6 +11,7 @@ export interface RespuestaHealth {
   worker: { ultimoPing: string | null };
 }
 
+@ApiTags('health')
 @Controller('health')
 export class HealthController {
   constructor(
@@ -18,6 +20,8 @@ export class HealthController {
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'Reporta el estado real de Postgres, Redis y el último heartbeat del worker' })
+  @ApiResponse({ status: 200, description: 'Estado agregado del walking skeleton (puede ser "degradado")' })
   async obtenerHealth(): Promise<RespuestaHealth> {
     const db = await this.verificarDb();
     const redis = await this.verificarRedis();
