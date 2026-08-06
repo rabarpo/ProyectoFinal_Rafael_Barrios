@@ -154,9 +154,42 @@ main
 
 ## Fase 9: Verificación end-to-end del walking skeleton (PR 10, cierre de la cadena — tras integrar PR 10 en `system-scaffolding`, la rama tracker está lista para fusionar a `main`)
 
-- [ ] 9.1 RED (e2e): test que encola `system.ping` vía `POST /api/system/ping` y espera que `GET /health` refleje `worker.ultimoPing` posterior al encolado dentro de un timeout razonable. `[R5]`
-- [ ] 9.2 GREEN: confirmar el ida y vuelta con `backend` + `worker` + `redis` corriendo (`docker-compose.test.yml` + worker local, o compose completo). `[R5]`
-- [ ] 9.3 Ejecutar los criterios de éxito de `proposal.md` de punta a punta: `pnpm turbo run build && pnpm turbo run test` desde la raíz, `docker compose up`, `/health` con ambas dependencias sanas, frontend renderizando vía cliente generado, migración baseline aplicada, CI verde. `[R1][R4a][R4c][R7a][R9]`
+- [x] 9.1 RED (e2e): test que encola `system.ping` vía `POST /api/system/ping` y espera que `GET /health` refleje `worker.ultimoPing` posterior al encolado dentro de un timeout razonable. `[R5]` — `apps/backend/test/system-ping-roundtrip.e2e-spec.ts`, confirmado RED corriendo la suite contra `docker-compose.test.yml` real con el spawn del worker deshabilitado por una bandera temporal (`SKIP_WORKER_SPAWN_FOR_RED_TEST`): `worker.ultimoPing` permanece `null`, `expect(ultimoPing).not.toBeNull()` falla como se esperaba (timeout de 20s agotado).
+- [x] 9.2 GREEN: confirmar el ida y vuelta con `backend` + `worker` + `redis` corriendo (`docker-compose.test.yml` + worker local, o compose completo). `[R5]` — **Confirmado** contra Docker Desktop real: con la bandera de RED retirada, el mismo test spawnea `pnpm --filter @seei/worker start` como proceso hijo real apuntando al Redis efímero (puerto 6380), hace `POST /api/system/ping` contra la app Nest real (`app.listen(0)`, sin mocks) y hace polling de `GET /api/health` hasta ver `worker.ultimoPing` — pasa en ~7-12s. Reproducido también dentro de `pnpm --filter @seei/backend run test:e2e` (orquestación completa: `up -d --wait` → `prisma migrate deploy` → Jest de las 3 suites e2e → `down -v`), 3 test suites / 4 tests en verde, exit code 0, contenedores y red de `seei-test` removidos limpiamente al final.
+- [x] 9.3 Ejecutar los criterios de éxito de `proposal.md` de punta a punta: `pnpm turbo run build && pnpm turbo run test` desde la raíz, `docker compose up`, `/health` con ambas dependencias sanas, frontend renderizando vía cliente generado, migración baseline aplicada, CI verde. `[R1][R4a][R4c][R7a][R9]` — ver detalle debajo de la tabla de tareas ("Verificación final de criterios de éxito, PR10").
+
+### Verificación final de criterios de éxito (PR 10, tarea 9.3)
+
+Ejecutado en vivo en este entorno, contra Docker Desktop real (`docker ps` accesible), no simulado:
+
+| Criterio (`proposal.md`) | Resultado | Evidencia |
+|---|---|---|
+| `pnpm turbo run build` desde la raíz | ✅ Verde | 6/6 tareas (5 cacheadas + `@seei/backend:build` fresco), `nest build` incluido |
+| `pnpm turbo run test` desde la raíz (con `lint`/`typecheck`) | ✅ Verde | `pnpm turbo run lint typecheck test`: 15/15 tareas exitosas — backend Jest (2 suites/3 tests), contracts Vitest (2 suites/3 tests, incluye el drift check `[TM1][TM2]`), worker Vitest (1 suite/2 tests), frontend Vitest (1 suite/1 test) |
+| `docker compose up` (con `.dev.yml`) levanta los 5 servicios sanos | ✅ Verde | `postgres`, `redis`, `frontend`, `backend`, `worker` en `healthy`; `caddy` arriba y respondiendo (sin healthcheck propio en el compose); `migrate` en `Exited (0)` tras aplicar la baseline. Nota de entorno idéntica a la de PR8 (tarea 6.6): puerto 80/443 reservado por Windows HTTP.sys — se usó un override YAML local no committeado que remapea los puertos publicados de `caddy` a 8080/8443; `docker-compose.yml` del repo sigue publicando 80/443 sin cambios |
+| `/health` responde con Postgres y Redis sanos | ✅ Verde | `curl -k --resolve seei.localhost:8443:127.0.0.1 https://seei.localhost:8443/api/health` → `200` `{"estado":"ok","db":{"estado":"ok",...},"redis":{"estado":"ok",...},"worker":{"ultimoPing":null}}` |
+| El trabajo `system.ping` hace el ida y vuelta backend→Redis→worker, visible en `/health` | ✅ Verde | `POST /api/system/ping` → `202`; `GET /health` inmediatamente después → `worker.ultimoPing` con timestamp ISO reciente. Verificado dos veces: (1) test automatizado `system-ping-roundtrip.e2e-spec.ts` (9.1/9.2); (2) manualmente contra el compose completo vía Caddy/HTTPS, igual que arriba |
+| Frontend renderiza el estado de health vía el cliente generado | ✅ Verde (parcial browser) | `GET https://seei.localhost:8443/` → `200`, sirve el shell de la SPA con `src/main.tsx`; el consumo real del cliente generado (`packages/contracts` → `HealthPage`) está cubierto por el test RTL de PR5 (`HealthPage.spec.tsx`, mock del cliente generado) — no se abrió un navegador real en este entorno headless, así que la ejecución del JS en cliente no se verificó visualmente, solo por test unitario + servido correcto del bundle |
+| Migración baseline de Prisma se aplica limpiamente en Docker/CI | ✅ Verde | Servicio `migrate` del compose completo: `Exited (0)`; reconfirmado también en el e2e del backend (`migrate-baseline.e2e-spec.ts`, PR7) y en el job `e2e-backend` de CI (PR9, verificación local equivalente) |
+| CI (GitHub Actions) ejecuta build, test y drift check | ⚠️ **Verificación local equivalente, no runner real de GitHub Actions** — igual que en PR9: sin acceso a un runner de GitHub Actions en este entorno, se reprodujeron exactamente los mismos comandos que invoca `.github/workflows/ci.yml` (`pnpm install --frozen-lockfile`, `pnpm turbo run generate:contracts --force`, `pnpm --filter @seei/contracts run check:drift`, `pnpm turbo run lint typecheck build test`) y todos terminaron en verde con exit code 0 | Ver comandos arriba; `git status --short` tras el drift check no mostró cambios inesperados |
+| Campos de comando de `testing`/`apply`/`verify` en `openspec/config.yaml` completos | ✅ Verde (heredado de PR1, tarea 0.5) | Sin cambios en este PR |
+| Postgres aprovisiona `seei_migrator`/`seei_app`, cadenas de conexión disponibles en dev y CI | ✅ Verde (heredado de PR7) | Reconfirmado en esta corrida: `migrate` (rol `seei_migrator`) aplicó la baseline; `backend`/`worker` corrieron sanos con `DATABASE_URL` del rol `seei_app` |
+
+**Hallazgo real durante esta verificación (no un simulacro):** `.env.example` (raíz del repo, plantilla
+para `infra/docker/.env`) declara `DATABASE_URL`/`MIGRATION_DATABASE_URL` apuntando a
+`localhost:5432` y `REDIS_URL` a `localhost:6379`. Esos valores funcionan para herramientas que
+corren en el host contra los puertos publicados por `docker-compose.dev.yml`, pero **no** para los
+propios contenedores (`migrate`, `backend`, `worker`), que deben resolver Postgres/Redis por su
+nombre de servicio en la red interna de Docker (`postgres`, `redis`) — con `localhost` tal cual,
+`docker compose up` falla en el servicio `migrate` con `P1001: Can't reach database server at
+localhost:5432`. Se confirmó el `docker compose up` completo usando un archivo de entorno local no
+committeado con `DATABASE_URL=...@postgres:5432/...`, `MIGRATION_DATABASE_URL=...@postgres:5432/...`,
+`REDIS_URL=redis://redis:6379` — con esos valores los 5 servicios quedan sanos y `/health` responde
+`200`. **No se pudo corregir `.env.example` en este PR**: el archivo cae bajo una regla de protección
+de credenciales del entorno de ejecución que bloquea lectura/escritura de cualquier ruta con patrón
+`.env*` para todas las herramientas disponibles en esta sesión (Read/Write/Edit/Bash), incluida la
+plantilla sin secretos reales. Queda como corrección pendiente para quien tenga acceso directo al
+archivo — no se marca como resuelto ni se oculta.
 
 ## Cobertura de escenarios no resuelta
 
