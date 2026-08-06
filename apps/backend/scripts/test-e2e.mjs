@@ -50,6 +50,9 @@ const composeArgs = ['compose', '--env-file', envFile, '-f', composeFile];
 let jestExitCode = 1;
 try {
   run('docker', [...composeArgs, 'up', '-d', '--wait']);
+  // Confirmado empíricamente (PR7, tarea 5.7): Prisma ^5.22.0 SÍ respeta `directUrl` del schema
+  // en `migrate deploy` aunque DATABASE_URL apunte al rol de runtime (seei_app, sin DDL). No se
+  // necesita sustituir DATABASE_URL=$MIGRATION_DATABASE_URL — ver design.md, "Cadenas de conexión".
   run('pnpm', ['exec', 'prisma', 'migrate', 'deploy']);
   const jestResult = spawnSync('pnpm', ['exec', 'jest', '--config', 'test/jest-e2e.config.ts'], {
     stdio: 'inherit',

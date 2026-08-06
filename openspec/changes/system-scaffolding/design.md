@@ -263,6 +263,14 @@ de migración no toma `directUrl`, el script `db:migrate` se invoca con la varia
 (`DATABASE_URL=$MIGRATION_DATABASE_URL prisma migrate deploy`). Esta rama se decide con una
 comprobación real durante `sdd-apply`, no por supuesto.
 
+**Resultado de la comprobación (PR7, tarea 5.7):** con Prisma `^5.22.0` (resuelto `5.22.x`),
+`prisma migrate deploy` invocado con `DATABASE_URL` apuntando a `seei_app` (sin permisos DDL) y
+`MIGRATION_DATABASE_URL` apuntando a `seei_migrator` **sí** toma `directUrl` para ejecutar la
+migración — la baseline se aplicó exitosamente sin sustituir `DATABASE_URL`. Confirmado contra
+Postgres 16 real (`infra/docker/docker-compose.test.yml`) vía
+`apps/backend/scripts/test-e2e.mjs` → `apps/backend/test/migrate-baseline.e2e-spec.ts` (verde).
+La contingencia de sustitución de variable **no fue necesaria** y no se aplicó.
+
 `.env.example` versionado (nunca secretos reales) declara `POSTGRES_PASSWORD`,
 `SEEI_MIGRATOR_PASSWORD`, `SEEI_APP_PASSWORD`, `DATABASE_URL`, `MIGRATION_DATABASE_URL`,
 `REDIS_URL`. El despliegue real toma ambas URL de secretos del entorno de GitHub; CI usa
@@ -418,8 +426,9 @@ contratos/frontend. La decisión final del corte corresponde a `sdd-tasks`.
 
 ## Preguntas abiertas
 
-- [ ] Verificar durante `sdd-apply` que la versión fijada de Prisma efectivamente usa `directUrl`
+- [x] Verificar durante `sdd-apply` que la versión fijada de Prisma efectivamente usa `directUrl`
       para `migrate deploy`; si no, aplicar la contingencia de sustitución de variable ya descrita.
+      **Resuelto (PR7):** sí la usa — ver detalle en la sección "Cadenas de conexión" arriba.
 - [ ] Confirmar que la serialización del documento de `@nestjs/swagger` es estable entre
       ejecuciones con versiones fijadas; si el orden de claves variara, el check de deriva sería
       inestable y habría que normalizar el JSON antes de comparar.
