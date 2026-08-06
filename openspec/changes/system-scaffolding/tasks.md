@@ -119,14 +119,14 @@ main
 
 ## Fase 5: Roles de Postgres y migración baseline (PR 7, base: PR 6)
 
-- [ ] 5.1 `(config)` `infra/docker/postgres/init/01-roles.sql`: crear `seei_migrator` (propietario, DDL) y `seei_app` (runtime, DML por `ALTER DEFAULT PRIVILEGES`), según el SQL de `design.md`. `[R8a][R8b]`
-- [ ] 5.2 `(config)` `.env.example` con `POSTGRES_PASSWORD`, `SEEI_MIGRATOR_PASSWORD`, `SEEI_APP_PASSWORD`, `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `REDIS_URL`.
-- [ ] 5.3 `(config)` `infra/docker/docker-compose.test.yml`: solo `postgres`+`redis` en puertos alternos (`5433`/`6380`), datos en `tmpfs`.
-- [ ] 5.4 RED (e2e): test que conecta con `DATABASE_URL` (rol `seei_app`) e intenta `CREATE TABLE` — Postgres debe rechazar por falta de privilegios. `[R8a]`
-- [ ] 5.5 GREEN: confirmar el rechazo aplicando `01-roles.sql` contra `docker-compose.test.yml` (no requiere código de producción adicional). `[R8a]`
-- [ ] 5.6 RED (e2e): test que ejecuta `prisma migrate deploy` con `MIGRATION_DATABASE_URL` contra una base nueva — debe aplicar la baseline sin error y sin crear tablas de dominio. `[R8b][R9]`
-- [ ] 5.7 GREEN: verificar contra `docker-compose.test.yml`; si la versión fijada de Prisma no toma `directUrl` para `migrate deploy`, aplicar la contingencia `DATABASE_URL=$MIGRATION_DATABASE_URL prisma migrate deploy` (pregunta abierta de `design.md`). `[R8b][R9]`
-- [ ] 5.8 `apps/backend/test:e2e` script: `up -d --wait` (`docker-compose.test.yml`) → `prisma migrate deploy` → Jest → `down -v`.
+- [x] 5.1 `(config)` `infra/docker/postgres/init/01-roles.sql`: crear `seei_migrator` (propietario, DDL) y `seei_app` (runtime, DML por `ALTER DEFAULT PRIVILEGES`), según el SQL de `design.md`. `[R8a][R8b]`
+- [x] 5.2 `(config)` `.env.example` con `POSTGRES_PASSWORD`, `SEEI_MIGRATOR_PASSWORD`, `SEEI_APP_PASSWORD`, `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `REDIS_URL`.
+- [x] 5.3 `(config)` `infra/docker/docker-compose.test.yml`: solo `postgres`+`redis` en puertos alternos (`5433`/`6380`), datos en `tmpfs`.
+- [x] 5.4 RED (e2e): test que conecta con `DATABASE_URL` (rol `seei_app`) e intenta `CREATE TABLE` — Postgres debe rechazar por falta de privilegios. `[R8a]`
+- [ ] 5.5 GREEN: confirmar el rechazo aplicando `01-roles.sql` contra `docker-compose.test.yml` (no requiere código de producción adicional). `[R8a]` — **BLOQUEADO**: el motor de Docker no está disponible en este entorno de ejecución (CLI/compose instalados, sin daemon accesible); no se pudo levantar `docker-compose.test.yml` para confirmar el rechazo real. Ver nota de riesgos.
+- [x] 5.6 RED (e2e): test que ejecuta `prisma migrate deploy` con `MIGRATION_DATABASE_URL` contra una base nueva — debe aplicar la baseline sin error y sin crear tablas de dominio. `[R8b][R9]`
+- [ ] 5.7 GREEN: verificar contra `docker-compose.test.yml`; si la versión fijada de Prisma no toma `directUrl` para `migrate deploy`, aplicar la contingencia `DATABASE_URL=$MIGRATION_DATABASE_URL prisma migrate deploy` (pregunta abierta de `design.md`). `[R8b][R9]` — **BLOQUEADO** por la misma falta de Docker; no se pudo ejecutar `prisma migrate deploy` contra Postgres real para confirmar si `directUrl` es tomado o si aplica la contingencia.
+- [x] 5.8 `apps/backend/test:e2e` script: `up -d --wait` (`docker-compose.test.yml`) → `prisma migrate deploy` → Jest → `down -v`. Implementado en `apps/backend/scripts/test-e2e.mjs`; orquestación no ejercitada de punta a punta por el mismo bloqueo de Docker.
 
 ## Fase 6: Docker Compose y Caddy (PR 8, base: PR 7 — declarado por encima de 400 líneas, ver justificación en el Plan de PRs)
 

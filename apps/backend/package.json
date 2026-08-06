@@ -6,7 +6,7 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "test": "jest --config jest.config.ts",
-    "test:e2e": "jest --config test/jest-e2e.config.ts",
+    "test:e2e": "node scripts/test-e2e.mjs",
     "lint": "echo \"@seei/backend: nothing to lint yet\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "openapi:extract": "tsx src/openapi.ts",
