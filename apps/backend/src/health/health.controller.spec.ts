@@ -34,4 +34,16 @@ describe('HealthController', () => {
     expect(resultado.db.estado).toBe('ok');
     expect(resultado.redis.estado).toBe('ok');
   });
+
+  it('reporta redis.estado "error" y estado "degradado" cuando Redis rechaza PING, sin ocultarlo con un 200 genérico', async () => {
+    prisma.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
+    redis.ping.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    const resultado = await controller.obtenerHealth();
+
+    expect(resultado.db.estado).toBe('ok');
+    expect(resultado.redis.estado).toBe('error');
+    expect(resultado.estado).toBe('degradado');
+    expect(redis.get).not.toHaveBeenCalled();
+  });
 });
