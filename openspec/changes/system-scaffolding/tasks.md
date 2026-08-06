@@ -113,9 +113,9 @@ main
 
 ## Fase 4: Worker Node.js + BullMQ (PR 6, base: PR 5)
 
-- [ ] 4.1 `(config)` Bootstrap de Node.js en `apps/worker`, conexión BullMQ a Redis, Vitest.
-- [ ] 4.2 RED: test del processor `system.ping` que espera `SET system:ping:heartbeat <timestamp ISO>` en Redis, sin ninguna llamada a Prisma/Postgres. `[R6]`
-- [ ] 4.3 GREEN: implementar el processor `system.ping`; agregar doc-comment explícito ("no reutilizable como andamiaje de outbox del ADR-0012, ver #12/#15") y una sección en `README.md`. `[R6]`
+- [x] 4.1 `(config)` Bootstrap de Node.js en `apps/worker`, conexión BullMQ a Redis, Vitest.
+- [x] 4.2 RED: test del processor `system.ping` que espera `SET system:ping:heartbeat <timestamp ISO>` en Redis, sin ninguna llamada a Prisma/Postgres. `[R6]`
+- [x] 4.3 GREEN: implementar el processor `system.ping`; agregar doc-comment explícito ("no reutilizable como andamiaje de outbox del ADR-0012, ver #12/#15") y una sección en `README.md`. `[R6]`
 
 ## Fase 5: Roles de Postgres y migración baseline (PR 7, base: PR 6)
 
