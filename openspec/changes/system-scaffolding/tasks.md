@@ -147,10 +147,10 @@ main
 
 ## Fase 8: ADR y documentación (PR 10, base: PR 9)
 
-- [ ] 8.1 Redactar `adrs/0014-monorepo-pnpm-turborepo.md` (formato MADR: Estado/Contexto/Decisión/Alternativas consideradas/Consecuencias) documentando pnpm+Turborepo y el contrato OpenAPI como artefacto generado y versionado.
-- [ ] 8.2 Redactar `adrs/0015-roles-postgresql-migrador-app.md` (mismo formato) documentando `seei_migrator`/`seei_app` y el mecanismo de `ALTER DEFAULT PRIVILEGES`, dejando explícito que la revocación de auditoría es trabajo de #3.
-- [ ] 8.3 `README.md`: sección `## HTTPS local` (confianza de la CA, tabla por SO, Firefox) y gotcha de `docker-entrypoint-initdb.d` (`docker compose down -v` tras tocar `01-roles.sql`).
-- [ ] 8.4 `docs/onboarding.md`: referencia a `## HTTPS local`, pasos de arranque (`pnpm install`, `pnpm compose:dev`, `pnpm caddy:trust`).
+- [x] 8.1 Redactar `adrs/0014-monorepo-pnpm-turborepo.md` (formato MADR: Estado/Contexto/Decisión/Alternativas consideradas/Consecuencias) documentando pnpm+Turborepo y el contrato OpenAPI como artefacto generado y versionado.
+- [x] 8.2 Redactar `adrs/0015-roles-postgresql-migrador-app.md` (mismo formato) documentando `seei_migrator`/`seei_app` y el mecanismo de `ALTER DEFAULT PRIVILEGES`, dejando explícito que la revocación de auditoría es trabajo de #3.
+- [x] 8.3 `README.md`: sección `## HTTPS local` (confianza de la CA, tabla por SO, Firefox) y gotcha de `docker-entrypoint-initdb.d` (`docker compose down -v` tras tocar `01-roles.sql`).
+- [x] 8.4 `docs/onboarding.md`: referencia a `## HTTPS local`, pasos de arranque (`pnpm install`, `pnpm compose:dev`, `pnpm caddy:trust`).
 
 ## Fase 9: Verificación end-to-end del walking skeleton (PR 10, cierre de la cadena — tras integrar PR 10 en `system-scaffolding`, la rama tracker está lista para fusionar a `main`)
 
