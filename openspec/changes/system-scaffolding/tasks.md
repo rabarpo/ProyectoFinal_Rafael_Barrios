@@ -87,13 +87,13 @@ main
 
 ### PR 3 — Backend / ping, extractor OpenAPI y Prisma (base: PR 2)
 
-- [ ] 1.8 RED: test unitario de `SystemPingController` que espera `202` y una llamada a `Queue.add('system.ping', …)`. `[R5]`
-- [ ] 1.9 GREEN: implementar `POST /api/system/ping` que encola el job en la cola `system` (BullMQ producer). `[R5]`
-- [ ] 1.10 Decorar `HealthController`/`SystemPingController`/DTOs con `@nestjs/swagger` para que aparezcan en el documento OpenAPI.
-- [ ] 1.11 `(config)` Crear `apps/backend/src/openapi.ts`: `NestFactory.create(AppModule, {logger:false})` → `SwaggerModule.createDocument` → `writeFileSync('dist-openapi/openapi.json')` → `app.close()`, sin `listen()`.
-- [ ] 1.12 Verificar `pnpm --filter @seei/backend exec tsx src/openapi.ts` produce `dist-openapi/openapi.json` sin Postgres/Redis vivos (confirma D1).
-- [ ] 1.13 `(config)` `apps/backend/prisma/schema.prisma`: `datasource db` con `url = env("DATABASE_URL")`, `directUrl = env("MIGRATION_DATABASE_URL")`.
-- [ ] 1.14 `(config)` Crear la migración baseline vacía de Prisma (`prisma migrate dev --create-only`, sin modelos de dominio). `[R9]`
+- [x] 1.8 RED: test unitario de `SystemPingController` que espera `202` y una llamada a `Queue.add('system.ping', …)`. `[R5]`
+- [x] 1.9 GREEN: implementar `POST /api/system/ping` que encola el job en la cola `system` (BullMQ producer). `[R5]`
+- [x] 1.10 Decorar `HealthController`/`SystemPingController`/DTOs con `@nestjs/swagger` para que aparezcan en el documento OpenAPI.
+- [x] 1.11 `(config)` Crear `apps/backend/src/openapi.ts`: `NestFactory.create(AppModule, {logger:false})` → `SwaggerModule.createDocument` → `writeFileSync('dist-openapi/openapi.json')` → `app.close()`, sin `listen()`.
+- [x] 1.12 Verificar `pnpm --filter @seei/backend exec tsx src/openapi.ts` produce `dist-openapi/openapi.json` sin Postgres/Redis vivos (confirma D1).
+- [x] 1.13 `(config)` `apps/backend/prisma/schema.prisma`: `datasource db` con `url = env("DATABASE_URL")`, `directUrl = env("MIGRATION_DATABASE_URL")`.
+- [x] 1.14 `(config)` Crear la migración baseline vacía de Prisma (`prisma migrate dev --create-only`, sin modelos de dominio). `[R9]`
 
 ## Fase 2: Pipeline de contratos OpenAPI (PR 4, base: PR 3)
 
