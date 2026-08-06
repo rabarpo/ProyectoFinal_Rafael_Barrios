@@ -1,0 +1,140 @@
+# CI (design.md, sección "Workflow de GitHub Actions"; tareas 7.1-7.4 de
+# openspec/changes/system-scaffolding/tasks.md).
+#
+# `build-and-check` regenera el contrato OpenAPI, verifica que no haya deriva silenciosa
+# ([R3a][R3b][R3c] — script de PR4, tarea 2.6, packages/contracts/scripts/check-drift.ts) ANTES
+# de compilar/testear, y luego corre lint/typecheck/build/test sobre todo el monorepo.
+#
+# `e2e-backend` ejercita la migración baseline con el rol `seei_migrator` y la suite e2e del
+# backend ([R8b][R9]) contra Postgres 16 + Redis 7 provistos por
+# `infra/docker/docker-compose.test.yml` (mismas imágenes `postgres:16`/`redis:7` y el mismo
+# `infra/docker/postgres/init/01-roles.sql` verificados en Docker Desktop real en el PR 7). Se
+# usa ese compose ya implementado y verificado en lugar de declarar un bloque `services:` nativo
+# de GitHub Actions en paralelo: `apps/backend/scripts/test-e2e.mjs` (invocado por
+# `turbo run test:e2e --filter=@seei/backend`) siempre orquesta ese compose por su cuenta, así
+# que un segundo par Postgres/Redis nativo quedaría provisto pero nunca ejercitado por los tests
+# — infraestructura muerta. El paso explícito de `prisma migrate deploy` de abajo corre contra
+# el mismo compose ya levantado (idempotente: si `turbo run test:e2e` lo repite internamente, no
+# hace nada nuevo), preservando el orden pedido en la tarea 7.2.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Cache Turborepo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-build-and-check-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-build-and-check-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # [R3a] Regenera el contrato con --force: un acierto de caché de Turborepo no debe
+      # convertir la verificación de deriva en un no-op.
+      - name: Regenerate OpenAPI contract
+        run: pnpm turbo run generate:contracts --force
+
+      # [R3a][R3b][R3c] Verificación de deriva — corre inmediatamente después de generar y
+      # ANTES de build/test (design.md: un contrato divergente debe fallar acá, con un mensaje
+      # explícito, en vez de como un error de tipos confuso en el frontend).
+      - name: Verify OpenAPI contract has no drift
+        run: pnpm --filter @seei/contracts run check:drift
+
+      - name: Lint, typecheck, build, test
+        run: pnpm turbo run lint typecheck build test
+
+  e2e-backend:
+    needs: build-and-check
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci_ephemeral_postgres
+      SEEI_MIGRATOR_PASSWORD: ci_ephemeral_migrator
+      SEEI_APP_PASSWORD: ci_ephemeral_app
+      DATABASE_URL: postgresql://seei_app:ci_ephemeral_app@localhost:5433/seei?schema=public
+      MIGRATION_DATABASE_URL: postgresql://seei_migrator:ci_ephemeral_migrator@localhost:5433/seei?schema=public
+      REDIS_URL: redis://localhost:6380
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Cache Turborepo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-e2e-backend-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-e2e-backend-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Credenciales descartables solo para esta corrida (design.md, "Cadenas de conexión": "CI
+      # usa contraseñas descartables en texto plano porque la base es efímera"). No versionado
+      # (infra/docker/.env.test está en .gitignore) — lo consume
+      # apps/backend/scripts/test-e2e.mjs vía docker-compose.test.yml.
+      - name: Write ephemeral infra/docker/.env.test
+        run: |
+          cat > infra/docker/.env.test <<EOF
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          SEEI_MIGRATOR_PASSWORD=$SEEI_MIGRATOR_PASSWORD
+          SEEI_APP_PASSWORD=$SEEI_APP_PASSWORD
+          DATABASE_URL=$DATABASE_URL
+          MIGRATION_DATABASE_URL=$MIGRATION_DATABASE_URL
+          REDIS_URL=$REDIS_URL
+          EOF
+
+      # postgres:16 + redis:7 (infra/docker/docker-compose.test.yml) con
+      # infra/docker/postgres/init/01-roles.sql aplicado por el entrypoint oficial —
+      # aprovisiona seei_migrator/seei_app equivalente a lo verificado en el PR 7.
+      - name: Start ephemeral Postgres/Redis
+        run: docker compose --env-file infra/docker/.env.test -f infra/docker/docker-compose.test.yml up -d --wait
+
+      # [R8b][R9] Migración baseline con el rol propietario (seei_migrator vía
+      # MIGRATION_DATABASE_URL/directUrl — confirmado en el PR 7 que Prisma ^5.22.0 la toma sin
+      # sustituir DATABASE_URL).
+      - name: Apply baseline migration (seei_migrator)
+        run: pnpm --filter @seei/backend exec prisma migrate deploy
+
+      # [R8b][R9] turbo run test:e2e --filter=@seei/backend invoca
+      # apps/backend/scripts/test-e2e.mjs, que repite up -d --wait (no-op, ya sano) y
+      # prisma migrate deploy (no-op, ya aplicada) antes de Jest, y baja el entorno
+      # (down -v) al final incluso si la suite falla.
+      - name: Run backend e2e suite
+        run: pnpm turbo run test:e2e --filter=@seei/backend
