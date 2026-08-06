@@ -1,0 +1,16 @@
+# Punto de entrada TLS único (ADR-0007). Certificado emitido por la CA local de Caddy
+# (`tls internal`, persistida en el volumen `caddy_data`) — ver `pnpm caddy:trust` y la sección
+# "HTTPS local" de README.md. Sitio único, sin ramas: frontend y API comparten origen porque el
+# backend fija `app.setGlobalPrefix('api')` (design.md, "Topología de Docker Compose").
+
+seei.localhost {
+    tls internal
+
+    handle /api/* {
+        reverse_proxy backend:3000
+    }
+
+    handle {
+        reverse_proxy frontend:8080
+    }
+}

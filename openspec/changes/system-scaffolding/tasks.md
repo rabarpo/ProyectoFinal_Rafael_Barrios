@@ -130,13 +130,13 @@ main
 
 ## Fase 6: Docker Compose y Caddy (PR 8, base: PR 7 — declarado por encima de 400 líneas, ver justificación en el Plan de PRs)
 
-- [ ] 6.1 `(config)` `infra/docker/{backend,frontend,worker}.Dockerfile` multi-stage, etapa `dev` para `frontend`.
-- [ ] 6.2 `(config)` `infra/docker/docker-compose.yml` base: `caddy`, `frontend`, `backend`, `worker`, `migrate` (one-shot), `postgres`, `redis`; healthchecks según la tabla de `design.md`; SIN `ports` publicados en `postgres`/`redis`. `[R7b]`
-- [ ] 6.3 `(config)` `infra/docker/docker-compose.dev.yml`: publica `127.0.0.1:5432`/`127.0.0.1:6379`, bind mounts, `frontend` en etapa `dev`, `NODE_ENV=development`. Aditivo, no reescribe el endurecimiento base.
-- [ ] 6.4 `(config)` `infra/docker/Caddyfile`: `seei.localhost { tls internal; handle /api/* {reverse_proxy backend:3000}; handle {reverse_proxy frontend:8080} }`.
-- [ ] 6.5 `(config)` Script `pnpm compose:dev` que invoca ambos archivos compose; script `pnpm caddy:trust` que copia el `root.crt` de Caddy.
-- [ ] 6.6 Verificar manualmente/documentar: `docker compose up` (con `.dev.yml`) deja los cinco servicios healthy y `GET /health` vía Caddy sobre HTTPS responde `200`. `[R7a]`
-- [ ] 6.7 Verificar por inspección: `docker-compose.yml` base no declara `ports` en `postgres` ni `redis`. `[R7b]`
+- [x] 6.1 `(config)` `infra/docker/{backend,frontend,worker}.Dockerfile` multi-stage, etapa `dev` para `frontend`.
+- [x] 6.2 `(config)` `infra/docker/docker-compose.yml` base: `caddy`, `frontend`, `backend`, `worker`, `migrate` (one-shot), `postgres`, `redis`; healthchecks según la tabla de `design.md`; SIN `ports` publicados en `postgres`/`redis`. `[R7b]`
+- [x] 6.3 `(config)` `infra/docker/docker-compose.dev.yml`: publica `127.0.0.1:5432`/`127.0.0.1:6379`, bind mounts, `frontend` en etapa `dev`, `NODE_ENV=development`. Aditivo, no reescribe el endurecimiento base.
+- [x] 6.4 `(config)` `infra/docker/Caddyfile`: `seei.localhost { tls internal; handle /api/* {reverse_proxy backend:3000}; handle {reverse_proxy frontend:8080} }`.
+- [x] 6.5 `(config)` Script `pnpm compose:dev` que invoca ambos archivos compose; script `pnpm caddy:trust` que copia el `root.crt` de Caddy.
+- [x] 6.6 Verificar manualmente/documentar: `docker compose up` (con `.dev.yml`) deja los cinco servicios healthy y `GET /health` vía Caddy sobre HTTPS responde `200`. `[R7a]` — **Confirmado** contra Docker Desktop real: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait` dejó `postgres`, `redis`, `backend`, `frontend`, `caddy` en `healthy` (`worker` sin healthcheck, arriba y estable) y `migrate` en `Exited (0)` tras aplicar la baseline. `curl -k --resolve seei.localhost:<puerto>:127.0.0.1 https://seei.localhost:<puerto>/api/health` respondió `HTTP_STATUS:200` con `{"estado":"ok","db":{"estado":"ok",...},"redis":{"estado":"ok",...},"worker":{"ultimoPing":null}}`. Nota de entorno: el host tenía el puerto 80/443 reservado por Windows (HTTP.sys, PID 4) fuera de nuestro control, así que la verificación remapeó los puertos publicados de `caddy` con un override YAML local no committeado (`ports: !override [...]`) a 8080/8443; `docker-compose.yml` en el repo sigue publicando 80/443/443-udp sin cambios. Dos gotchas reales corregidos durante la verificación (ver Dockerfiles/compose): (1) `apk add openssl` en las etapas `base`/`runtime` de `backend.Dockerfile` — sin él, el motor de Prisma sobre musl fallaba con "Could not parse schema engine response"; (2) el healthcheck de `frontend` usa `127.0.0.1` en vez de `localhost` — `localhost` resolvía primero a `::1` (IPv6) y el servidor solo escucha en IPv4, produciendo "connection refused" falso negativo.
+- [x] 6.7 Verificar por inspección: `docker-compose.yml` base no declara `ports` en `postgres` ni `redis`. `[R7b]` — **Confirmado** leyendo el YAML: ni el bloque `postgres` ni el bloque `redis` tienen clave `ports` (solo `caddy` publica puertos hacia el host).
 
 ## Fase 7: CI con GitHub Actions (PR 9, base: PR 8)
 

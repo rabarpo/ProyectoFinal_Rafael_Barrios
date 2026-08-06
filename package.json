@@ -14,7 +14,9 @@
     "typecheck": "turbo run typecheck",
     "dev": "turbo run dev",
     "db:migrate": "turbo run db:migrate",
-    "generate:contracts": "turbo run generate:contracts"
+    "generate:contracts": "turbo run generate:contracts",
+    "compose:dev": "docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.dev.yml up",
+    "caddy:trust": "docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.dev.yml cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-local-root.crt"
   },
   "devDependencies": {
     "turbo": "^2.3.3"

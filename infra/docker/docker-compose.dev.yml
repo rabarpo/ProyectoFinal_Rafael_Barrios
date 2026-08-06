@@ -1,0 +1,52 @@
+# Override ADITIVO ÚNICAMENTE (design.md, "Topología de Docker Compose"). Nunca reescribe el
+# endurecimiento del compose base: postgres/redis siguen sin publicar puertos ahí, este archivo
+# solo agrega comodidad de desarrollo cuando se invoca junto con `docker-compose.yml`
+# (`pnpm compose:dev`).
+#
+# `backend`/`worker` apuntan a la etapa `base` de su Dockerfile (misma que usa el build de
+# producción antes de compilar/deploy): ya trae el monorepo completo instalado con
+# devDependencies, así que alcanza con montar el código por bind mount y correr en modo watch —
+# no hace falta una etapa `dev` propia en esos dos Dockerfiles (task 6.1 solo la exige para
+# `frontend`, cuyo servidor de Vite en dev sí necesita una etapa dedicada).
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  backend:
+    build:
+      target: base
+    working_dir: /repo/apps/backend
+    environment:
+      NODE_ENV: development
+    command: ["pnpm", "exec", "nest", "start", "--watch"]
+    volumes:
+      - ../../apps/backend:/repo/apps/backend
+      - /repo/apps/backend/node_modules
+
+  worker:
+    build:
+      target: base
+    working_dir: /repo/apps/worker
+    environment:
+      NODE_ENV: development
+    command: ["pnpm", "exec", "tsx", "watch", "src/main.ts"]
+    volumes:
+      - ../../apps/worker:/repo/apps/worker
+      - /repo/apps/worker/node_modules
+
+  frontend:
+    build:
+      target: dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ../../apps/frontend:/repo/apps/frontend
+      - /repo/apps/frontend/node_modules
+      - ../../packages/contracts:/repo/packages/contracts
+      - /repo/packages/contracts/node_modules

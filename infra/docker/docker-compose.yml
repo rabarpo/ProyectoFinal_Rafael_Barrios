@@ -1,0 +1,133 @@
+name: seei
+
+# Topología de producción local (design.md, "Topología de Docker Compose"). Único punto de
+# entrada TLS es `caddy`; ningún otro servicio publica puertos hacia el host. Postgres y Redis
+# quedan accesibles solo dentro de la red `seei` interna, nunca desde el host (ADR-0007, [R7b]).
+#
+# Variables de entorno: este archivo espera un `.env` en este mismo directorio (Docker Compose
+# lo carga automáticamente porque es el directorio del proyecto), copiado desde el `.env.example`
+# de la raíz del repo — ver design.md, "Cadenas de conexión".
+
+networks:
+  seei:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    networks: [seei]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: infra/docker/frontend.Dockerfile
+      target: runtime
+    networks: [seei]
+    healthcheck:
+      # `127.0.0.1` explícito, no `localhost`: en esta imagen `localhost` resuelve primero a
+      # `::1` (IPv6) y el servidor solo escucha en IPv4, lo que produce "connection refused"
+      # (gotcha confirmado durante la verificación en vivo de la tarea 6.6).
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: infra/docker/backend.Dockerfile
+      target: runtime
+    networks: [seei]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/worker.Dockerfile
+      target: runtime
+    networks: [seei]
+    environment:
+      REDIS_URL: ${REDIS_URL}
+    # Sin healthcheck: el worker no expone superficie HTTP (design.md, "Preguntas abiertas" —
+    # omisión aceptada para el andamiaje, a revisar cuando llegue el despachador del outbox).
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: infra/docker/backend.Dockerfile
+      target: runtime
+    networks: [seei]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
+    command: ["node_modules/.bin/prisma", "migrate", "deploy"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    networks: [seei]
+    environment:
+      POSTGRES_DB: seei
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      SEEI_MIGRATOR_PASSWORD: ${SEEI_MIGRATOR_PASSWORD:?SEEI_MIGRATOR_PASSWORD is required}
+      SEEI_APP_PASSWORD: ${SEEI_APP_PASSWORD:?SEEI_APP_PASSWORD is required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d seei"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    networks: [seei]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15

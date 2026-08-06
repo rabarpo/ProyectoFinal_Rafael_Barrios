@@ -8,3 +8,4 @@ coverage/
 .env.test
 *.log
 .DS_Store
+caddy-local-root.crt
