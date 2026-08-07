@@ -58,6 +58,20 @@ describe('SessionService', () => {
     expect(miembros.sort()).toEqual([idA, idB].sort());
   });
 
+  // 7.2 RED [D7]: crear() acepta un sessionId explícito (pre-generado por AuthService ANTES de
+  // confirmar la auditoría transaccional) y lo usa tal cual, en vez de generar uno propio.
+  it('[D7] crear() con sessionId explícito lo usa como clave, sin generar uno nuevo', async () => {
+    const sessionIdExplicito = 'sesion-explicita-fija';
+
+    const sessionId = await service.crear('usuario-8', 'comite', sessionIdExplicito);
+
+    expect(sessionId).toBe(sessionIdExplicito);
+    const raw = await redis.get(`session:${sessionIdExplicito}`);
+    expect(raw).not.toBeNull();
+    const miembros = await redis.smembers('session:user:usuario-8');
+    expect(miembros).toEqual([sessionIdExplicito]);
+  });
+
   // 4.4 [D1]: obtener() renueva el TTL deslizante en cada llamada.
   it('[D1] obtener() renueva el TTL deslizante en cada llamada', async () => {
     const sessionId = await service.crear('usuario-3', 'comite');

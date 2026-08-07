@@ -12,7 +12,7 @@ import { SessionService } from './session.service';
  */
 const COOKIE_NAME = 'seei_session';
 
-interface RequestConCookies {
+export interface RequestConCookies {
   cookies?: Record<string, string>;
   usuario?: SesionUsuario;
 }

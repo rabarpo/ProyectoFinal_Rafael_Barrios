@@ -30,9 +30,14 @@ export class SessionService {
    * Sesiones concurrentes permitidas (D4): NO invalida sesiones previas del usuario.
    * `session:user:{userId}` es el índice (SET) usado por `revokeAllForUser`; su EXPIRE se
    * renueva en cada login, igual que el techo absoluto de una sesión nueva.
+   *
+   * `sessionIdExplicito` (design.md D7): `AuthService.login()` genera el id ANTES de confirmar
+   * la transacción de auditoría (para incluirlo en el payload de `LOGIN_EXITOSO`) y solo escribe
+   * en Redis después del commit — pasa ese mismo id aquí en vez de dejar que se genere uno nuevo,
+   * así el `session_id` auditado siempre coincide con la clave real de Redis.
    */
-  async crear(userId: string, rol: RolUsuario): Promise<string> {
-    const sessionId = randomBytes(32).toString('base64url');
+  async crear(userId: string, rol: RolUsuario, sessionIdExplicito?: string): Promise<string> {
+    const sessionId = sessionIdExplicito ?? randomBytes(32).toString('base64url');
     const sesion: SesionUsuario = { userId, rol, creadoEn: Math.floor(Date.now() / 1000) };
 
     await this.redis
