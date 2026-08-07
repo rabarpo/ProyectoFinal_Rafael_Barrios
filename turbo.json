@@ -15,6 +15,11 @@
       "cache": false,
       "env": ["DATABASE_URL", "MIGRATION_DATABASE_URL", "REDIS_URL"]
     },
+    "test:schema": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["DATABASE_URL", "MIGRATION_DATABASE_URL"]
+    },
     "db:migrate": { "cache": false, "env": ["MIGRATION_DATABASE_URL"] },
     "dev": { "cache": false, "persistent": true }
   }
