@@ -46,17 +46,23 @@ describe('seed estructural (prisma/seed.ts)', () => {
     expect(filasDespues).toBe(filasAntes);
   }, 30000);
 
-  // [R9b] El seed no crea material de credenciales.
-  it('[R9b] fuera de producción crea filas de Usuario sin password_hash ni identificador OAuth', async () => {
+  // [R9b] Actualizado por auth-server-sessions (PR1, tarea 3.4): la columna `password_hash`
+  // ahora existe por diseño (spec "Columna de credencial en `Usuario`") y el seed la puebla con
+  // un hash argon2id — nunca con la contraseña en texto plano ni con ningún identificador OAuth
+  // (fuera de alcance, spec "Fuera de alcance").
+  it('[R9b] fuera de producción crea filas de Usuario con password_hash argon2id, sin la contraseña en texto plano ni identificador OAuth', async () => {
     const result = runSeed('development');
 
     expect(result.status).toBe(0);
 
-    const usuarios = await client.query(`SELECT * FROM "Usuario" WHERE codigo LIKE 'seed-%'`);
+    const usuarios = await client.query<{ password_hash: string | null }>(
+      `SELECT * FROM "Usuario" WHERE codigo LIKE 'seed-%'`,
+    );
     expect(usuarios.rows.length).toBeGreaterThanOrEqual(5);
     for (const fila of usuarios.rows) {
       const columnas = Object.keys(fila);
-      expect(columnas).not.toContain('password_hash');
+      expect(fila.password_hash).toMatch(/^\$argon2id\$/);
+      expect(fila.password_hash).not.toContain('seed-password-dev-2026');
       expect(columnas.some((c) => c.toLowerCase().includes('oauth'))).toBe(false);
     }
   }, 30000);

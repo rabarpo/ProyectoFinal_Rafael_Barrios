@@ -30,27 +30,29 @@ Chain strategy: feature-branch-chain
 ## PR 1 — Credential Foundation (base = feature/tracker branch)
 
 ### Phase 1: Dependency Risk Verification (D5, do first)
-- [ ] 1.1 Add `@node-rs/argon2` to `apps/backend/package.json`; run `pnpm install --frozen-lockfile`
+- [x] 1.1 Add `@node-rs/argon2` to `apps/backend/package.json`; run `pnpm install --frozen-lockfile`
       inside a `node:22-alpine`-based build (or `backend.Dockerfile`) and confirm the resolved package
       is `@node-rs/argon2-linux-x64-musl` with no compile step [design D5 risk]
-- [ ] 1.2 If musl binary fails to resolve: fall back to `crypto.scrypt` per design.md alternative,
+- [x] 1.2 If musl binary fails to resolve: fall back to `crypto.scrypt` per design.md alternative,
       update D5 decision note, and re-scope PasswordService tasks below accordingly
+      (N/A — musl binary resolved cleanly; see verification evidence below, no fallback needed)
 
 ### Phase 2: Schema
-- [ ] 2.1 Add `password_hash String?` to `Usuario` in `apps/backend/prisma/schema.prisma` [R1]
-- [ ] 2.2 Generate migration `<ts>_credencial_usuario` stacked after `append-only-audit-engine`
-- [ ] 2.3 RED: `test/schema/usuario.spec.ts` asserts `password_hash` column exists and is nullable —
+- [x] 2.1 Add `password_hash String?` to `Usuario` in `apps/backend/prisma/schema.prisma` [R1]
+- [x] 2.2 Generate migration `<ts>_credencial_usuario` stacked after `append-only-audit-engine`
+      (`20260807211246_credencial_usuario`, additive `ALTER TABLE "Usuario" ADD COLUMN "password_hash" TEXT`)
+- [x] 2.3 RED: `test/schema/usuario.spec.ts` asserts `password_hash` column exists and is nullable —
       fails pre-migration [R1]
-- [ ] 2.4 GREEN 2.3 via 2.2's migration
+- [x] 2.4 GREEN 2.3 via 2.2's migration
 
 ### Phase 3: Password Hashing
-- [ ] 3.1 RED: `password.service.spec.ts` — `verificar()` against a fixed decoy hash returns false in
+- [x] 3.1 RED: `password.service.spec.ts` — `verificar()` against a fixed decoy hash returns false in
       roughly constant time (no early-return oracle) [design D3]
-- [ ] 3.2 Create `apps/backend/src/auth/password.service.ts`: argon2id
+- [x] 3.2 Create `apps/backend/src/auth/password.service.ts`: argon2id
       `memoryCost=19456,timeCost=2,parallelism=1`, PHC-embedded salt, decoy-hash constant [D3][D5]
       — GREEN 3.1
-- [ ] 3.3 GREEN: correct password against a real hash verifies true; wrong password verifies false
-- [ ] 3.4 Modify `apps/backend/prisma/seed.ts` to set `password_hash` for the 5 seeded users from
+- [x] 3.3 GREEN: correct password against a real hash verifies true; wrong password verifies false
+- [x] 3.4 Modify `apps/backend/prisma/seed.ts` to set `password_hash` for the 5 seeded users from
       `SEED_PASSWORD`, idempotent, respecting existing production guard
 
 ## PR 2 — Session Infra (base = PR 1 branch)

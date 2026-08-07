@@ -18,6 +18,7 @@ async function main(): Promise<void> {
   }
 
   const { PrismaClient, RolUsuario, Turno } = await import('@prisma/client');
+  const { hash } = await import('@node-rs/argon2');
   const prisma = new PrismaClient();
 
   try {
@@ -68,8 +69,20 @@ async function main(): Promise<void> {
       },
     });
 
-    // Un Usuario por rol, solo identidad — las columnas de credenciales no existen en este
-    // change, así que no hay material de credenciales que pueda filtrarse (escenario `[R9b]`).
+    // Un Usuario por rol, con credencial local (auth-server-sessions, PR1, tarea 3.4; spec
+    // "Columna de credencial en `Usuario`"). `SEED_PASSWORD` con valor por defecto de
+    // desarrollo: el guard de producción de arriba ya impide que este script corra con
+    // NODE_ENV=production, así que un valor por defecto en texto plano aquí nunca alcanza un
+    // ambiente productivo. El hash (nunca la contraseña en texto plano) se persiste, y se
+    // recalcula en cada corrida (`update`) para que cambiar `SEED_PASSWORD` y reejecutar el
+    // seed sea suficiente — mismo patrón idempotente vía `upsert` que el resto de este archivo.
+    const seedPassword = process.env.SEED_PASSWORD ?? 'seed-password-dev-2026';
+    const seedPasswordHash = await hash(seedPassword, {
+      memoryCost: 19456,
+      timeCost: 2,
+      parallelism: 1,
+    });
+
     const usuariosPorRol = [
       { rol: RolUsuario.estudiante, codigo: 'seed-estudiante', dni: '00000001', correo: 'seed.estudiante@seei.local', nombres: 'Estudiante Semilla' },
       { rol: RolUsuario.docente, codigo: 'seed-docente', dni: '00000002', correo: 'seed.docente@seei.local', nombres: 'Docente Semilla' },
@@ -81,8 +94,8 @@ async function main(): Promise<void> {
     for (const datosUsuario of usuariosPorRol) {
       await prisma.usuario.upsert({
         where: { codigo: datosUsuario.codigo },
-        update: {},
-        create: datosUsuario,
+        update: { password_hash: seedPasswordHash },
+        create: { ...datosUsuario, password_hash: seedPasswordHash },
       });
     }
 
