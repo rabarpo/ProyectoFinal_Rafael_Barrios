@@ -86,46 +86,48 @@ Chain strategy: feature-branch-chain
 ## PR 3 — Wiring + Orchestration (base = PR 2 branch)
 
 ### Phase 6: Module + DTO
-- [ ] 6.1 Create `apps/backend/src/auth/dto/login.dto.ts`: `LoginDto` (`codigo`, `password`) with
+- [x] 6.1 Create `apps/backend/src/auth/dto/login.dto.ts`: `LoginDto` (`codigo`, `password`) with
       `@ApiProperty`
-- [ ] 6.2 Modify `apps/backend/src/auditoria/audit-event-types.ts`: add `LOGIN_EXITOSO`,
+- [x] 6.2 Modify `apps/backend/src/auditoria/audit-event-types.ts`: add `LOGIN_EXITOSO`,
       `LOGIN_FALLIDO`, `LOGOUT` (additive; ADR-0016 trigger `WHEN` clause untouched)
-- [ ] 6.3 Create `apps/backend/src/auth/auth.module.ts`: providers `PrismaService`, `redisProvider`,
+- [x] 6.3 Create `apps/backend/src/auth/auth.module.ts`: providers `PrismaService`, `redisProvider`,
       `SessionService`, `PasswordService`, `AuthService`; imports `AuditoriaModule`; `configure()`
       applies `cookieParser()` [D6]; add `cookie-parser`+`@types/cookie-parser` to `package.json`
-- [ ] 6.4 Modify `apps/backend/src/app.module.ts` to register `AuthModule`
-- [ ] 6.5 GREEN: `AppModule` still instantiates with no live Redis/Postgres connection at construction
-      (D6/D9 — no eager connect) [R10]
+- [x] 6.4 Modify `apps/backend/src/app.module.ts` to register `AuthModule`
+- [x] 6.5 GREEN: `AppModule` still instantiates with no live Redis/Postgres connection at construction
+      (D6/D9 — no eager connect) [R10] (verified via `pnpm exec tsx src/openapi.ts` with both
+      containers stopped — exit 0)
 
 ### Phase 7: AuthService Orchestration (D7 — audit before Redis)
-- [ ] 7.1 RED: `auth.service.spec.ts` (or e2e) — audit write failure inside `$transaction()` leaves no
+- [x] 7.1 RED: `auth.service.spec.ts` (or e2e) — audit write failure inside `$transaction()` leaves no
       session key in Redis and no cookie issued [R9]
-- [ ] 7.2 Create `apps/backend/src/auth/auth.service.ts`: `login()` — lookup `Usuario`, `verificar()`
+- [x] 7.2 Create `apps/backend/src/auth/auth.service.ts`: `login()` — lookup `Usuario`, `verificar()`
       against decoy hash when absent, `$transaction` logging `LOGIN_EXITOSO`/`LOGIN_FALLIDO`, only on
       commit call `SessionService.crear()` — GREEN 7.1 [R9][D7]
-- [ ] 7.3 RED/GREEN: valid credentials + `estado !== 'bloqueado'` create a `session:{id}` in Redis and
+- [x] 7.3 RED/GREEN: valid credentials + `estado !== 'bloqueado'` create a `session:{id}` in Redis and
       return the session for cookie issuance [R2]
-- [ ] 7.4 RED/GREEN: wrong password creates no session key and emits no cookie; audits exactly one
+- [x] 7.4 RED/GREEN: wrong password creates no session key and emits no cookie; audits exactly one
       `LOGIN_FALLIDO` row [R3a][R3b]
-- [ ] 7.5 RED/GREEN: `estado === 'bloqueado'` with correct password is rejected, no session created
+- [x] 7.5 RED/GREEN: `estado === 'bloqueado'` with correct password is rejected, no session created
       [R4]
-- [ ] 7.6 RED/GREEN: `logout()` deletes `session:{id}`, `SREM`s the user set, and audits exactly one
+- [x] 7.6 RED/GREEN: `logout()` deletes `session:{id}`, `SREM`s the user set, and audits exactly one
       `LOGOUT` row [R5]
 
 ### Phase 8: AuthController
-- [ ] 8.1 Create `apps/backend/src/auth/auth.controller.ts`: `POST auth/login` (200 + `Set-Cookie
+- [x] 8.1 Create `apps/backend/src/auth/auth.controller.ts`: `POST auth/login` (200 + `Set-Cookie
       seei_session`, httpOnly/sameSite=lax/no maxAge per D6), `POST auth/logout` (204, expires
       cookie), `@ApiOperation`/`@ApiResponse` per ADR-0004
-- [ ] 8.2 Wire `AuthGuard`+`RolesGuard` on any route requiring both, verifying route-level (not
-      global) registration [D8]
+- [x] 8.2 Wire `AuthGuard`+`RolesGuard` on any route requiring both, verifying route-level (not
+      global) registration [D8] (added `GET auth/whoami` as the reference protected route +
+      e2e fixture, since no other domain route exists yet in this change)
 
 ### Phase 9: Adversarial + Integration Verification
-- [ ] 9.1 RED/GREEN: all four login-failure causes (inexistente, password ausente, password
+- [x] 9.1 RED/GREEN: all four login-failure causes (inexistente, password ausente, password
       incorrecta, bloqueado) return identical `401 {"message":"Credenciales inválidas"}` [D3][adversarial]
-- [ ] 9.2 RED/GREEN: no HTTP response body nor any `EventoAuditoria` payload contains the submitted
+- [x] 9.2 RED/GREEN: no HTTP response body nor any `EventoAuditoria` payload contains the submitted
       password, across all login paths [adversarial]
-- [ ] 9.3 `test/auth/*.e2e-spec.ts`: login OK, wrong password, nonexistent user, blocked user, logout,
+- [x] 9.3 `test/auth/*.e2e-spec.ts`: login OK, wrong password, nonexistent user, blocked user, logout,
       protected route without cookie, protected route with deleted session — one audit row per path
-- [ ] 9.4 GREEN: `pnpm openapi:extract` completes with no Redis/Postgres connection error in CI [R10]
-- [ ] 9.5 Run `test:schema` + `test` + `test:e2e -- auth` together; confirm no regression in existing
+- [x] 9.4 GREEN: `pnpm openapi:extract` completes with no Redis/Postgres connection error in CI [R10]
+- [x] 9.5 Run `test:schema` + `test` + `test:e2e -- auth` together; confirm no regression in existing
       suites (append-only-audit-engine, base-schema)
