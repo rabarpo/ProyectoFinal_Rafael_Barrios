@@ -56,10 +56,11 @@ model Usuario {
   estado    EstadoUsuario @default(activo)
   creado_en DateTime      @default(now()) @db.Timestamptz(3)
 
-  apoderados   Apoderado[]
-  matriculas   Matricula[]
-  derechoVotos DerechoVoto[]
-  jobsCorreo   JobCorreo[]
+  apoderados       Apoderado[]
+  matriculas       Matricula[]
+  derechoVotos     DerechoVoto[]
+  jobsCorreo       JobCorreo[]
+  eventosAuditoria EventoAuditoria[]
 }
 
 model Apoderado {
@@ -364,4 +365,25 @@ model Acta {
   creado_en  DateTime   @default(now()) @db.Timestamptz(3)
 
   proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
+}
+
+// Grupo 5 — Motor de auditoría append-only (append-only-audit-engine, PR1; design.md D1/D2/D3).
+// `onDelete: Restrict` explícito en `actor_usuario_id` (anula el `SetNull` por omisión de Prisma
+// en relaciones opcionales — mismo gotcha que D1 de #2): un `DELETE` sobre `Usuario` no puede
+// vaciar en silencio la autoría de un evento. `event_type`/`entity_type` son `TEXT` (convención
+// impuesta por `CHECK`, no `ENUM` — D7); `entity_id` es `TEXT` porque direcciona entidades
+// heterogéneas y ninguna FK es posible. Sin índices adicionales: la tabla nace vacía y el camino
+// de lectura lo define #21 (D1).
+model EventoAuditoria {
+  id               String   @id @default(uuid()) @db.Uuid
+  actor_usuario_id String?  @db.Uuid
+  event_type       String
+  entity_type      String
+  entity_id        String?
+  occurred_at      DateTime @default(now()) @db.Timestamptz(3)
+  ip_address       String?  @db.Inet
+  user_agent       String?
+  payload          Json     @db.JsonB
+
+  actor Usuario? @relation(fields: [actor_usuario_id], references: [id], onDelete: Restrict)
 }

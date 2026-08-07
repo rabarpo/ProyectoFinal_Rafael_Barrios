@@ -15,6 +15,17 @@ export async function createPgClient(): Promise<Client> {
   return client;
 }
 
+// append-only-audit-engine (design.md D5, tarea 2.1): la capa de trigger se prueba con el rol
+// propietario `seei_migrator` (MIGRATION_DATABASE_URL) porque Postgres verifica privilegios
+// ANTES de disparar un trigger — con `seei_app` todo UPDATE/DELETE da 42501 y el trigger nunca
+// corre. Sin este cliente, la capa de trigger queda sin prueba y un `DROP TRIGGER` accidental
+// pasaría verde.
+export async function createMigratorPgClient(): Promise<Client> {
+  const client = new Client({ connectionString: process.env.MIGRATION_DATABASE_URL });
+  await client.connect();
+  return client;
+}
+
 export async function withTransaction<T>(
   client: Client,
   fn: () => Promise<T>,

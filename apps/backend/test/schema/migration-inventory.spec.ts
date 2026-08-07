@@ -40,6 +40,8 @@ describe('migraciones agrupadas — inventario de alcance [R8]', () => {
     'Notificacion',
     'Configuracion',
     'Acta',
+    // Grupo 5 — motor de auditoría append-only (append-only-audit-engine, PR1)
+    'EventoAuditoria',
   ].sort();
 
   beforeAll(async () => {
