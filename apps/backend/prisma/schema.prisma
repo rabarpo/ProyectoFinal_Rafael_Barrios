@@ -46,15 +46,18 @@ enum Turno {
   tarde
 }
 
+// `password_hash` (auth-server-sessions, PR1; design.md D5/D9): nulable a propósito — un
+// `Usuario` sin credencial local (p. ej. provisto solo para OAuth de #5) sigue siendo válido.
 model Usuario {
-  id        String        @id @default(uuid()) @db.Uuid
-  nombres   String
-  dni       String        @unique
-  codigo    String        @unique
-  correo    String        @unique
-  rol       RolUsuario
-  estado    EstadoUsuario @default(activo)
-  creado_en DateTime      @default(now()) @db.Timestamptz(3)
+  id            String        @id @default(uuid()) @db.Uuid
+  nombres       String
+  dni           String        @unique
+  codigo        String        @unique
+  correo        String        @unique
+  rol           RolUsuario
+  estado        EstadoUsuario @default(activo)
+  creado_en     DateTime      @default(now()) @db.Timestamptz(3)
+  password_hash String?
 
   apoderados       Apoderado[]
   matriculas       Matricula[]
