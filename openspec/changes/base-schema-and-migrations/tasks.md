@@ -79,19 +79,19 @@ la tracker se mergea a `main`. Mismo patrón usado en `system-scaffolding`.
 
 ## Fase 3: Núcleo de votación (PR 3, base: PR 2 — mayor valor de revisión)
 
-- [ ] 3.1 Agregar a `schema.prisma`: `DerechoVoto`, `Voto`; `onDelete: Restrict` explícito en todo (D1, anula `SetNull` por omisión); `@@unique([proceso_id, derecho_voto_id])`, `@@unique([proceso_id, clave_idempotencia])`.
-- [ ] 3.2 `prisma migrate dev --create-only --name voting_core`.
-- [ ] 3.3 Anexar SQL raw: `ALTER TABLE "Voto" ADD CONSTRAINT "voto_eleccion_exactamente_una_chk" CHECK (num_nonnulls("lista_id","opcion_id","candidato_id") + "blanco"::int = 1)`; comentario `// NOTE:` sobre `Voto`.
-- [ ] 3.4 RED `[R3a]`: insertar `DerechoVoto` referenciando `ProcesoElectoral`/`Usuario` válidos → aceptado y vinculado por FK.
-- [ ] 3.5 RED `[R3b]`: insertar `DerechoVoto` con `proceso_id` inexistente → violación FK `23503`.
-- [ ] 3.6 RED `[R4]`: insertar segundo `Voto` con el mismo `(proceso_id, derecho_voto_id)` → `23505`/`P2002`.
-- [ ] 3.7 RED `[R5a]`: insertar `Voto` con `lista_id` y `candidato_id` ambos establecidos → `23514`.
-- [ ] 3.8 RED `[R5b]`: insertar `Voto` con `lista_id`/`opcion_id`/`candidato_id` en `NULL` y `blanco=false` → `23514`.
-- [ ] 3.9 RED `[R5c]`: insertar `Voto` con `blanco=true` y el resto `NULL` → aceptado.
-- [ ] 3.10 GREEN: aplicar migración; asertar `voto_eleccion_exactamente_una_chk` vía `pg_constraint`; 3.4–3.9 pasan.
-- [ ] 3.11 RED `[R6]`: `SELECT count(*) FROM pg_views WHERE schemaname='public'` debe ser `0`.
-- [ ] 3.12 GREEN: confirmar 3.11 (este change no crea ninguna vista).
-- [ ] 3.13 Verificar `pnpm --filter @seei/backend test:schema` verde para alcance PR3.
+- [x] 3.1 Agregar a `schema.prisma`: `DerechoVoto`, `Voto`; `onDelete: Restrict` explícito en todo (D1, anula `SetNull` por omisión); `@@unique([proceso_id, derecho_voto_id])`, `@@unique([proceso_id, clave_idempotencia])`.
+- [x] 3.2 `prisma migrate dev --create-only --name voting_core`.
+- [x] 3.3 Anexar SQL raw: `ALTER TABLE "Voto" ADD CONSTRAINT "voto_eleccion_exactamente_una_chk" CHECK (num_nonnulls("lista_id","opcion_id","candidato_id") + "blanco"::int = 1)`; comentario `// NOTE:` sobre `Voto`.
+- [x] 3.4 RED `[R3a]`: insertar `DerechoVoto` referenciando `ProcesoElectoral`/`Usuario` válidos → aceptado y vinculado por FK.
+- [x] 3.5 RED `[R3b]`: insertar `DerechoVoto` con `proceso_id` inexistente → violación FK `23503`.
+- [x] 3.6 RED `[R4]`: insertar segundo `Voto` con el mismo `(proceso_id, derecho_voto_id)` → `23505`/`P2002`.
+- [x] 3.7 RED `[R5a]`: insertar `Voto` con `lista_id` y `candidato_id` ambos establecidos → `23514`.
+- [x] 3.8 RED `[R5b]`: insertar `Voto` con `lista_id`/`opcion_id`/`candidato_id` en `NULL` y `blanco=false` → `23514`.
+- [x] 3.9 RED `[R5c]`: insertar `Voto` con `blanco=true` y el resto `NULL` → aceptado.
+- [x] 3.10 GREEN: aplicar migración; asertar `voto_eleccion_exactamente_una_chk` vía `pg_constraint`; 3.4–3.9 pasan.
+- [x] 3.11 RED `[R6]`: `SELECT count(*) FROM pg_views WHERE schemaname='public'` debe ser `0`.
+- [x] 3.12 GREEN: confirmar 3.11 (este change no crea ninguna vista).
+- [x] 3.13 Verificar `pnpm --filter @seei/backend test:schema` verde para alcance PR3.
 
 ## Fase 4: Tablas de soporte y cierre (PR 4, base: PR 3)
 

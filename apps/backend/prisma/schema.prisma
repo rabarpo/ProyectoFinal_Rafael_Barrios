@@ -56,8 +56,9 @@ model Usuario {
   estado    EstadoUsuario @default(activo)
   creado_en DateTime      @default(now()) @db.Timestamptz(3)
 
-  apoderados Apoderado[]
-  matriculas Matricula[]
+  apoderados   Apoderado[]
+  matriculas   Matricula[]
+  derechoVotos DerechoVoto[]
 }
 
 model Apoderado {
@@ -186,6 +187,8 @@ model ProcesoElectoral {
   candidatos   Candidato[]
   opciones     OpcionConsulta[]
   procesoAulas ProcesoAula[]
+  derechoVotos DerechoVoto[]
+  votos        Voto[]
 }
 
 model Lista {
@@ -202,6 +205,7 @@ model Lista {
 
   proceso    ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Cascade)
   candidatos Candidato[]
+  votos      Voto[]
 
   @@unique([proceso_id, numero])
 }
@@ -219,6 +223,7 @@ model Candidato {
 
   proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Cascade)
   lista   Lista?           @relation(fields: [lista_id], references: [id], onDelete: Restrict)
+  votos   Voto[]
 }
 
 model OpcionConsulta {
@@ -228,6 +233,7 @@ model OpcionConsulta {
   descripcion String?
 
   proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Cascade)
+  votos   Voto[]
 
   @@unique([proceso_id, etiqueta])
 }
@@ -241,4 +247,46 @@ model ProcesoAula {
   aula    Aula             @relation(fields: [aula_id], references: [id], onDelete: Restrict)
 
   @@unique([proceso_id, aula_id])
+}
+
+// Grupo 3 — Núcleo de votación (base-schema-and-migrations, tarea 3.1; design.md D1/D5).
+// `onDelete: Restrict` explícito en TODAS las relaciones — ningún camino de borrado alcanza
+// `DerechoVoto` ni `Voto` (ADR-0003, ADR-0010). En particular, `Voto → Lista/OpcionConsulta/
+// Candidato` anula el `SetNull` por omisión de Prisma en relaciones opcionales (design.md D1,
+// "Gotcha que obliga a ser explícito").
+
+model DerechoVoto {
+  id              String @id @default(uuid()) @db.Uuid
+  proceso_id      String @db.Uuid
+  usuario_id      String @db.Uuid
+  en_calidad_de   String
+  aula_snapshot   String
+
+  proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
+  usuario Usuario          @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  votos   Voto[]
+}
+
+// NOTE: `exactamente una elección` vive como CHECK en SQL raw dentro de
+//       prisma/migrations/<ts>_voting_core/migration.sql — Prisma no expresa CHECK.
+model Voto {
+  id                 String   @id @default(uuid()) @db.Uuid
+  proceso_id         String   @db.Uuid
+  derecho_voto_id    String   @db.Uuid
+  lista_id           String?  @db.Uuid
+  opcion_id          String?  @db.Uuid
+  candidato_id       String?  @db.Uuid
+  blanco             Boolean  @default(false)
+  codigo_comprobante String   @unique
+  clave_idempotencia String
+  hora_servidor      DateTime @default(now()) @db.Timestamptz(3)
+
+  proceso     ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
+  derechoVoto DerechoVoto      @relation(fields: [derecho_voto_id], references: [id], onDelete: Restrict)
+  lista       Lista?           @relation(fields: [lista_id], references: [id], onDelete: Restrict)
+  opcion      OpcionConsulta?  @relation(fields: [opcion_id], references: [id], onDelete: Restrict)
+  candidato   Candidato?       @relation(fields: [candidato_id], references: [id], onDelete: Restrict)
+
+  @@unique([proceso_id, derecho_voto_id])
+  @@unique([proceso_id, clave_idempotencia])
 }
