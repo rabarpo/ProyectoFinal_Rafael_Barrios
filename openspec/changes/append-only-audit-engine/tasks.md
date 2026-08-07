@@ -79,26 +79,26 @@ ADR-0016, rejection tests) — not adopted by default per design.
 ## PR 2 — Write Path (base = PR 1 branch)
 
 ### Phase 5: Event Type Registry + Service
-- [ ] 5.1 Create `apps/backend/src/auditoria/audit-event-types.ts`:
+- [x] 5.1 Create `apps/backend/src/auditoria/audit-event-types.ts`:
       `AUDIT_EVENT_TYPES = { VOTO, RECHAZO }` + `AuditEventType` union [R8b]
-- [ ] 5.2 Create `apps/backend/src/auditoria/auditoria.service.ts`:
+- [x] 5.2 Create `apps/backend/src/auditoria/auditoria.service.ts`:
       `log(tx: Prisma.TransactionClient, eventType, actorId, entityType, entityId, payload)`
-- [ ] 5.3 Create `apps/backend/src/auditoria/auditoria.module.ts` (`AuditoriaModule`, exports service)
-- [ ] 5.4 Import `AuditoriaModule` in `apps/backend/src/app.module.ts`
+- [x] 5.3 Create `apps/backend/src/auditoria/auditoria.module.ts` (`AuditoriaModule`, exports service)
+- [x] 5.4 Import `AuditoriaModule` in `apps/backend/src/app.module.ts`
 
 ### Phase 6: Atomicity Suite (RED before GREEN)
-- [ ] 6.1 RED: `test/auditoria-transaccional.e2e-spec.ts` — rollback after both writes inside one
+- [x] 6.1 RED: `test/auditoria-transaccional.e2e-spec.ts` — rollback after both writes inside one
       `$transaction` (using `AnioEscolar` fixture) leaves 0 business rows and 0 audit rows [R6a]
-- [ ] 6.2 GREEN 6.1 via `AuditoriaService.log` implementation from Phase 5
-- [ ] 6.3 RED/GREEN: committed transaction leaves exactly 1 business row + 1 audit row, `entity_id`
+- [x] 6.2 GREEN 6.1 via `AuditoriaService.log` implementation from Phase 5
+- [x] 6.3 RED/GREEN: committed transaction leaves exactly 1 business row + 1 audit row, `entity_id`
       matches business row id [R6b]
-- [ ] 6.4 RED/GREEN: `AuditoriaService.log` with `event_type='VOTO'` payload containing
+- [x] 6.4 RED/GREEN: `AuditoriaService.log` with `event_type='VOTO'` payload containing
       `candidato_id`, same `$transaction` as business write — trigger rejects, business write also
       rolls back [R7a]
-- [ ] 6.5 GREEN: client-provided `occurred_at` ignored, server time recorded (no field in `log()`
+- [x] 6.5 GREEN: client-provided `occurred_at` ignored, server time recorded (no field in `log()`
       signature) [R1b]
 
 ### Phase 7: Wiring Verification
-- [ ] 7.1 Verify `AppModule` still instantiates without live DB (D6 — no eager connection)
-- [ ] 7.2 Run full `test:schema` + `test:e2e -- auditoria` suites together; confirm no regression in
+- [x] 7.1 Verify `AppModule` still instantiates without live DB (D6 — no eager connection)
+- [x] 7.2 Run full `test:schema` + `test:e2e -- auditoria` suites together; confirm no regression in
       existing #2 migration-inventory suite
