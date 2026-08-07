@@ -196,18 +196,17 @@ WARNING:
    test/migrate-baseline.e2e-spec.ts together with the rest of test:e2e (i.e. pnpm turbo run
    test:e2e --filter=@seei/backend, no --testPathPattern) fails its second assertion - it
    expects the public schema to contain only _prisma_migrations after prisma migrate deploy,
-   but by the time any e2e suite runs, all 7 migrations (including 5+ domain-table migrations
+   but by the time any e2e suite runs all 7 migrations (including 5+ domain-table migrations
    from base-schema-and-migrations) have already been applied, so 19 domain tables also exist.
-   Confirmed via git log -- apps/backend/test/migrate-baseline.e2e-spec.ts: the file has never
-   been modified since its introduction in 8e2f721 (part of system-scaffolding/early
-   base-schema-and-migrations work), predating every domain-table migration. This is a
-   pre-existing, deterministic (not flaky/order-dependent) defect in the CI e2e-backend jobs
-   full suite, unrelated to auth-server-sessions and not touched by this change or its fix
-   commit. It does not affect this changes own suites: pnpm turbo run test, test:schema,
-   and test:e2e -- auth (the exact commands the user asked to re-run, and the ones this changes
-   spec/tasks reference) all pass cleanly. Recommend logging this as a separate follow-up/bug
-   against the CI e2e-backend job or against base-schema-and-migrationss already-archived
-   scope - out of scope to fix here.
+   Confirmed via git log that this test file has never been modified since its introduction in
+   8e2f721 (part of system-scaffolding/early base-schema-and-migrations work), predating every
+   domain-table migration - this is a pre-existing, deterministic (not flaky/order-dependent)
+   defect in the CI e2e-backend jobs full suite, unrelated to auth-server-sessions and not
+   touched by this change or its fix commit. It does not affect this changes own suites: pnpm
+   turbo run test, test:schema, and test:e2e -- auth (the exact commands the user asked to
+   re-run, and the ones this changes spec/tasks reference) all pass cleanly. Recommend logging
+   this as a separate follow-up/bug against the CI e2e-backend job or against
+   base-schema-and-migrations already-archived scope - out of scope to fix here.
 
 SUGGESTION: (carried over from the prior pass, already reviewed/accepted by the user - listed
 for completeness only, not re-litigated)
