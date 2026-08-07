@@ -95,16 +95,16 @@ la tracker se mergea a `main`. Mismo patrón usado en `system-scaffolding`.
 
 ## Fase 4: Tablas de soporte y cierre (PR 4, base: PR 3)
 
-- [ ] 4.1 Agregar a `schema.prisma`: `JobCorreo`/`Notificacion`, `Configuracion`, `Acta`; `onDelete: Restrict` (D1); `Configuracion` sin columnas de secreto SMTP (D7: solo `smtp_host`/`smtp_puerto`/`smtp_remitente`).
-- [ ] 4.2 `prisma migrate dev --create-only --name support_tables` (sin SQL raw).
-- [ ] 4.3 RED `[R7]`: insertar `Acta` referenciando un `ProcesoElectoral` existente → aceptado.
-- [ ] 4.4 GREEN: aplicar migración; 4.3 pasa.
-- [ ] 4.5 Finalizar `seed.ts`: `upsert` de `Configuracion` singleton (datos de marcador de posición, sin secretos SMTP).
-- [ ] 4.6 RED: seed fuera de producción → fila de `Configuracion` sin campos de secreto SMTP.
-- [ ] 4.7 GREEN: 4.6 pasa; seed idempotente vía `upsert` por clave natural.
-- [ ] 4.8 RED `[R8]`: `prisma migrate deploy` desde la baseline vacía de #1 hasta las cuatro migraciones de #2 → se aplican en orden sin error y sin tablas fuera del inventario de alcance.
-- [ ] 4.9 GREEN: confirmar 4.8 (verificación de integración entre los cuatro grupos).
-- [ ] 4.10 Verificar suite completa `pnpm --filter @seei/backend test:schema` en verde `[R10]`; `pnpm --filter @seei/backend run check:drift` limpio.
+- [x] 4.1 Agregar a `schema.prisma`: `JobCorreo`/`Notificacion`, `Configuracion`, `Acta`; `onDelete: Restrict` (D1); `Configuracion` sin columnas de secreto SMTP (D7: solo `smtp_host`/`smtp_puerto`/`smtp_remitente`).
+- [x] 4.2 `prisma migrate dev --create-only --name support_tables` (sin SQL raw).
+- [x] 4.3 RED `[R7]`: insertar `Acta` referenciando un `ProcesoElectoral` existente → aceptado.
+- [x] 4.4 GREEN: aplicar migración; 4.3 pasa.
+- [x] 4.5 Finalizar `seed.ts`: `upsert` de `Configuracion` singleton (datos de marcador de posición, sin secretos SMTP).
+- [x] 4.6 RED: seed fuera de producción → fila de `Configuracion` sin campos de secreto SMTP.
+- [x] 4.7 GREEN: 4.6 pasa; seed idempotente vía `upsert` por clave natural.
+- [x] 4.8 RED `[R8]`: `prisma migrate deploy` desde la baseline vacía de #1 hasta las cuatro migraciones de #2 → se aplican en orden sin error y sin tablas fuera del inventario de alcance.
+- [x] 4.9 GREEN: confirmar 4.8 (verificación de integración entre los cuatro grupos).
+- [x] 4.10 Verificar suite completa `pnpm --filter @seei/backend test:schema` en verde `[R10]`; `pnpm --filter @seei/backend run check:drift` limpio.
 
 ## Cobertura de escenarios no resuelta
 

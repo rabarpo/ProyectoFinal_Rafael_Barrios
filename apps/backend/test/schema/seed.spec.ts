@@ -60,4 +60,30 @@ describe('seed estructural (prisma/seed.ts)', () => {
       expect(columnas.some((c) => c.toLowerCase().includes('oauth'))).toBe(false);
     }
   }, 30000);
+
+  // 4.6 [D7] El seed crea el singleton Configuracion sin ninguna columna de secreto SMTP.
+  it('fuera de producción crea el singleton Configuracion sin campos de secreto SMTP', async () => {
+    const result = runSeed('development');
+
+    expect(result.status).toBe(0);
+
+    const configuraciones = await client.query(`SELECT * FROM "Configuracion" WHERE clave = 'institucional'`);
+    expect(configuraciones.rows.length).toBe(1);
+
+    const columnas = Object.keys(configuraciones.rows[0]);
+    const columnasPermitidas = new Set([
+      'id',
+      'clave',
+      'anio_escolar_id',
+      'smtp_host',
+      'smtp_puerto',
+      'smtp_remitente',
+      'actualizado_en',
+    ]);
+    for (const columna of columnas) {
+      expect(columnasPermitidas.has(columna)).toBe(true);
+    }
+    expect(columnas.some((c) => c.toLowerCase().includes('password'))).toBe(false);
+    expect(columnas.some((c) => c.toLowerCase().includes('secret'))).toBe(false);
+  }, 30000);
 });

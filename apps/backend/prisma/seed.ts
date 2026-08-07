@@ -1,6 +1,7 @@
-// Seed estructural (base-schema-and-migrations, tarea 1.13; design.md, sección "Seed
-// estructural"). Este PR crea únicamente datos de identidad y árbol académico: el singleton
-// `Configuracion` (D7) se agrega en la Fase 4 (tarea 4.5), cuando ese modelo existe.
+// Seed estructural (base-schema-and-migrations, tareas 1.13 y 4.5; design.md, sección "Seed
+// estructural"). Crea datos de identidad, árbol académico y el singleton `Configuracion` (D7,
+// sin ninguna columna de secreto SMTP: solo `smtp_host`/`smtp_puerto`/`smtp_remitente`, datos de
+// marcador de posición).
 //
 // MUST NOT ejecutarse en producción (spec, "Seeds estructurales restringidos a no-producción",
 // escenario `[R9a]`) — el guard corre como la PRIMERA sentencia ejecutable, antes de importar
@@ -85,7 +86,22 @@ async function main(): Promise<void> {
       });
     }
 
-    console.log('Seed estructural (identidad y árbol académico) aplicado.');
+    // Singleton `Configuracion` (D7) — datos de marcador de posición, sin ninguna columna de
+    // secreto SMTP. La contraseña SMTP vendrá de variable de entorno o gestor de secretos,
+    // decisión de #10, nunca de una fila de esta tabla.
+    await prisma.configuracion.upsert({
+      where: { clave: 'institucional' },
+      update: {},
+      create: {
+        clave: 'institucional',
+        anio_escolar_id: anioEscolar.id,
+        smtp_host: 'smtp.seei.local',
+        smtp_puerto: 587,
+        smtp_remitente: 'no-responder@seei.local',
+      },
+    });
+
+    console.log('Seed estructural (identidad, árbol académico y configuración) aplicado.');
   } finally {
     await prisma.$disconnect();
   }

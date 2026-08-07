@@ -59,6 +59,7 @@ model Usuario {
   apoderados   Apoderado[]
   matriculas   Matricula[]
   derechoVotos DerechoVoto[]
+  jobsCorreo   JobCorreo[]
 }
 
 model Apoderado {
@@ -79,9 +80,10 @@ model AnioEscolar {
   nombre String  @unique
   activo Boolean @default(false)
 
-  secciones  Seccion[]
-  aulas      Aula[]
-  matriculas Matricula[]
+  secciones       Seccion[]
+  aulas           Aula[]
+  matriculas      Matricula[]
+  configuraciones Configuracion[]
 }
 
 model Nivel {
@@ -189,6 +191,7 @@ model ProcesoElectoral {
   procesoAulas ProcesoAula[]
   derechoVotos DerechoVoto[]
   votos        Voto[]
+  actas        Acta[]
 }
 
 model Lista {
@@ -256,11 +259,11 @@ model ProcesoAula {
 // "Gotcha que obliga a ser explícito").
 
 model DerechoVoto {
-  id              String @id @default(uuid()) @db.Uuid
-  proceso_id      String @db.Uuid
-  usuario_id      String @db.Uuid
-  en_calidad_de   String
-  aula_snapshot   String
+  id            String @id @default(uuid()) @db.Uuid
+  proceso_id    String @db.Uuid
+  usuario_id    String @db.Uuid
+  en_calidad_de String
+  aula_snapshot String
 
   proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
   usuario Usuario          @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
@@ -289,4 +292,76 @@ model Voto {
 
   @@unique([proceso_id, derecho_voto_id])
   @@unique([proceso_id, clave_idempotencia])
+}
+
+// Grupo 4 — Tablas de soporte (base-schema-and-migrations, tarea 4.1; design.md D1/D7).
+// `onDelete: Restrict` en toda relación (artefactos probatorios y singleton institucional, sin
+// composición descartable). Sin SQL raw en este grupo (D4). `Configuracion` NO lleva ninguna
+// columna de secreto SMTP (D7): solo `smtp_host`/`smtp_puerto`/`smtp_remitente` — la contraseña
+// vendrá de variable de entorno o gestor de secretos, decisión de #10.
+
+enum EstadoJobCorreo {
+  pendiente
+  enviado
+  fallido
+}
+
+enum TipoNotificacion {
+  correo
+}
+
+enum TipoActa {
+  apertura
+  cierre
+  resultados
+}
+
+enum EstadoActa {
+  borrador
+  emitida
+}
+
+model JobCorreo {
+  id         String          @id @default(uuid()) @db.Uuid
+  usuario_id String          @db.Uuid
+  asunto     String
+  cuerpo     String
+  estado     EstadoJobCorreo @default(pendiente)
+  intentos   Int             @default(0)
+  creado_en  DateTime        @default(now()) @db.Timestamptz(3)
+
+  usuario        Usuario        @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  notificaciones Notificacion[]
+}
+
+model Notificacion {
+  id            String           @id @default(uuid()) @db.Uuid
+  job_correo_id String           @db.Uuid
+  tipo          TipoNotificacion @default(correo)
+  creado_en     DateTime         @default(now()) @db.Timestamptz(3)
+
+  jobCorreo JobCorreo @relation(fields: [job_correo_id], references: [id], onDelete: Restrict)
+}
+
+model Configuracion {
+  id              String   @id @default(uuid()) @db.Uuid
+  clave           String   @unique
+  anio_escolar_id String   @db.Uuid
+  smtp_host       String?
+  smtp_puerto     Int?
+  smtp_remitente  String?
+  actualizado_en  DateTime @default(now()) @db.Timestamptz(3)
+
+  anioEscolar AnioEscolar @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
+}
+
+model Acta {
+  id         String     @id @default(uuid()) @db.Uuid
+  proceso_id String     @db.Uuid
+  tipo       TipoActa
+  estado     EstadoActa @default(borrador)
+  contenido  String
+  creado_en  DateTime   @default(now()) @db.Timestamptz(3)
+
+  proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
 }
