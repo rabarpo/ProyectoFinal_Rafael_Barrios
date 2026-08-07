@@ -50,24 +50,24 @@ la tracker se mergea a `main`. Mismo patrón usado en `system-scaffolding`.
 
 ## Fase 1: Identidad y árbol académico (PR 1, base: PR 0)
 
-- [ ] 1.1 Agregar a `schema.prisma`: `Usuario`, `Apoderado`, `AnioEscolar`, `Nivel`, `Grado`, `Seccion`, `Aula`, `Matricula`; `onDelete` según D1 (`Apoderado→Usuario` Cascade, resto Restrict); PascalCase sin diacríticos.
-- [ ] 1.2 `prisma migrate dev --create-only --name identity_and_academic_tree`.
-- [ ] 1.3 Anexar SQL raw: `CREATE UNIQUE INDEX "anio_escolar_activo_unico_idx" ... WHERE "activo" = true`; comentario `// NOTE:` sobre el modelo `AnioEscolar`.
-- [ ] 1.4 `(config)` Crear `apps/backend/scripts/check-migration-drift.sh` (D2); registrar script `check:drift`.
-- [ ] 1.5 RED `[TM2]`: modificar un modelo sin migrar → el script debe fallar mostrando el SQL faltante.
-- [ ] 1.6 RED `[TM1]`: archivo sucio fuera de `prisma/migrations` en el árbol de trabajo → el script debe pasar (pathspec limitado a `*_drift_check`).
-- [ ] 1.7 RED `[TM3]`: `DIR` apuntando a una migración real → el script debe abortar sin `rm -rf`.
-- [ ] 1.8 GREEN: implementar `check-migration-drift.sh` (`set -euo pipefail`, validación de sufijo, deriva decidida por contenido) — 1.5–1.7 en verde.
-- [ ] 1.9 RED `[R1a]`: test de catálogo — columna `Aula.turno` y cadena FK `Nivel→Grado→Seccion→Aula→Matricula` existen con cardinalidades correctas.
-- [ ] 1.10 RED `[R1b]`: insertar `Seccion` referenciando un `Grado` inexistente → violación FK `23503`.
-- [ ] 1.11 RED `[R2]`: insertar segundo `AnioEscolar` con `activo=true` mientras uno ya está activo → `23505`/`P2002`.
-- [ ] 1.12 GREEN: aplicar migración; 1.9–1.11 pasan; asertar `anio_escolar_activo_unico_idx` vía `pg_indexes`.
-- [ ] 1.13 `(config)` Crear `apps/backend/prisma/seed.ts`: aborta antes de conectar si `NODE_ENV==='production'`; `upsert` de `AnioEscolar` activo, `Nivel→Grado→Seccion→Aula` (`turno=manana`), 1 `Usuario` por rol (solo identidad).
-- [ ] 1.14 RED `[R9a]`: ejecutar seed con `NODE_ENV=production` → código de salida distinto de 0, cero filas creadas.
-- [ ] 1.15 RED `[R9b]`: ejecutar seed fuera de producción → filas de `Usuario` sin `password_hash` ni identificador OAuth.
-- [ ] 1.16 GREEN: `seed.ts` satisface 1.14–1.15.
-- [ ] 1.17 `(config)` `.github/workflows/ci.yml`: `check:drift` en `build-and-check`; `test:schema` en `e2e-backend` tras `prisma migrate deploy`.
-- [ ] 1.18 Verificar `pnpm --filter @seei/backend test:schema` verde para alcance PR1; `check-migration-drift.sh` verde en árbol limpio.
+- [x] 1.1 Agregar a `schema.prisma`: `Usuario`, `Apoderado`, `AnioEscolar`, `Nivel`, `Grado`, `Seccion`, `Aula`, `Matricula`; `onDelete` según D1 (`Apoderado→Usuario` Cascade, resto Restrict); PascalCase sin diacríticos.
+- [x] 1.2 `prisma migrate dev --create-only --name identity_and_academic_tree`.
+- [x] 1.3 Anexar SQL raw: `CREATE UNIQUE INDEX "anio_escolar_activo_unico_idx" ... WHERE "activo" = true`; comentario `// NOTE:` sobre el modelo `AnioEscolar`.
+- [x] 1.4 `(config)` Crear `apps/backend/scripts/check-migration-drift.sh` (D2); registrar script `check:drift`.
+- [x] 1.5 RED `[TM2]`: modificar un modelo sin migrar → el script debe fallar mostrando el SQL faltante.
+- [x] 1.6 RED `[TM1]`: archivo sucio fuera de `prisma/migrations` en el árbol de trabajo → el script debe pasar (pathspec limitado a `*_drift_check`).
+- [x] 1.7 RED `[TM3]`: `DIR` apuntando a una migración real → el script debe abortar sin `rm -rf`.
+- [x] 1.8 GREEN: implementar `check-migration-drift.sh` (`set -euo pipefail`, validación de sufijo, deriva decidida por contenido) — 1.5–1.7 en verde.
+- [x] 1.9 RED `[R1a]`: test de catálogo — columna `Aula.turno` y cadena FK `Nivel→Grado→Seccion→Aula→Matricula` existen con cardinalidades correctas.
+- [x] 1.10 RED `[R1b]`: insertar `Seccion` referenciando un `Grado` inexistente → violación FK `23503`.
+- [x] 1.11 RED `[R2]`: insertar segundo `AnioEscolar` con `activo=true` mientras uno ya está activo → `23505`/`P2002`.
+- [x] 1.12 GREEN: aplicar migración; 1.9–1.11 pasan; asertar `anio_escolar_activo_unico_idx` vía `pg_indexes`.
+- [x] 1.13 `(config)` Crear `apps/backend/prisma/seed.ts`: aborta antes de conectar si `NODE_ENV==='production'`; `upsert` de `AnioEscolar` activo, `Nivel→Grado→Seccion→Aula` (`turno=manana`), 1 `Usuario` por rol (solo identidad).
+- [x] 1.14 RED `[R9a]`: ejecutar seed con `NODE_ENV=production` → código de salida distinto de 0, cero filas creadas.
+- [x] 1.15 RED `[R9b]`: ejecutar seed fuera de producción → filas de `Usuario` sin `password_hash` ni identificador OAuth.
+- [x] 1.16 GREEN: `seed.ts` satisface 1.14–1.15.
+- [x] 1.17 `(config)` `.github/workflows/ci.yml`: `check:drift` en `build-and-check`; `test:schema` en `e2e-backend` tras `prisma migrate deploy`.
+- [x] 1.18 Verificar `pnpm --filter @seei/backend test:schema` verde para alcance PR1; `check-migration-drift.sh` verde en árbol limpio.
 
 ## Fase 2: Estructura del proceso electoral (PR 2, base: PR 1)
 

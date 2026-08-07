@@ -8,8 +8,137 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// `shadowDatabaseUrl` (contingencia verificada en sdd-apply, PR1): `seei_migrator` no tiene el
+// atributo CREATEDB (design.md de #1, D5 — rol propietario de esquema, no de clúster), así que
+// `prisma migrate dev`/`--create-only` no puede crear su base sombra efímera con ese rol. Se
+// apunta al superusuario de bootstrap `postgres` (el mismo que #1 usa solo para el
+// aprovisionamiento inicial de roles, nunca para runtime) exclusivamente para esta necesidad de
+// tooling de autoría; no cambia los privilegios de `seei_migrator`/`seei_app` en runtime ni en
+// `prisma migrate deploy` (que no usa base sombra).
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("MIGRATION_DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("MIGRATION_DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// Grupo 1 — Identidad y árbol académico (base-schema-and-migrations, tarea 1.1; design.md D1).
+// `onDelete` explícito en toda relación: `Restrict` por omisión, `Cascade` solo en
+// `Apoderado → Usuario` (composición pura del registro del estudiante, nunca referenciada por
+// `DerechoVoto`/`Voto`). PascalCase sin diacríticos ni `ñ`; columnas snake_case; PK `uuid`.
+
+enum RolUsuario {
+  estudiante
+  docente
+  comite
+  administrador
+  director
+}
+
+enum EstadoUsuario {
+  activo
+  inactivo
+  bloqueado
+}
+
+enum Turno {
+  manana
+  tarde
+}
+
+model Usuario {
+  id        String        @id @default(uuid()) @db.Uuid
+  nombres   String
+  dni       String        @unique
+  codigo    String        @unique
+  correo    String        @unique
+  rol       RolUsuario
+  estado    EstadoUsuario @default(activo)
+  creado_en DateTime      @default(now()) @db.Timestamptz(3)
+
+  apoderados Apoderado[]
+  matriculas Matricula[]
+}
+
+model Apoderado {
+  id         String  @id @default(uuid()) @db.Uuid
+  nombres    String
+  dni        String
+  correo     String?
+  usuario_id String  @db.Uuid
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+// NOTE: la unicidad de "a lo sumo un AnioEscolar activo" vive como índice único parcial en SQL
+//       raw dentro de prisma/migrations/<ts>_identity_and_academic_tree/migration.sql — Prisma
+//       no expresa índices parciales en el DSL.
+model AnioEscolar {
+  id     String  @id @default(uuid()) @db.Uuid
+  nombre String  @unique
+  activo Boolean @default(false)
+
+  secciones  Seccion[]
+  aulas      Aula[]
+  matriculas Matricula[]
+}
+
+model Nivel {
+  id     String @id @default(uuid()) @db.Uuid
+  nombre String @unique
+
+  grados Grado[]
+}
+
+model Grado {
+  id       String @id @default(uuid()) @db.Uuid
+  nombre   String
+  nivel_id String @db.Uuid
+
+  nivel     Nivel     @relation(fields: [nivel_id], references: [id], onDelete: Restrict)
+  secciones Seccion[]
+  aulas     Aula[]
+
+  @@unique([nivel_id, nombre])
+}
+
+model Seccion {
+  id              String @id @default(uuid()) @db.Uuid
+  nombre          String
+  grado_id        String @db.Uuid
+  anio_escolar_id String @db.Uuid
+
+  grado       Grado       @relation(fields: [grado_id], references: [id], onDelete: Restrict)
+  anioEscolar AnioEscolar @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
+  aulas       Aula[]
+
+  @@unique([grado_id, anio_escolar_id, nombre])
+}
+
+model Aula {
+  id              String @id @default(uuid()) @db.Uuid
+  turno           Turno
+  grado_id        String @db.Uuid
+  seccion_id      String @db.Uuid
+  anio_escolar_id String @db.Uuid
+
+  grado       Grado       @relation(fields: [grado_id], references: [id], onDelete: Restrict)
+  seccion     Seccion     @relation(fields: [seccion_id], references: [id], onDelete: Restrict)
+  anioEscolar AnioEscolar @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
+  matriculas  Matricula[]
+
+  @@unique([grado_id, seccion_id, anio_escolar_id])
+}
+
+model Matricula {
+  id              String @id @default(uuid()) @db.Uuid
+  usuario_id      String @db.Uuid
+  aula_id         String @db.Uuid
+  anio_escolar_id String @db.Uuid
+
+  usuario     Usuario     @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  aula        Aula        @relation(fields: [aula_id], references: [id], onDelete: Restrict)
+  anioEscolar AnioEscolar @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
+
+  @@unique([usuario_id, aula_id, anio_escolar_id])
 }

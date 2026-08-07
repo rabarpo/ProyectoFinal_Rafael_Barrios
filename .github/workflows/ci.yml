@@ -33,6 +33,18 @@ concurrency:
 jobs:
   build-and-check:
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci_ephemeral_postgres
+      SEEI_MIGRATOR_PASSWORD: ci_ephemeral_migrator
+      SEEI_APP_PASSWORD: ci_ephemeral_app
+      DATABASE_URL: postgresql://seei_app:ci_ephemeral_app@localhost:5433/seei?schema=public
+      MIGRATION_DATABASE_URL: postgresql://seei_migrator:ci_ephemeral_migrator@localhost:5433/seei?schema=public
+      # `seei_migrator` no tiene CREATEDB (system-scaffolding design.md D5 — propietario del
+      # esquema, no del clúster); `check:drift` usa `prisma migrate dev --create-only`, que
+      # necesita crear/vaciar una base sombra. Se apunta al superusuario de bootstrap `postgres`
+      # solo para esta necesidad de tooling de autoría (base-schema-and-migrations design.md D2,
+      # contingencia verificada en sdd-apply) — nunca para runtime ni para `migrate deploy`.
+      SHADOW_DATABASE_URL: postgresql://postgres:ci_ephemeral_postgres@localhost:5433/seei_shadow?schema=public
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,6 +79,38 @@ jobs:
       # explícito, en vez de como un error de tipos confuso en el frontend).
       - name: Verify OpenAPI contract has no drift
         run: pnpm --filter @seei/contracts run check:drift
+
+      # [TM1][TM2][TM3] Verificación de deriva del lado DSL (base-schema-and-migrations,
+      # design.md D2, tarea 1.17) — corre ANTES de build/test, igual que el check de #4 arriba,
+      # así un `schema.prisma` cambiado sin su migración falla acá con un mensaje explícito.
+      # Reutiliza `docker-compose.test.yml` (mismo patrón que `e2e-backend`, abajo) solo para el
+      # servicio `postgres`: `check:drift` necesita una base real para su base sombra efímera.
+      - name: Write ephemeral infra/docker/.env.test
+        run: |
+          cat > infra/docker/.env.test <<EOF
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          SEEI_MIGRATOR_PASSWORD=$SEEI_MIGRATOR_PASSWORD
+          SEEI_APP_PASSWORD=$SEEI_APP_PASSWORD
+          DATABASE_URL=$DATABASE_URL
+          MIGRATION_DATABASE_URL=$MIGRATION_DATABASE_URL
+          SHADOW_DATABASE_URL=$SHADOW_DATABASE_URL
+          EOF
+
+      - name: Start ephemeral Postgres
+        run: docker compose --env-file infra/docker/.env.test -f infra/docker/docker-compose.test.yml up -d --wait postgres
+
+      - name: Create ephemeral shadow database
+        run: docker compose -f infra/docker/docker-compose.test.yml exec -T -e PGPASSWORD=$POSTGRES_PASSWORD postgres psql -U postgres -d postgres -c "CREATE DATABASE seei_shadow;"
+
+      - name: Apply migrations (seei_migrator)
+        run: pnpm --filter @seei/backend exec prisma migrate deploy
+
+      - name: Verify migration drift
+        run: pnpm --filter @seei/backend run check:drift
+
+      - name: Stop ephemeral Postgres
+        if: always()
+        run: docker compose -f infra/docker/docker-compose.test.yml down -v
 
       - name: Lint, typecheck, build, test
         run: pnpm turbo run lint typecheck build test
@@ -131,6 +175,12 @@ jobs:
       # sustituir DATABASE_URL).
       - name: Apply baseline migration (seei_migrator)
         run: pnpm --filter @seei/backend exec prisma migrate deploy
+
+      # base-schema-and-migrations (design.md D3, tarea 1.17) — suite de rechazo de
+      # restricciones contra un Postgres real, con el rol `seei_app` (DATABASE_URL), corre
+      # inmediatamente después de la migración y antes del e2e funcional.
+      - name: Run backend schema suite
+        run: pnpm turbo run test:schema --filter=@seei/backend
 
       # [R8b][R9] turbo run test:e2e --filter=@seei/backend invoca
       # apps/backend/scripts/test-e2e.mjs, que repite up -d --wait (no-op, ya sano) y
