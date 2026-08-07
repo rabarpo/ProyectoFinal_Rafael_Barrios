@@ -31,6 +31,62 @@
           "system"
         ]
       }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Login exitoso, cookie seei_session emitida"
+          },
+          "401": {
+            "description": "Credenciales inválidas"
+          }
+        },
+        "summary": "Login con código de usuario y contraseña; emite cookie de sesión httpOnly",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Logout procesado"
+          }
+        },
+        "summary": "Cierra la sesión activa (idempotente) y expira la cookie",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/whoami": {
+      "get": {
+        "operationId": "AuthController_whoami",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sesión válida"
+          },
+          "401": {
+            "description": "Sin cookie de sesión o sesión inexistente/expirada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Devuelve la sesión autenticada actual (ejemplo de ruta protegida)",
+        "tags": [
+          "auth"
+        ]
+      }
     }
   },
   "info": {
