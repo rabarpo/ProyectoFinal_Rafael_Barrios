@@ -58,29 +58,29 @@ Chain strategy: feature-branch-chain
 ## PR 2 — Session Infra (base = PR 1 branch)
 
 ### Phase 4: Session Types + SessionService
-- [ ] 4.1 Create `apps/backend/src/auth/sesion-usuario.ts`: `SesionUsuario` interface +
+- [x] 4.1 Create `apps/backend/src/auth/sesion-usuario.ts`: `SesionUsuario` interface +
       `Express.Request` augmentation
-- [ ] 4.2 RED: `session.service.spec.ts` — `crear()` writes `session:{id}` (JSON, EX=1800) and adds to
+- [x] 4.2 RED: `session.service.spec.ts` — `crear()` writes `session:{id}` (JSON, EX=1800) and adds to
       `session:user:{userId}` (SET, EXPIRE=28800) [R2][D4]
-- [ ] 4.3 Create `apps/backend/src/auth/session.service.ts`: `crear/obtener/revocar/revokeAllForUser`
+- [x] 4.3 Create `apps/backend/src/auth/session.service.ts`: `crear/obtener/revocar/revokeAllForUser`
       over `REDIS_CLIENT` — GREEN 4.2
-- [ ] 4.4 RED/GREEN: `obtener()` renews sliding TTL on each call and enforces the 28800s absolute
+- [x] 4.4 RED/GREEN: `obtener()` renews sliding TTL on each call and enforces the 28800s absolute
       ceiling from `creadoEn` regardless of renewal [D1]
-- [ ] 4.5 RED/GREEN: `revocar()` deletes `session:{id}` and `SREM`s the user set
-- [ ] 4.6 RED/GREEN: `revokeAllForUser` with 2+ active sessions leaves no `session:{id}` for that user
+- [x] 4.5 RED/GREEN: `revocar()` deletes `session:{id}` and `SREM`s the user set
+- [x] 4.6 RED/GREEN: `revokeAllForUser` with 2+ active sessions leaves no `session:{id}` for that user
       [R8]
-- [ ] 4.7 RED/GREEN: `revokeAllForUser` invoked twice does not throw (idempotent, orphan `DEL` is a
+- [x] 4.7 RED/GREEN: `revokeAllForUser` invoked twice does not throw (idempotent, orphan `DEL` is a
       no-op) [R8][adversarial]
 
 ### Phase 5: Guards + Decorator
-- [ ] 5.1 Create `apps/backend/src/auth/roles.decorator.ts`: `ROLES_KEY` + `@Roles(...RolUsuario[])`
-- [ ] 5.2 RED: `auth.guard.spec.ts` — request without cookie is rejected without reaching handler [R6a]
-- [ ] 5.3 Create `apps/backend/src/auth/auth.guard.ts`: reads cookie → `SessionService.obtener()` →
+- [x] 5.1 Create `apps/backend/src/auth/roles.decorator.ts`: `ROLES_KEY` + `@Roles(...RolUsuario[])`
+- [x] 5.2 RED: `auth.guard.spec.ts` — request without cookie is rejected without reaching handler [R6a]
+- [x] 5.3 Create `apps/backend/src/auth/auth.guard.ts`: reads cookie → `SessionService.obtener()` →
       attaches `req.usuario` or 401; renews TTL — GREEN 5.2
-- [ ] 5.4 RED/GREEN: cookie referencing a deleted/expired `session:{id}` is rejected [R6b]
-- [ ] 5.5 RED: `roles.guard.spec.ts` — route with `@Roles('ROL_X')` and session `rol !== 'ROL_X'` is
+- [x] 5.4 RED/GREEN: cookie referencing a deleted/expired `session:{id}` is rejected [R6b]
+- [x] 5.5 RED: `roles.guard.spec.ts` — route with `@Roles('ROL_X')` and session `rol !== 'ROL_X'` is
       rejected without reaching handler [R7]
-- [ ] 5.6 Create `apps/backend/src/auth/roles.guard.ts` — GREEN 5.5; no `@Roles()` metadata passes;
+- [x] 5.6 Create `apps/backend/src/auth/roles.guard.ts` — GREEN 5.6; no `@Roles()` metadata passes;
       metadata present without `req.usuario` throws 401 [D8]
 
 ## PR 3 — Wiring + Orchestration (base = PR 2 branch)
