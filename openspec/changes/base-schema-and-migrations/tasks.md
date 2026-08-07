@@ -71,11 +71,11 @@ la tracker se mergea a `main`. Mismo patrón usado en `system-scaffolding`.
 
 ## Fase 2: Estructura del proceso electoral (PR 2, base: PR 1)
 
-- [ ] 2.1 Agregar a `schema.prisma`: `ProcesoElectoral`, `Lista`, `Candidato`, `OpcionConsulta`, `ProcesoAula`; `onDelete` según D1 (`Lista`/`OpcionConsulta`/`Candidato`/`ProcesoAula`→`ProcesoElectoral` Cascade; `Candidato→Lista` y `ProcesoAula→Aula` Restrict).
-- [ ] 2.2 `prisma migrate dev --create-only --name electoral_process_structure` (sin SQL raw).
-- [ ] 2.3 RED: insertar `ProcesoAula` referenciando un `Aula` inexistente → violación FK `23503`.
-- [ ] 2.4 GREEN: aplicar migración; 2.3 pasa.
-- [ ] 2.5 Verificar `pnpm --filter @seei/backend test:schema` verde para alcance PR2.
+- [x] 2.1 Agregar a `schema.prisma`: `ProcesoElectoral`, `Lista`, `Candidato`, `OpcionConsulta`, `ProcesoAula`; `onDelete` según D1 (`Lista`/`OpcionConsulta`/`Candidato`/`ProcesoAula`→`ProcesoElectoral` Cascade; `Candidato→Lista` y `ProcesoAula→Aula` Restrict).
+- [x] 2.2 `prisma migrate dev --create-only --name electoral_process_structure` (sin SQL raw).
+- [x] 2.3 RED: insertar `ProcesoAula` referenciando un `Aula` inexistente → violación FK `23503`.
+- [x] 2.4 GREEN: aplicar migración; 2.3 pasa.
+- [x] 2.5 Verificar `pnpm --filter @seei/backend test:schema` verde para alcance PR2.
 
 ## Fase 3: Núcleo de votación (PR 3, base: PR 2 — mayor valor de revisión)
 

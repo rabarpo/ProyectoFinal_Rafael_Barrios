@@ -122,10 +122,11 @@ model Aula {
   seccion_id      String @db.Uuid
   anio_escolar_id String @db.Uuid
 
-  grado       Grado       @relation(fields: [grado_id], references: [id], onDelete: Restrict)
-  seccion     Seccion     @relation(fields: [seccion_id], references: [id], onDelete: Restrict)
-  anioEscolar AnioEscolar @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
-  matriculas  Matricula[]
+  grado        Grado         @relation(fields: [grado_id], references: [id], onDelete: Restrict)
+  seccion      Seccion       @relation(fields: [seccion_id], references: [id], onDelete: Restrict)
+  anioEscolar  AnioEscolar   @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
+  matriculas   Matricula[]
+  procesoAulas ProcesoAula[]
 
   @@unique([grado_id, seccion_id, anio_escolar_id])
 }
@@ -141,4 +142,103 @@ model Matricula {
   anioEscolar AnioEscolar @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
 
   @@unique([usuario_id, aula_id, anio_escolar_id])
+}
+
+// Grupo 2 — Estructura del proceso electoral (base-schema-and-migrations, tarea 2.1; design.md D1).
+// `onDelete` explícito: `Cascade` en `Lista`/`Candidato`/`OpcionConsulta`/`ProcesoAula` hacia
+// `ProcesoElectoral` (composición de un proceso descartable en `borrador`, sin `DerechoVoto`
+// todavía); `Restrict` en `Candidato → Lista` y `ProcesoAula → Aula` (ninguno de los dos puede
+// desvincularse en silencio). Sin SQL raw en este grupo (D4).
+
+enum TipoProceso {
+  municipio
+  representante_aula
+  padres
+  consulta
+}
+
+enum EstadoProceso {
+  borrador
+  abierto
+  cerrado
+  acta_emitida
+}
+
+enum EstadoParticipacion {
+  activo
+  baja
+}
+
+model ProcesoElectoral {
+  id                      String        @id @default(uuid()) @db.Uuid
+  nombre                  String
+  descripcion             String?
+  tipo                    TipoProceso
+  estado                  EstadoProceso @default(borrador)
+  fecha_apertura_prevista DateTime      @db.Timestamptz(3)
+  fecha_cierre_prevista   DateTime      @db.Timestamptz(3)
+  apertura_real           DateTime?     @db.Timestamptz(3)
+  cierre_real             DateTime?     @db.Timestamptz(3)
+  ocultar_resultados      Boolean       @default(false)
+  creado_en               DateTime      @default(now()) @db.Timestamptz(3)
+
+  listas       Lista[]
+  candidatos   Candidato[]
+  opciones     OpcionConsulta[]
+  procesoAulas ProcesoAula[]
+}
+
+model Lista {
+  id               String              @id @default(uuid()) @db.Uuid
+  proceso_id       String              @db.Uuid
+  nombre           String
+  numero           Int
+  simbolo          String?
+  lema             String?
+  propuesta        String?
+  plan_trabajo_url String?
+  estado           EstadoParticipacion @default(activo)
+  baja_en          DateTime?           @db.Timestamptz(3)
+
+  proceso    ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Cascade)
+  candidatos Candidato[]
+
+  @@unique([proceso_id, numero])
+}
+
+model Candidato {
+  id         String              @id @default(uuid()) @db.Uuid
+  proceso_id String              @db.Uuid
+  lista_id   String?             @db.Uuid
+  nombres    String
+  grado      String?
+  aula       String?
+  cargo      String?
+  estado     EstadoParticipacion @default(activo)
+  baja_en    DateTime?           @db.Timestamptz(3)
+
+  proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Cascade)
+  lista   Lista?           @relation(fields: [lista_id], references: [id], onDelete: Restrict)
+}
+
+model OpcionConsulta {
+  id          String  @id @default(uuid()) @db.Uuid
+  proceso_id  String  @db.Uuid
+  etiqueta    String
+  descripcion String?
+
+  proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Cascade)
+
+  @@unique([proceso_id, etiqueta])
+}
+
+model ProcesoAula {
+  id         String @id @default(uuid()) @db.Uuid
+  proceso_id String @db.Uuid
+  aula_id    String @db.Uuid
+
+  proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Cascade)
+  aula    Aula             @relation(fields: [aula_id], references: [id], onDelete: Restrict)
+
+  @@unique([proceso_id, aula_id])
 }
