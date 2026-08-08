@@ -25,7 +25,10 @@
         "SMTP_USER",
         "SMTP_PASSWORD",
         "SMTP_FROM",
-        "APP_BASE_URL"
+        "APP_BASE_URL",
+        "LOGIN_INTENTOS_MAX",
+        "LOGIN_INTENTOS_VENTANA_SEGUNDOS",
+        "LOGIN_BLOQUEO_SEGUNDOS"
       ]
     },
     "test:schema": {

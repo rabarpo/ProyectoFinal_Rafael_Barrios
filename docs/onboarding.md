@@ -36,6 +36,15 @@ Turborepo, roles de Postgres, topología de Docker Compose) ver
    | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | Credenciales SMTP de `SmtpEmailSender`; sin `SMTP_HOST` se usa `ConsoleEmailSender` |
    | `APP_BASE_URL` | Base para armar el enlace de recuperación (`${APP_BASE_URL}/recuperar?token=...`) |
 
+   Bloqueo y desbloqueo de cuentas (backlog #6) agrega estas tres variables, todas opcionales en
+   desarrollo (`BloqueoService` cae a sus valores por defecto sin ellas):
+
+   | Variable | Uso |
+   |---|---|
+   | `LOGIN_INTENTOS_MAX` | Umbral de intentos fallidos consecutivos que dispara el bloqueo automático (por defecto `5`) |
+   | `LOGIN_INTENTOS_VENTANA_SEGUNDOS` | TTL fijo (no deslizante) del contador de intentos fallidos en Redis (por defecto `900`) |
+   | `LOGIN_BLOQUEO_SEGUNDOS` | Duración del bloqueo automático antes de la expiración perezosa (por defecto `900`) |
+
 3. **Levantar el stack completo** (Caddy + frontend + backend + worker + Postgres + Redis, con el
    override de desarrollo — bind mounts, puertos de DB/Redis publicados solo en `127.0.0.1`):
 
