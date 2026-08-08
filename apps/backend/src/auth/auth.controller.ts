@@ -1,12 +1,27 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard, type RequestConCookies } from './auth.guard';
 import { AuthService } from './auth.service';
+import { BloqueoService } from './bloqueo.service';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
 import { RecoveryConfirmDto } from './dto/recovery-confirm.dto';
 import { RecoveryRequestDto } from './dto/recovery-request.dto';
+import { UsuarioBloqueadoDto } from './dto/usuario-bloqueado.dto';
 import { RecoveryService } from './recovery.service';
+import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
 import type { SesionUsuario } from './sesion-usuario';
 
@@ -35,6 +50,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly recoveryService: RecoveryService,
+    private readonly bloqueoService: BloqueoService,
   ) {}
 
   @Post('login')
@@ -151,5 +167,55 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Sin cookie de sesión o sesión inexistente/expirada' })
   whoami(@Req() req: RequestConUsuario): SesionUsuario | undefined {
     return req.usuario;
+  }
+
+  /**
+   * bloqueo-desbloqueo-cuentas, PR3 (design.md "Contratos", D3). Sin filtros ni paginación — el
+   * `estado` de la fila es la verdad durable; se listan también los bloqueos ya vencidos
+   * (`bloqueado_hasta` en el pasado) porque la expiración perezosa solo sana la fila ante un login
+   * exitoso.
+   */
+  @Get('usuarios/bloqueados')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('comite')
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Lista las cuentas actualmente bloqueadas (panel del comité)' })
+  @ApiResponse({ status: 200, description: 'Listado de cuentas bloqueadas', type: [UsuarioBloqueadoDto] })
+  @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
+  @ApiResponse({ status: 403, description: 'Rol distinto de comite' })
+  async listarBloqueados(): Promise<UsuarioBloqueadoDto[]> {
+    const usuarios = await this.bloqueoService.listarBloqueados();
+    return usuarios.map((usuario) => ({
+      ...usuario,
+      bloqueado_hasta: usuario.bloqueado_hasta ? usuario.bloqueado_hasta.toISOString() : null,
+    }));
+  }
+
+  /**
+   * bloqueo-desbloqueo-cuentas, PR3 (design.md "Contratos", flujo "desbloqueo manual del
+   * comité"). Sin body — no hay nada que validar (no existe `ValidationPipe` en el proyecto) y
+   * ADR-0008 se satisface con actor + timestamp. `ParseUUIDPipe` evita que un `:id` malformado
+   * escape como `500` por un `P2023` de Prisma; devuelve `400` en su lugar.
+   */
+  @Post('usuarios/:id/desbloquear')
+  @HttpCode(200)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('comite')
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Desbloquea manualmente una cuenta (panel del comité)' })
+  @ApiResponse({ status: 200, description: 'Desbloqueo procesado (idempotente)' })
+  @ApiResponse({ status: 400, description: 'id malformado' })
+  @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
+  @ApiResponse({ status: 403, description: 'Rol distinto de comite' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async desbloquear(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: RequestConUsuario,
+  ): Promise<{ desbloqueado: boolean }> {
+    const resultado = await this.bloqueoService.desbloquearManual(id, req.usuario!.userId);
+    if (resultado === null) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    return resultado;
   }
 }
