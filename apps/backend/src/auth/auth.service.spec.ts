@@ -1,6 +1,7 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { AuthService } from './auth.service';
+import type { BloqueoService } from './bloqueo.service';
 import { GoogleOauthService } from './google-oauth.service';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
@@ -20,6 +21,7 @@ describe('AuthService.login — orquestación D3/D7', () => {
     codigo: string;
     password_hash: string | null;
     estado: 'activo' | 'inactivo' | 'bloqueado';
+    bloqueado_hasta: Date | null;
     rol: 'comite';
   }
 
@@ -28,6 +30,7 @@ describe('AuthService.login — orquestación D3/D7', () => {
     codigo: 'seed-comite',
     password_hash: 'hash-real',
     estado: 'activo',
+    bloqueado_hasta: null,
     rol: 'comite',
   };
 
@@ -36,6 +39,7 @@ describe('AuthService.login — orquestación D3/D7', () => {
     passwordValida?: boolean;
     transactionThrows?: boolean;
   }) {
+    const txUsuarioUpdateMany = jest.fn().mockResolvedValue({ count: 0 });
     const prisma = {
       usuario: {
         findUnique: jest.fn().mockResolvedValue(overrides.usuario ?? null),
@@ -44,7 +48,10 @@ describe('AuthService.login — orquestación D3/D7', () => {
         if (overrides.transactionThrows) {
           throw new Error('fallo simulado de auditoría');
         }
-        return callback({} as Prisma.TransactionClient);
+        const tx = {
+          usuario: { updateMany: txUsuarioUpdateMany },
+        } as unknown as Prisma.TransactionClient;
+        return callback(tx);
       }),
     };
 
@@ -64,15 +71,21 @@ describe('AuthService.login — orquestación D3/D7', () => {
 
     const googleOauthService = { verificar: jest.fn() };
 
+    const bloqueoService = {
+      registrarFallo: jest.fn().mockResolvedValue(undefined),
+      resetearIntentos: jest.fn().mockResolvedValue(undefined),
+    };
+
     const service = new AuthService(
       prisma as never,
       passwordService as unknown as PasswordService,
       sessionService as unknown as SessionService,
       auditoria as unknown as AuditoriaService,
       googleOauthService as unknown as GoogleOauthService,
+      bloqueoService as unknown as BloqueoService,
     );
 
-    return { service, prisma, passwordService, sessionService, auditoria };
+    return { service, prisma, passwordService, sessionService, auditoria, bloqueoService, txUsuarioUpdateMany };
   }
 
   // 7.1 RED [R9][D7]: si la transacción de auditoría falla, NO se llega a crear la sesión.
@@ -132,8 +145,8 @@ describe('AuthService.login — orquestación D3/D7', () => {
   });
 
   // 7.5 [R4]: usuario bloqueado con contraseña correcta es rechazado, sin crear sesión.
-  it('[R4] estado bloqueado con contraseña correcta es rechazado y no crea sesión', async () => {
-    const usuarioBloqueado = { ...usuarioActivo, estado: 'bloqueado' as const };
+  it('[R4] estado bloqueado (vigente, sin bloqueado_hasta) con contraseña correcta es rechazado y no crea sesión', async () => {
+    const usuarioBloqueado = { ...usuarioActivo, estado: 'bloqueado' as const, bloqueado_hasta: null };
     const { service, sessionService, auditoria } = crearServicio({
       usuario: usuarioBloqueado,
       passwordValida: true,
@@ -203,6 +216,100 @@ describe('AuthService.login — orquestación D3/D7', () => {
     const llamada = auditoria.log.mock.calls[0];
     expect(JSON.stringify(llamada)).not.toContain('secreta-no-debe-aparecer');
   });
+
+  /**
+   * bloqueo-desbloqueo-cuentas, PR2 (design.md D6/D7/D8, tareas 6.1-6.7). `bloqueoVigente()`
+   * reemplaza `estado==='bloqueado'`: un bloqueo con `bloqueado_hasta` en el pasado NO rechaza por
+   * causa de bloqueo. D8: el contador se incrementa con la clave real solo cuando el motivo es
+   * `password_incorrecta` sobre un `Usuario` sin bloqueo vigente; se resetea DESPUÉS del commit y
+   * ANTES de `sessionService.crear()`.
+   */
+  // 6.1/6.3 [R5][S3][D6][D7]
+  it('[R5][D6][D7] bloqueo vencido con contraseña correcta no rechaza, sanea estado/bloqueado_hasta y resetea el contador', async () => {
+    const usuarioBloqueoVencido = {
+      ...usuarioActivo,
+      estado: 'bloqueado' as const,
+      bloqueado_hasta: new Date(Date.now() - 60_000),
+    };
+    const { service, sessionService, bloqueoService, txUsuarioUpdateMany } = crearServicio({
+      usuario: usuarioBloqueoVencido,
+      passwordValida: true,
+    });
+
+    const resultado = await service.login({ codigo: 'seed-comite', password: 'correcta' });
+
+    expect(resultado.rol).toBe('comite');
+    expect(txUsuarioUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'usuario-1', estado: 'bloqueado', bloqueado_hasta: { lt: expect.any(Date) } },
+      data: { estado: 'activo', bloqueado_hasta: null },
+    });
+    expect(bloqueoService.resetearIntentos).toHaveBeenCalledWith('usuario-1');
+    // D7: resetearIntentos ANTES de sessionService.crear() — crear() sigue siendo el último efecto.
+    const ordenReset = bloqueoService.resetearIntentos.mock.invocationCallOrder[0];
+    const ordenCrear = sessionService.crear.mock.invocationCallOrder[0];
+    expect(ordenReset).toBeLessThan(ordenCrear);
+  });
+
+  // 6.2 [R5]
+  it('[R5] bloqueo vencido con contraseña incorrecta rechaza por contraseña (no por bloqueo) e incrementa el contador real', async () => {
+    const usuarioBloqueoVencido = {
+      ...usuarioActivo,
+      estado: 'bloqueado' as const,
+      bloqueado_hasta: new Date(Date.now() - 60_000),
+    };
+    const { service, auditoria, bloqueoService } = crearServicio({
+      usuario: usuarioBloqueoVencido,
+      passwordValida: false,
+    });
+
+    await expect(
+      service.login({ codigo: 'seed-comite', password: 'incorrecta' }),
+    ).rejects.toThrow(UnauthorizedException);
+
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      AUDIT_EVENT_TYPES.LOGIN_FALLIDO,
+      'usuario-1',
+      'Usuario',
+      'usuario-1',
+      expect.objectContaining({ motivo: 'password_incorrecta' }),
+    );
+    // D8: motivo contable (password_incorrecta, sin bloqueo vigente) ⇒ clave real (usuario, no null).
+    expect(bloqueoService.registrarFallo).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'usuario-1' }),
+      'seed-comite',
+      'password_incorrecta',
+    );
+  });
+
+  // 6.4 [S3]
+  it('[S3] bloqueo vigente (bloqueado_hasta futuro) rechaza sin importar la contraseña, sin crear sesión', async () => {
+    const usuarioBloqueoVigente = {
+      ...usuarioActivo,
+      estado: 'bloqueado' as const,
+      bloqueado_hasta: new Date(Date.now() + 60_000),
+    };
+    const { service, sessionService } = crearServicio({
+      usuario: usuarioBloqueoVigente,
+      passwordValida: true,
+    });
+
+    await expect(
+      service.login({ codigo: 'seed-comite', password: 'correcta' }),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(sessionService.crear).not.toHaveBeenCalled();
+  });
+
+  // 6.6 [S2][D1][D8][adversarial]
+  it('[S2][D1][D8][adversarial] usuario inexistente incrementa la clave señuelo (usuario null), no una real', async () => {
+    const { service, bloqueoService } = crearServicio({ usuario: null, passwordValida: false });
+
+    await expect(
+      service.login({ codigo: 'no-existe', password: 'cualquiera' }),
+    ).rejects.toThrow(UnauthorizedException);
+
+    expect(bloqueoService.registrarFallo).toHaveBeenCalledWith(null, 'no-existe', 'usuario_inexistente');
+  });
 });
 
 describe('AuthService.logout — D7 (auditoría antes de revocar en Redis)', () => {
@@ -221,6 +328,10 @@ describe('AuthService.logout — D7 (auditoría antes de revocar en Redis)', () 
     };
     const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
     const googleOauthService = { verificar: jest.fn() };
+    const bloqueoService = {
+      registrarFallo: jest.fn().mockResolvedValue(undefined),
+      resetearIntentos: jest.fn().mockResolvedValue(undefined),
+    };
 
     const service = new AuthService(
       prisma as never,
@@ -228,6 +339,7 @@ describe('AuthService.logout — D7 (auditoría antes de revocar en Redis)', () 
       sessionService as unknown as SessionService,
       auditoria as unknown as AuditoriaService,
       googleOauthService as unknown as GoogleOauthService,
+      bloqueoService as unknown as BloqueoService,
     );
 
     return { service, sessionService, auditoria };
@@ -278,6 +390,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
     google_id: string | null;
     password_hash: string | null;
     estado: 'activo' | 'inactivo' | 'bloqueado';
+    bloqueado_hasta: Date | null;
     rol: 'comite';
   }
 
@@ -298,6 +411,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       }
       return {};
     });
+    const txUsuarioUpdateMany = jest.fn().mockResolvedValue({ count: 0 });
 
     const prisma = {
       usuario: {
@@ -311,7 +425,9 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
         if (overrides.transactionThrows) {
           throw new Error('fallo simulado de auditoría');
         }
-        const tx = { usuario: { update: txUsuarioUpdate } } as unknown as Prisma.TransactionClient;
+        const tx = {
+          usuario: { update: txUsuarioUpdate, updateMany: txUsuarioUpdateMany },
+        } as unknown as Prisma.TransactionClient;
         return callback(tx);
       }),
     };
@@ -337,15 +453,31 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       }),
     };
 
+    const bloqueoService = {
+      registrarFallo: jest.fn().mockResolvedValue(undefined),
+      resetearIntentos: jest.fn().mockResolvedValue(undefined),
+    };
+
     const service = new AuthService(
       prisma as never,
       passwordService as unknown as PasswordService,
       sessionService as unknown as SessionService,
       auditoria as unknown as AuditoriaService,
       googleOauthService as unknown as GoogleOauthService,
+      bloqueoService as unknown as BloqueoService,
     );
 
-    return { service, prisma, passwordService, sessionService, auditoria, googleOauthService, txUsuarioUpdate };
+    return {
+      service,
+      prisma,
+      passwordService,
+      sessionService,
+      auditoria,
+      googleOauthService,
+      txUsuarioUpdate,
+      txUsuarioUpdateMany,
+      bloqueoService,
+    };
   }
 
   // 7.1 RED [R3][D3#1]
@@ -374,6 +506,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: null,
       password_hash: null,
       estado: 'bloqueado',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService, auditoria } = crearServicio({ usuarioPorCorreo: usuarioBloqueado });
@@ -398,6 +531,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: SUB,
       password_hash: 'hash-existente',
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService, auditoria, txUsuarioUpdate } = crearServicio({
@@ -427,6 +561,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: null,
       password_hash: null,
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService, auditoria, txUsuarioUpdate } = crearServicio({
@@ -456,6 +591,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: null,
       password_hash: 'hash-existente',
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService, auditoria, txUsuarioUpdate } = crearServicio({
@@ -494,6 +630,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: null,
       password_hash: 'hash-existente',
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService, auditoria, txUsuarioUpdate } = crearServicio({
@@ -524,6 +661,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: null,
       password_hash: 'hash-existente',
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService, auditoria, txUsuarioUpdate } = crearServicio({
@@ -555,6 +693,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: 'otro-sub-distinto',
       password_hash: null,
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService, auditoria } = crearServicio({ usuarioPorCorreo: usuarioOtroGoogleId });
@@ -579,6 +718,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: null,
       password_hash: null,
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const otroUsuarioConEseSub: UsuarioFixture = {
@@ -587,6 +727,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: SUB,
       password_hash: null,
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService, auditoria, txUsuarioUpdate } = crearServicio({
@@ -616,6 +757,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: null,
       password_hash: null,
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService } = crearServicio({
@@ -636,6 +778,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: SUB,
       password_hash: 'hash-existente',
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, sessionService } = crearServicio({
@@ -672,6 +815,7 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
       google_id: null,
       password_hash: 'hash-existente',
       estado: 'activo',
+      bloqueado_hasta: null,
       rol: 'comite',
     };
     const { service, auditoria } = crearServicio({
@@ -686,5 +830,75 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
 
     const llamada = auditoria.log.mock.calls[0];
     expect(JSON.stringify(llamada)).not.toContain('secreta-no-debe-aparecer');
+  });
+
+  /**
+   * bloqueo-desbloqueo-cuentas, PR2 (design.md D7, tarea 6.9). Mismo chequeo puro que `login()`,
+   * extendido a `loginConGoogle()` — un bloqueo vencido no rechaza OAuth por causa de bloqueo.
+   */
+  it('[D7][adversarial] bloqueo vigente (bloqueado_hasta futuro) rechaza OAuth igual que login()', async () => {
+    const usuarioBloqueoVigente: UsuarioFixture = {
+      id: 'u1',
+      correo: CORREO,
+      google_id: SUB,
+      password_hash: 'hash-existente',
+      estado: 'bloqueado',
+      bloqueado_hasta: new Date(Date.now() + 60_000),
+      rol: 'comite',
+    };
+    const { service, sessionService, auditoria } = crearServicio({
+      usuarioPorCorreo: usuarioBloqueoVigente,
+    });
+
+    await expect(service.loginConGoogle('token-valido')).rejects.toThrow(UnauthorizedException);
+    expect(sessionService.crear).not.toHaveBeenCalled();
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      AUDIT_EVENT_TYPES.LOGIN_OAUTH_FALLIDO,
+      'u1',
+      'Usuario',
+      'u1',
+      expect.objectContaining({ motivo: 'usuario_bloqueado' }),
+    );
+  });
+
+  it('[D7][adversarial] bloqueo vencido no rechaza OAuth por causa de bloqueo y sanea la fila', async () => {
+    const usuarioBloqueoVencido: UsuarioFixture = {
+      id: 'u1',
+      correo: CORREO,
+      google_id: SUB,
+      password_hash: 'hash-existente',
+      estado: 'bloqueado',
+      bloqueado_hasta: new Date(Date.now() - 60_000),
+      rol: 'comite',
+    };
+    const { service, sessionService, txUsuarioUpdateMany } = crearServicio({
+      usuarioPorCorreo: usuarioBloqueoVencido,
+    });
+
+    const resultado = await service.loginConGoogle('token-valido');
+
+    expect(sessionService.crear).toHaveBeenCalledWith('u1', 'comite', resultado.sessionId);
+    expect(txUsuarioUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'u1', estado: 'bloqueado', bloqueado_hasta: { lt: expect.any(Date) } },
+      data: { estado: 'activo', bloqueado_hasta: null },
+    });
+  });
+
+  // 6.11/6.12 [R3][adversarial]
+  it('[R3][adversarial] rechazos de OAuth nunca llaman a bloqueoService.registrarFallo', async () => {
+    const usuarioBloqueado: UsuarioFixture = {
+      id: 'u1',
+      correo: CORREO,
+      google_id: null,
+      password_hash: null,
+      estado: 'bloqueado',
+      bloqueado_hasta: null,
+      rol: 'comite',
+    };
+    const { service, bloqueoService } = crearServicio({ usuarioPorCorreo: usuarioBloqueado });
+
+    await expect(service.loginConGoogle('token-valido')).rejects.toThrow(UnauthorizedException);
+    expect(bloqueoService.registrarFallo).not.toHaveBeenCalled();
   });
 });

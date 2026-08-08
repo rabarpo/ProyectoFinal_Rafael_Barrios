@@ -4,6 +4,7 @@ import type { Prisma, RolUsuario, Usuario } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { AUDIT_EVENT_TYPES } from '../auditoria/audit-event-types';
+import { BloqueoService, bloqueoVigente, sanarBloqueoVencido } from './bloqueo.service';
 import { GoogleOauthService } from './google-oauth.service';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
@@ -44,39 +45,56 @@ export class AuthService {
     private readonly sessionService: SessionService,
     private readonly auditoria: AuditoriaService,
     private readonly googleOauthService: GoogleOauthService,
+    private readonly bloqueoService: BloqueoService,
   ) {}
 
   /**
    * D3: las cuatro causas de rechazo (usuario inexistente, sin `password_hash`, contraseña
-   * incorrecta, `estado='bloqueado'`) terminan en el mismo `UnauthorizedException` sin cuerpo
+   * incorrecta, bloqueo vigente) terminan en el mismo `UnauthorizedException` sin cuerpo
    * distinguible. `PasswordService.verificar()` corre SIEMPRE (incluso cuando `usuario` es
    * `null` o no tiene `password_hash`, contra el hash señuelo) para no abrir un oráculo de
    * tiempo entre "usuario inexistente" y "contraseña incorrecta".
+   *
+   * bloqueo-desbloqueo-cuentas, PR2 (design.md D7/D8): la guarda `estado==='bloqueado'` se
+   * reemplaza por `bloqueoVigente(usuario)` — un bloqueo con `bloqueado_hasta` ya vencido NO
+   * rechaza por causa de bloqueo y sigue evaluando la contraseña. D8: la rama de rechazo llama
+   * `registrarFallo()` con la clave real solo cuando el fallo es "contable" (motivo
+   * `password_incorrecta` sobre un `Usuario` sin bloqueo vigente); toda otra rama incrementa la
+   * señuelo. La rama exitosa sana el bloqueo vencido (D6) dentro de la misma transacción que
+   * audita `LOGIN_EXITOSO`, y resetea el contador (`DEL`) DESPUÉS del commit y ANTES de
+   * `sessionService.crear()` — así `crear()` sigue siendo el último efecto de Redis (D7 de #4).
    */
   async login(dto: LoginDto): Promise<ResultadoLogin> {
     const usuario = await this.prisma.usuario.findUnique({ where: { codigo: dto.codigo } });
     const passwordValida = await this.passwordService.verificar(dto.password, usuario?.password_hash);
 
-    if (!usuario || !usuario.password_hash || !passwordValida || usuario.estado === 'bloqueado') {
+    if (!usuario || !usuario.password_hash || !passwordValida || bloqueoVigente(usuario)) {
       const motivo = this.determinarMotivoFallo(usuario, passwordValida);
       await this.auditarLoginFallido(dto.codigo, usuario, motivo);
+
+      const contable = motivo === 'password_incorrecta' && usuario !== null && !bloqueoVigente(usuario);
+      await this.bloqueoService.registrarFallo(contable ? usuario : null, dto.codigo, motivo);
+
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // A partir de aquí, TypeScript narrowed `usuario` a no-nulo, con `password_hash` presente,
-    // `passwordValida === true` y `estado !== 'bloqueado'` (el `if` de arriba cubre las 4 causas).
+    // `passwordValida === true` y sin bloqueo vigente (el `if` de arriba cubre las 4 causas).
     const sessionId = randomBytes(32).toString('base64url');
 
-    await this.prisma.$transaction((tx) =>
-      this.auditoria.log(
+    await this.prisma.$transaction(async (tx) => {
+      await sanarBloqueoVencido(tx, usuario);
+      await this.auditoria.log(
         tx,
         AUDIT_EVENT_TYPES.LOGIN_EXITOSO,
         usuario.id,
         'Usuario',
         usuario.id,
         { session_id: sessionId, rol: usuario.rol } as Prisma.InputJsonValue,
-      ),
-    );
+      );
+    });
+
+    await this.bloqueoService.resetearIntentos(usuario.id);
 
     // D7: solo se llega aquí si la transacción de arriba confirmó. Un fallo de Redis después de
     // este punto deja una fila LOGIN_EXITOSO sin sesión (modo de falla residual aceptado en
@@ -113,7 +131,10 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    if (usuario.estado === 'bloqueado') {
+    // bloqueo-desbloqueo-cuentas, PR2 (design.md D7): mismo chequeo puro que `login()` — un
+    // bloqueo con `bloqueado_hasta` ya vencido no rechaza OAuth por causa de bloqueo (dejarlo
+    // solo en `login()` haría que un bloqueo vencido siguiera rechazando OAuth para siempre).
+    if (bloqueoVigente(usuario)) {
       await this.auditarLoginOAuthFallido(correo, usuario.id, 'usuario_bloqueado');
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -174,6 +195,8 @@ export class AuthService {
 
     try {
       await this.prisma.$transaction(async (tx) => {
+        // D6/D7: la sanación de bloqueo vencido se replica acá — mismo criterio que `login()`.
+        await sanarBloqueoVencido(tx, usuario);
         if (vincular) {
           await tx.usuario.update({ where: { id: usuario.id }, data: { google_id: sub } });
         }

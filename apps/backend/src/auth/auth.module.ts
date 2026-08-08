@@ -7,6 +7,7 @@ import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { EmailModule } from '../email/email.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { BloqueoService } from './bloqueo.service';
 import { googleOauthClientProvider } from './google-oauth.provider';
 import { GoogleOauthService } from './google-oauth.service';
 import { PasswordService } from './password.service';
@@ -43,6 +44,7 @@ import { SessionService } from './session.service';
     SessionService,
     PasswordService,
     AuthService,
+    BloqueoService,
     googleOauthClientProvider,
     GoogleOauthService,
     RecoveryService,
