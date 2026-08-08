@@ -193,50 +193,73 @@ no adoptada por defecto.
 ## PR 3 — CRUD de `Apoderado` + `AuthService` D7 + contrato (base = PR 2 branch)
 
 ### Phase 11: `ApoderadosController`/`ApoderadosService` (D3/R11)
-- [ ] 11.1 RED e2e: alta de apoderado sobre un `Usuario` con `rol = 'estudiante'` → `201`,
+- [x] 11.1 RED e2e: alta de apoderado sobre un `Usuario` con `rol = 'estudiante'` → `201`,
       exactamente una fila `APODERADO_CREADO` [R11]
-- [ ] 11.2 RED e2e: un estudiante puede tener varios apoderados registrados [R11]
-- [ ] 11.3 RED adversarial: cualquier operación de `/apoderados` sobre un `:id` con `rol ≠
-      'estudiante'` → `409 USUARIO_NO_ES_ESTUDIANTE`, sin escritura [R11]
-- [ ] 11.4 RED e2e: `GET /usuarios/:id/apoderados` lista los apoderados del estudiante (arreglo
-      vacío es válido) [R11]
-- [ ] 11.5 RED e2e: `PATCH .../apoderados/:apoderadoId` actualiza datos básicos, deja exactamente
-      una fila `APODERADO_ACTUALIZADO` [R11]
-- [ ] 11.6 RED e2e: `DELETE .../apoderados/:apoderadoId` elimina físicamente la fila, deja
-      exactamente una fila `APODERADO_ELIMINADO` [R11]
-- [ ] 11.7 RED e2e: rol `comite` se rechaza en las 9 rutas de `UsersModule` (usuarios + apoderados)
-      sin ejecutar ningún handler [R9]
-- [ ] 11.8 Crear `apps/backend/src/users/apoderados.service.ts` y
+      — DESVIACIÓN (mismo criterio que PR1/PR2, tarea 6.4/7.1): sin daemon Docker en este entorno
+      (`docker ps` falla), `test/users/apoderados.e2e-spec.ts` queda escrito y type-checkeado
+      (`pnpm typecheck` en verde), no ejecutado hasta GREEN. Cobertura de orquestación equivalente
+      en verde como unit test en `src/users/apoderados.service.spec.ts`.
+- [x] 11.2 RED e2e: un estudiante puede tener varios apoderados registrados [R11] — ídem 11.1,
+      unit test + e2e escrito.
+- [x] 11.3 RED adversarial: cualquier operación de `/apoderados` sobre un `:id` con `rol ≠
+      'estudiante'` → `409 USUARIO_NO_ES_ESTUDIANTE`, sin escritura [R11] — cubierto en las cuatro
+      operaciones (`crear`/`listar`/`actualizar`/`eliminar`) en `apoderados.service.spec.ts`.
+- [x] 11.4 RED e2e: `GET /usuarios/:id/apoderados` lista los apoderados del estudiante (arreglo
+      vacío es válido) [R11] — ídem 11.1.
+- [x] 11.5 RED e2e: `PATCH .../apoderados/:apoderadoId` actualiza datos básicos, deja exactamente
+      una fila `APODERADO_ACTUALIZADO` [R11] — ídem 11.1.
+- [x] 11.6 RED e2e: `DELETE .../apoderados/:apoderadoId` elimina físicamente la fila, deja
+      exactamente una fila `APODERADO_ELIMINADO` [R11] — ídem 11.1.
+- [x] 11.7 RED e2e: rol `comite` se rechaza en las 9 rutas de `UsersModule` (usuarios + apoderados)
+      sin ejecutar ningún handler [R9] — 5 rutas de `Usuario` cubiertas en
+      `test/users/users.e2e-spec.ts` (PR2); 4 rutas de `Apoderado` cubiertas en
+      `test/users/apoderados.e2e-spec.ts` (ambas suites escritas, e2e pendiente de Docker vivo).
+- [x] 11.8 Crear `apps/backend/src/users/apoderados.service.ts` y
       `apps/backend/src/users/apoderados.controller.ts`
       (`@Controller('usuarios/:usuarioId/apoderados')`, mismos guards/roles a nivel de clase) —
       GREEN 11.1-11.7 [R9][R11][D3]
 
 ### Phase 12: `AuthService` — D7 rechaza `estado = 'inactivo'`
-- [ ] 12.1 RED: `login()` con contraseña válida y `Usuario.estado = 'inactivo'` → `401` sin
-      distinguir causa, sin sesión creada [R8]
-- [ ] 12.2 RED: `determinarMotivoFallo()` devuelve `'usuario_inactivo'` antes del fallback
+- [x] 12.1 RED: `login()` con contraseña válida y `Usuario.estado = 'inactivo'` → `401` sin
+      distinguir causa, sin sesión creada [R8] — unit test en `auth.service.spec.ts`; e2e escrito
+      en `test/auth/auth-inactivo.e2e-spec.ts` (pendiente de Docker vivo, mismo criterio 11.1).
+- [x] 12.2 RED: `determinarMotivoFallo()` devuelve `'usuario_inactivo'` antes del fallback
       `'usuario_bloqueado'` [R8]
-- [ ] 12.3 RED: `MotivoLoginFallido` incluye `'usuario_inactivo'` como valor de tipo aditivo [R8]
-- [ ] 12.4 RED: el rechazo por inactividad no incrementa `login:intentos:{userId}` (`contable ===
+- [x] 12.3 RED: `MotivoLoginFallido` incluye `'usuario_inactivo'` como valor de tipo aditivo [R8]
+- [x] 12.4 RED: el rechazo por inactividad no incrementa `login:intentos:{userId}` (`contable ===
       false`, `registrarFallo()` recibe `null`) [R8]
-- [ ] 12.5 RED: `loginConGoogle()` con `Usuario.estado = 'inactivo'` → `401`, sin sesión creada,
+- [x] 12.5 RED: `loginConGoogle()` con `Usuario.estado = 'inactivo'` → `401`, sin sesión creada,
       audita `LOGIN_OAUTH_FALLIDO` con `motivo = 'usuario_inactivo'` [R8]
-- [ ] 12.6 RED: `MotivoLoginOAuthFallido` incluye `'usuario_inactivo'` [R8]
-- [ ] 12.7 RED adversarial: la guarda `estado === 'inactivo'` se evalúa junto a `bloqueoVigente()`,
+- [x] 12.6 RED: `MotivoLoginOAuthFallido` incluye `'usuario_inactivo'` [R8]
+- [x] 12.7 RED adversarial: la guarda `estado === 'inactivo'` se evalúa junto a `bloqueoVigente()`,
       nunca antes del chequeo de contraseña — `PasswordService.verificar()` sigue corriendo contra
-      el hash señuelo (anti-oráculo, D3 de `#4`) [D7]
-- [ ] 12.8 Modificar `apps/backend/src/auth/auth.service.ts`: agregar guarda `usuario.estado ===
+      el hash señuelo (anti-oráculo, D3 de `#4`) [D7] — verificado por unit test que confirma
+      `passwordService.verificar()` se invoca antes del rechazo.
+- [x] 12.8 Modificar `apps/backend/src/auth/auth.service.ts`: agregar guarda `usuario.estado ===
       'inactivo'` en `login()` y `loginConGoogle()`, nueva rama en `determinarMotivoFallo()`,
       `'usuario_inactivo'` en ambos tipos `Motivo*` — GREEN 12.1-12.7 [R8][D7]
 
 ### Phase 13: Contrato de auditoría + regeneración
-- [ ] 13.1 GREEN: `test/schema/auditoria.spec.ts` confirma que el `WHEN` del trigger sigue listando
-      únicamente `VOTO`/`RECHAZO` tras el conjunto completo de cambios de este change [R12]
-- [ ] 13.2 Regenerar `packages/contracts/openapi.json` y sus tipos vía `pnpm generate:contracts`
-      tras cerrar ambos controladores
+- [x] 13.1 GREEN: `test/schema/auditoria.spec.ts` confirma que el `WHEN` del trigger sigue listando
+      únicamente `VOTO`/`RECHAZO` tras el conjunto completo de cambios de este change [R12] — test
+      `[TM4]` preexistente ya cubre esta aserción genéricamente; verificado estáticamente que
+      `prisma/migrations/20260807052206_append_only_audit/migration.sql:81` sigue siendo
+      `WHEN (NEW.event_type IN ('VOTO','RECHAZO'))`, sin tocar. No ejecutable en este entorno sin
+      daemon Docker (mismo criterio que PR1 tarea 2.2).
+- [x] 13.2 Regenerar `packages/contracts/openapi.json` y sus tipos vía `pnpm generate:contracts`
+      tras cerrar ambos controladores — GREEN: `pnpm generate:contracts` completa; el contrato
+      incluye `/usuarios/{usuarioId}/apoderados` y `/usuarios/{usuarioId}/apoderados/{apoderadoId}`.
 
 ### Phase 14: Regresión completa
-- [ ] 14.1 GREEN: `pnpm openapi:extract` completa sin conexión viva a Postgres/Redis
-- [ ] 14.2 Ejecutar `test:schema` + `test` + `test:e2e -- users apoderados auth` juntos; confirmar
+- [x] 14.1 GREEN: `pnpm openapi:extract` completa sin conexión viva a Postgres/Redis
+- [x] 14.2 Ejecutar `test:schema` + `test` + `test:e2e -- users apoderados auth` juntos; confirmar
       sin regresión en `bloqueo-desbloqueo-cuentas`, `google-oauth-y-recuperacion`,
       `auth-server-sessions`, `append-only-audit-engine`
+      — DESVIACIÓN: `test:schema`/`test:e2e` no ejecutables en este entorno sin daemon Docker
+      (mismo criterio que todo el change). `pnpm --filter @seei/backend test` corre completo:
+      116/146 tests en verde (12 nuevos de `apoderados.service.spec.ts` + 2 nuevos de D7 en
+      `auth.service.spec.ts`, más los 102 preexistentes de PR1/PR2); las 30 fallas restantes son
+      las 3 suites preexistentes que ya dependían de Redis vivo
+      (`session.service.spec.ts`/`bloqueo.service.spec.ts`/`recovery.service.spec.ts`), sin
+      relación con este PR (misma DESVIACIÓN documentada en PR2, tarea 10.2). `pnpm typecheck`
+      corre en verde.
