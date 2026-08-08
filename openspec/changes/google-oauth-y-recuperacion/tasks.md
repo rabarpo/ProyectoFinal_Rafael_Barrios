@@ -41,51 +41,51 @@ route + e2e, D3); split PR3 into PR3a (`solicitar()`, D7 request leg) and PR3b (
 ## PR 1 — Foundation (base = feature/tracker branch)
 
 ### Phase 1: ADR-0017 (D1)
-- [ ] 1.1 Create `adrs/0017-acceso-google-dominio-institucional.md` (Aceptado): fija (a) verificación
+- [x] 1.1 Create `adrs/0017-acceso-google-dominio-institucional.md` (Aceptado): fija (a) verificación
       manual del ID token en vez de `passport-google-oauth20`, (b) restricción por claim `hd` contra
       lista permitida, (c) sin auto-provisión de cuentas, (d) vinculación de cuenta con contraseña
       exige confirmarla, (e) la lista de dominios vive en env var hasta que #10 la persista en
       `Configuracion` — contenido y fundamento verbatim de design.md D1 [D1]
 
 ### Phase 2: Schema — `google_id`
-- [ ] 2.1 Add `google_id String? @unique` to `Usuario` in `apps/backend/prisma/schema.prisma` [R1]
-- [ ] 2.2 Generate migration `<ts>_google_id_usuario`, additive, stacked after
+- [x] 2.1 Add `google_id String? @unique` to `Usuario` in `apps/backend/prisma/schema.prisma` [R1]
+- [x] 2.2 Generate migration `<ts>_google_id_usuario`, additive, stacked after
       `auth-server-sessions`'s credential migration
-- [ ] 2.3 RED: `test/schema/usuario.spec.ts` asserts `google_id` column exists as nullable `String`
+- [x] 2.3 RED: `test/schema/usuario.spec.ts` asserts `google_id` column exists as nullable `String`
       with a unique constraint — fails pre-migration [R1]
-- [ ] 2.4 GREEN 2.3 via 2.2's migration
+- [x] 2.4 GREEN 2.3 via 2.2's migration
 
 ### Phase 3: `EmailModule` (D8)
-- [ ] 3.1 RED: `email-sender.spec.ts` — `ConsoleEmailSender.send()` logs only destinatario+asunto,
+- [x] 3.1 RED: `email-sender.spec.ts` — `ConsoleEmailSender.send()` logs only destinatario+asunto,
       never the cuerpo (contains the token in real usage) [D8]
-- [ ] 3.2 Create `apps/backend/src/email/email-sender.ts` (`EMAIL_SENDER` token, `EmailSender`
+- [x] 3.2 Create `apps/backend/src/email/email-sender.ts` (`EMAIL_SENDER` token, `EmailSender`
       interface) and `apps/backend/src/email/console-email-sender.ts` — GREEN 3.1 [R10]
-- [ ] 3.3 RED: `smtp-email-sender.spec.ts` — construction does not open a socket (no `verify()` call
+- [x] 3.3 RED: `smtp-email-sender.spec.ts` — construction does not open a socket (no `verify()` call
       in constructor); `send()` invokes `createTransport(...).sendMail()` lazily [D8]
-- [ ] 3.4 Create `apps/backend/src/email/smtp-email-sender.ts` (nodemailer, no `pool`, no eager
+- [x] 3.4 Create `apps/backend/src/email/smtp-email-sender.ts` (nodemailer, no `pool`, no eager
       `verify()`) — GREEN 3.3 [R10]
-- [ ] 3.5 Create `apps/backend/src/email/email.module.ts`: factory provider for `EMAIL_SENDER` —
+- [x] 3.5 Create `apps/backend/src/email/email.module.ts`: factory provider for `EMAIL_SENDER` —
       `SmtpEmailSender` when `SMTP_HOST` is set, else `ConsoleEmailSender`; add
       `nodemailer`+`@types/nodemailer` and `google-auth-library` to `apps/backend/package.json`
-- [ ] 3.6 GREEN: no row is ever created in `JobCorreo`/`Notificacion` by `EmailModule` (assert by
+- [x] 3.6 GREEN: no row is ever created in `JobCorreo`/`Notificacion` by `EmailModule` (assert by
       absence of any Prisma call to those models in the module — static/code-review check plus a
       guard test instantiating the module without a Prisma client) [R10]
 
 ### Phase 4: Audit event types (additive)
-- [ ] 4.1 Modify `apps/backend/src/auditoria/audit-event-types.ts`: add `LOGIN_OAUTH_EXITOSO`,
+- [x] 4.1 Modify `apps/backend/src/auditoria/audit-event-types.ts`: add `LOGIN_OAUTH_EXITOSO`,
       `LOGIN_OAUTH_FALLIDO`, `RECUPERACION_SOLICITADA`, `RECUPERACION_COMPLETADA` to
       `AUDIT_EVENT_TYPES`, additive only [R11]
-- [ ] 4.2 GREEN: `test/schema/auditoria.spec.ts` (or equivalent) inspects the ADR-0016 trigger's
+- [x] 4.2 GREEN: `test/schema/auditoria.spec.ts` (or equivalent) inspects the ADR-0016 trigger's
       `WHEN` clause and confirms it still lists only `VOTO`/`RECHAZO`, unaffected by the four new
       keys [R11]
 
 ### Phase 5: Env wiring
-- [ ] 5.1 Modify `turbo.json`: `test:e2e.env` += `GOOGLE_CLIENT_ID`, `GOOGLE_HOSTED_DOMAINS`,
+- [x] 5.1 Modify `turbo.json`: `test:e2e.env` += `GOOGLE_CLIENT_ID`, `GOOGLE_HOSTED_DOMAINS`,
       `RECOVERY_TTL_SECONDS`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`,
       `APP_BASE_URL`
-- [ ] 5.2 Modify `README.md` / `docs/onboarding.md`: document the new variables alongside
+- [x] 5.2 Modify `README.md` / `docs/onboarding.md`: document the new variables alongside
       `REDIS_URL`/`DATABASE_URL`
-- [ ] 5.3 GREEN: `pnpm openapi:extract` still completes with no Postgres/Redis/SMTP/`GOOGLE_CLIENT_ID`
+- [x] 5.3 GREEN: `pnpm openapi:extract` still completes with no Postgres/Redis/SMTP/`GOOGLE_CLIENT_ID`
       connection (lazy providers preserved, per D2/D8 fail-closed-at-request-time, not at
       `onModuleInit`)
 
