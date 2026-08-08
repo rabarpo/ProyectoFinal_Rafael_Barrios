@@ -8,6 +8,9 @@
 // google-oauth-y-recuperacion (PR1, tarea 4.1; design.md D3/D7, spec "Eventos de auditoría nuevos
 // son aditivos"): claves aditivas para login OAuth y recuperación de contraseña. Tampoco tocan la
 // cláusula `WHEN` del trigger de ADR-0016 — ninguna de las cuatro toca un `Voto`.
+// bloqueo-desbloqueo-cuentas (PR1, tarea 2.1; design.md "Cambios de archivos"): claves aditivas
+// para la transición automática a `bloqueado` (fuerza bruta, D2) y el desbloqueo por doble vía
+// (expiración perezosa D6, manual del comité). Tampoco tocan la cláusula `WHEN` de ADR-0016.
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
@@ -18,6 +21,8 @@ export const AUDIT_EVENT_TYPES = {
   LOGIN_OAUTH_FALLIDO: 'LOGIN_OAUTH_FALLIDO',
   RECUPERACION_SOLICITADA: 'RECUPERACION_SOLICITADA',
   RECUPERACION_COMPLETADA: 'RECUPERACION_COMPLETADA',
+  CUENTA_BLOQUEADA: 'CUENTA_BLOQUEADA',
+  CUENTA_DESBLOQUEADA: 'CUENTA_DESBLOQUEADA',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];
