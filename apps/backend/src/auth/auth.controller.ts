@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nes
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard, type RequestConCookies } from './auth.guard';
 import { AuthService } from './auth.service';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
 import { RolesGuard } from './roles.guard';
 import type { SesionUsuario } from './sesion-usuario';
@@ -43,6 +44,38 @@ export class AuthController {
 
     // D6: cookie de sesión de navegador (sin maxAge/expires), httpOnly, sameSite=lax, secure solo
     // en producción, sin firmar (el sessionId ya son 256 bits de CSPRNG y vive en Redis).
+    res.cookie(COOKIE_NAME, sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    return { mensaje: 'Login exitoso' };
+  }
+
+  /**
+   * google-oauth-y-recuperacion, PR2 (design.md D3, tarea 8.2). Misma cookie `seei_session` que
+   * `login()` — el resultado observable de un login OAuth exitoso es indistinguible del login por
+   * contraseña. `409 VINCULACION_REQUERIDA` es distinguible del `401` uniforme de D3/#4 a
+   * propósito (design.md D3, "por qué un 409 distinguible"): quien lo recibe ya probó, con un ID
+   * token firmado por Google, que controla ese buzón institucional.
+   */
+  @Post('google')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Login con Google OAuth restringido a dominios institucionales' })
+  @ApiResponse({ status: 200, description: 'Login exitoso, cookie seei_session emitida' })
+  @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
+  @ApiResponse({
+    status: 409,
+    description: 'Vinculación requerida: reenviar con la contraseña actual confirmada',
+  })
+  async loginGoogle(
+    @Body() dto: GoogleLoginDto,
+    @Res({ passthrough: true }) res: ResponseConCookie,
+  ): Promise<{ mensaje: string }> {
+    const { sessionId } = await this.authService.loginConGoogle(dto.idToken, dto.password);
+
     res.cookie(COOKIE_NAME, sessionId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
