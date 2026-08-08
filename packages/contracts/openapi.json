@@ -50,6 +50,60 @@
         ]
       }
     },
+    "/auth/google": {
+      "post": {
+        "operationId": "AuthController_loginGoogle",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Login exitoso, cookie seei_session emitida"
+          },
+          "401": {
+            "description": "Credenciales inválidas"
+          },
+          "409": {
+            "description": "Vinculación requerida: reenviar con la contraseña actual confirmada"
+          }
+        },
+        "summary": "Login con Google OAuth restringido a dominios institucionales",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/recovery": {
+      "post": {
+        "operationId": "AuthController_solicitarRecovery",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": "Solicitud recibida (respuesta uniforme, no revela si el correo existe)"
+          }
+        },
+        "summary": "Solicita un enlace de recuperación/establecimiento de contraseña",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/recovery/confirm": {
+      "post": {
+        "operationId": "AuthController_confirmarRecovery",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Contraseña actualizada, sesiones revocadas"
+          },
+          "400": {
+            "description": "Enlace inválido o expirado"
+          }
+        },
+        "summary": "Confirma la recuperación con el token recibido y establece la contraseña nueva",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/auth/logout": {
       "post": {
         "operationId": "AuthController_logout",
