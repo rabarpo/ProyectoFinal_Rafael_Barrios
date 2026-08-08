@@ -1,7 +1,8 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import type { Prisma, RolUsuario, Usuario } from '@prisma/client';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { EstadoUsuario, Prisma, RolUsuario, Usuario } from '@prisma/client';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { AUDIT_EVENT_TYPES } from '../auditoria/audit-event-types';
+import { SessionService } from '../auth/session.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { UsuarioRespuestaDto } from './dto/usuario-respuesta.dto';
 import { USERS_ERROR_CODES } from './users.errors';
@@ -16,6 +17,11 @@ export interface DatosUsuario {
   rol: RolUsuario;
 }
 
+// administracion-usuarios-apoderados, PR2 (design.md D1, tarea 8.3). `PATCH /usuarios/:id` acepta
+// cualquier subconjunto de estos cinco campos — `estado` NUNCA aparece aquí a propósito (D1: el
+// DTO no lo declara, así que ni siquiera compila pasarlo por este camino).
+export type DatosActualizarUsuario = Partial<DatosUsuario>;
+
 // D5: núcleo compartido de unicidad. No lanza; clasifica.
 export type Colision =
   | { tipo: 'sin_colision' }
@@ -24,6 +30,23 @@ export type Colision =
 
 const CORREO_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DNI_MAX_LENGTH = 20;
+
+// administracion-usuarios-apoderados, PR2 (design.md "Contratos HTTP", tarea 7.10). Valores
+// válidos de filtro para `GET /usuarios?rol=&estado=` — cualquier otro valor es `400
+// CAMPO_INVALIDO` (R5), nunca un `500` de Prisma sobre un enum desconocido.
+const ROLES_VALIDOS: readonly RolUsuario[] = [
+  'estudiante',
+  'docente',
+  'comite',
+  'administrador',
+  'director',
+];
+const ESTADOS_VALIDOS: readonly EstadoUsuario[] = ['activo', 'inactivo', 'bloqueado'];
+
+export interface FiltroListadoUsuarios {
+  rol?: string;
+  estado?: string;
+}
 
 /**
  * R3: texto libre, sin validación de formato (decisión confirmada en proposal.md); solo el
@@ -140,7 +163,50 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly sessionService: SessionService,
   ) {}
+
+  /**
+   * administracion-usuarios-apoderados, PR2 (design.md "Contratos HTTP", tarea 7.10, spec
+   * "Consulta y listado de Usuario"). Sin paginación (pregunta abierta declarada en design.md);
+   * `orderBy codigo asc`, arreglo desnudo — mismo criterio que `listarBloqueados()` de
+   * `bloqueo-desbloqueo-cuentas`.
+   */
+  async listar(filtro: FiltroListadoUsuarios): Promise<UsuarioRespuestaDto[]> {
+    if (filtro.rol !== undefined && !ROLES_VALIDOS.includes(filtro.rol as RolUsuario)) {
+      throw new BadRequestException({
+        codigo: USERS_ERROR_CODES.CAMPO_INVALIDO,
+        campo: 'rol',
+        motivo: 'formato',
+      });
+    }
+    if (filtro.estado !== undefined && !ESTADOS_VALIDOS.includes(filtro.estado as EstadoUsuario)) {
+      throw new BadRequestException({
+        codigo: USERS_ERROR_CODES.CAMPO_INVALIDO,
+        campo: 'estado',
+        motivo: 'formato',
+      });
+    }
+
+    const usuarios = await this.prisma.usuario.findMany({
+      where: {
+        ...(filtro.rol ? { rol: filtro.rol as RolUsuario } : {}),
+        ...(filtro.estado ? { estado: filtro.estado as EstadoUsuario } : {}),
+      },
+      orderBy: { codigo: 'asc' },
+    });
+
+    return usuarios.map(mapearUsuarioRespuesta);
+  }
+
+  /** GET /usuarios/:id — spec "Consulta y listado de Usuario". */
+  async obtenerPorId(id: string): Promise<UsuarioRespuestaDto> {
+    const usuario = await this.prisma.usuario.findUnique({ where: { id } });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    return mapearUsuarioRespuesta(usuario);
+  }
 
   /**
    * Camino HTTP (`POST /usuarios`): cualquier colisión, incluida la exacta, es
@@ -261,5 +327,153 @@ export class UsersService {
       }
       throw error;
     }
+  }
+
+  /**
+   * administracion-usuarios-apoderados, PR2 (design.md D1, tarea 8.3). `datos` viene de
+   * `ActualizarUsuarioDto`, que deliberadamente NO declara `estado` — "editar datos básicos no
+   * puede mover el estado" es una propiedad del tipo, no una validación en tiempo de ejecución.
+   * Sin cambios efectivos (todos los campos enviados coinciden con los actuales), es un no-op:
+   * no se dispara `clasificarColision` ni se audita (mismo criterio de "sin cambio, sin efecto"
+   * de D1/D6 para `cambiarEstado`).
+   */
+  async actualizar(
+    id: string,
+    datos: DatosActualizarUsuario,
+    actorId: string,
+  ): Promise<UsuarioRespuestaDto> {
+    if (datos.dni !== undefined) validarDni(datos.dni);
+    if (datos.correo !== undefined) validarCorreo(datos.correo);
+
+    try {
+      const usuario = await this.prisma.$transaction(async (tx) => {
+        const actual = await tx.usuario.findUnique({ where: { id } });
+        if (!actual) {
+          throw new NotFoundException('Usuario no encontrado');
+        }
+
+        const camposModificados = (
+          ['nombres', 'dni', 'codigo', 'correo', 'rol'] as Array<keyof DatosUsuario>
+        ).filter((campo) => datos[campo] !== undefined && datos[campo] !== actual[campo]);
+
+        if (camposModificados.length === 0) {
+          return actual;
+        }
+
+        const fusionado: Pick<DatosUsuario, 'dni' | 'codigo' | 'correo'> = {
+          dni: datos.dni ?? actual.dni,
+          codigo: datos.codigo ?? actual.codigo,
+          correo: datos.correo ?? actual.correo,
+        };
+        const colision = await clasificarColision(tx, fusionado, id);
+        if (colision.tipo !== 'sin_colision') {
+          const campo = colision.tipo === 'coincidencia_exacta' ? 'dni' : colision.campo;
+          throw new ConflictException({ codigo: USERS_ERROR_CODES.CAMPO_DUPLICADO, campo });
+        }
+
+        const actualizado = await tx.usuario.update({
+          where: { id },
+          data: {
+            nombres: datos.nombres,
+            dni: datos.dni,
+            codigo: datos.codigo,
+            correo: datos.correo,
+            rol: datos.rol,
+          },
+        });
+
+        await this.auditoria.log(
+          tx,
+          AUDIT_EVENT_TYPES.USUARIO_ACTUALIZADO,
+          actorId,
+          'Usuario',
+          actualizado.id,
+          { campos: camposModificados } as Prisma.InputJsonValue,
+        );
+
+        return actualizado;
+      });
+
+      return mapearUsuarioRespuesta(usuario);
+    } catch (error) {
+      if (esP2002(error)) {
+        throw new ConflictException({
+          codigo: USERS_ERROR_CODES.CAMPO_DUPLICADO,
+          campo: campoDesdeTarget(error.meta?.target),
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * administracion-usuarios-apoderados, PR2 (design.md D1/D2/D6, tarea 9.8). `destino` expresa el
+   * ESTADO DESTINO, nunca una acción — repetir el request es idempotente (D1): si la fila ya está
+   * en `destino`, no escribe fila de auditoría ni invoca `revokeAllForUser` (adversarial 9.7).
+   * `bloqueado` nunca es un destino válido de este módulo (`400 ESTADO_DESTINO_NO_PERMITIDO`,
+   * chequeo por valor, sin mirar la fila); una fila ya `bloqueada` rechaza cualquier destino con
+   * `409 TRANSICION_DESDE_BLOQUEADO` (chequeo por estado actual) — esa transición pertenece
+   * exclusivamente al flujo de `bloqueo-desbloqueo-cuentas`. `revokeAllForUser` corre después del
+   * commit, solo cuando la fila cambió a `inactivo` (D6, mismo patrón D7 de `#4`/`#6`).
+   */
+  async cambiarEstado(
+    id: string,
+    destino: string,
+    actorId: string,
+  ): Promise<{ id: string; estado: EstadoUsuario }> {
+    if (destino !== 'activo' && destino !== 'inactivo') {
+      throw new BadRequestException({
+        codigo: USERS_ERROR_CODES.ESTADO_DESTINO_NO_PERMITIDO,
+        valor_recibido: destino,
+      });
+    }
+
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      const actual = await tx.usuario.findUnique({ where: { id } });
+      if (!actual) {
+        return { found: false as const, cambio: false };
+      }
+
+      if (actual.estado === 'bloqueado') {
+        throw new ConflictException({
+          codigo: USERS_ERROR_CODES.TRANSICION_DESDE_BLOQUEADO,
+          estado_actual: 'bloqueado',
+        });
+      }
+
+      if (actual.estado === destino) {
+        return { found: true as const, cambio: false };
+      }
+
+      const { count } = await tx.usuario.updateMany({
+        where: { id, estado: { in: ['activo', 'inactivo'] } },
+        data: { estado: destino },
+      });
+
+      if (count === 1) {
+        await this.auditoria.log(
+          tx,
+          destino === 'inactivo'
+            ? AUDIT_EVENT_TYPES.USUARIO_DESACTIVADO
+            : AUDIT_EVENT_TYPES.USUARIO_REACTIVADO,
+          actorId,
+          'Usuario',
+          id,
+          { estado_anterior: actual.estado } as Prisma.InputJsonValue,
+        );
+      }
+
+      return { found: true as const, cambio: count === 1 };
+    });
+
+    if (!resultado.found) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (resultado.cambio && destino === 'inactivo') {
+      await this.sessionService.revokeAllForUser(id);
+    }
+
+    return { id, estado: destino };
   }
 }

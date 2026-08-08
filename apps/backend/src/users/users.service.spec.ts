@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import type { Prisma, Usuario } from '@prisma/client';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { AUDIT_EVENT_TYPES } from '../auditoria/audit-event-types';
+import { SessionService } from '../auth/session.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   campoDesdeTarget,
@@ -194,12 +195,14 @@ describe('UsersService.crear() (R1/R2/D5)', () => {
     };
     const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
 
+    const sessionService = { revokeAllForUser: jest.fn().mockResolvedValue(undefined) };
     const service = new UsersService(
       prisma as unknown as PrismaService,
       auditoria as unknown as AuditoriaService,
+      sessionService as unknown as SessionService,
     );
 
-    return { service, prisma, auditoria, create };
+    return { service, prisma, auditoria, create, sessionService };
   }
 
   // 6.1 RED [R2][D5]
@@ -282,12 +285,14 @@ describe('UsersService.crearIdempotente() (R13/D5 — gancho #9)', () => {
     };
     const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
 
+    const sessionService = { revokeAllForUser: jest.fn().mockResolvedValue(undefined) };
     const service = new UsersService(
       prisma as unknown as PrismaService,
       auditoria as unknown as AuditoriaService,
+      sessionService as unknown as SessionService,
     );
 
-    return { service, prisma, auditoria, create, tx };
+    return { service, prisma, auditoria, create, tx, sessionService };
   }
 
   // 6.1 RED [R13][D5]
@@ -353,5 +358,256 @@ describe('UsersService.crearIdempotente() (R13/D5 — gancho #9)', () => {
       ConflictException,
     );
     expect(create).not.toHaveBeenCalled();
+  });
+});
+
+// PR2 (design.md D1, tarea 8.3): unit tests con `PrismaService`/`AuditoriaService`/`SessionService`
+// mockeados — mismo criterio de PR1 (Postgres real queda reservado para e2e cuando haya un daemon
+// Docker disponible; ver DESVIACIÓN en tasks.md 6.4).
+describe('UsersService.actualizar() (R6/D1)', () => {
+  function crearServicio(overrides: {
+    actual?: Usuario | null;
+    porDni?: Usuario | null;
+    porCodigo?: Usuario | null;
+    porCorreo?: Usuario | null;
+    updateReturns?: Usuario;
+  }) {
+    const actual = overrides.actual === undefined ? crearUsuarioFixture() : overrides.actual;
+    const findUnique = jest.fn().mockResolvedValue(actual);
+    const update = jest.fn().mockResolvedValue(overrides.updateReturns ?? actual);
+    const findFirst = jest.fn(({ where }: { where: Record<string, unknown> }) => {
+      if ('dni' in where) return Promise.resolve(overrides.porDni ?? null);
+      if ('codigo' in where) return Promise.resolve(overrides.porCodigo ?? null);
+      return Promise.resolve(overrides.porCorreo ?? null);
+    });
+
+    const prisma = {
+      $transaction: jest.fn((callback: (tx: Prisma.TransactionClient) => unknown) =>
+        callback({ usuario: { findUnique, update, findFirst } } as unknown as Prisma.TransactionClient),
+      ),
+    };
+    const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
+    const sessionService = { revokeAllForUser: jest.fn().mockResolvedValue(undefined) };
+
+    const service = new UsersService(
+      prisma as unknown as PrismaService,
+      auditoria as unknown as AuditoriaService,
+      sessionService as unknown as SessionService,
+    );
+
+    return { service, prisma, auditoria, findUnique, update, findFirst, sessionService };
+  }
+
+  // 8.1 RED [R6]
+  it('[R6] actualiza nombres/correo y audita exactamente una fila USUARIO_ACTUALIZADO', async () => {
+    const actualizado = crearUsuarioFixture({ nombres: 'Ana Nueva', correo: 'nueva@example.com' });
+    const { service, update, auditoria } = crearServicio({ updateReturns: actualizado });
+
+    const resultado = await service.actualizar(
+      'usuario-1',
+      { nombres: 'Ana Nueva', correo: 'nueva@example.com' },
+      'actor-1',
+    );
+
+    expect(resultado.nombres).toBe('Ana Nueva');
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(auditoria.log).toHaveBeenCalledTimes(1);
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      AUDIT_EVENT_TYPES.USUARIO_ACTUALIZADO,
+      'actor-1',
+      'Usuario',
+      'usuario-1',
+      expect.objectContaining({ campos: expect.arrayContaining(['nombres', 'correo']) }),
+    );
+  });
+
+  // 8.2 RED adversarial [R6][D1]: un `estado` inyectado en el body (bypaseando el tipo del DTO
+  // con `as any`) se ignora — el DTO real (`ActualizarUsuarioDto`) no declara el campo, así que
+  // este camino ni siquiera compila desde el controlador; este test cubre el runtime defensivo.
+  it('[R6][D1] ignora un campo estado inyectado en el body; Usuario.estado no cambia', async () => {
+    const actual = crearUsuarioFixture({ estado: 'activo' });
+    const { service, update, auditoria } = crearServicio({ actual, updateReturns: actual });
+
+    const resultado = await service.actualizar(
+      'usuario-1',
+      { nombres: 'Otro Nombre', estado: 'inactivo' } as unknown as { nombres: string },
+      'actor-1',
+    );
+
+    expect(resultado.estado).toBe('activo');
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ estado: expect.anything() }),
+      }),
+    );
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      AUDIT_EVENT_TYPES.USUARIO_ACTUALIZADO,
+      'actor-1',
+      'Usuario',
+      'usuario-1',
+      expect.objectContaining({ campos: ['nombres'] }),
+    );
+  });
+
+  it('[D1] sin campos efectivamente modificados es un no-op: sin colisión, sin update, sin auditoría', async () => {
+    const actual = crearUsuarioFixture();
+    const { service, update, auditoria, findFirst } = crearServicio({ actual });
+
+    const resultado = await service.actualizar('usuario-1', { nombres: actual.nombres }, 'actor-1');
+
+    expect(resultado.nombres).toBe(actual.nombres);
+    expect(update).not.toHaveBeenCalled();
+    expect(auditoria.log).not.toHaveBeenCalled();
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
+  // R2: correo duplicado en PATCH también responde 409 identificando el campo.
+  it('[R2] correo duplicado en PATCH responde 409 CAMPO_DUPLICADO sin actualizar', async () => {
+    const otra = crearUsuarioFixture({ id: 'usuario-otro' });
+    const { service, update } = crearServicio({ porCorreo: otra });
+
+    await expect(
+      service.actualizar('usuario-1', { correo: 'ocupado@example.com' }, 'actor-1'),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('404 cuando el Usuario no existe', async () => {
+    const { service } = crearServicio({ actual: null });
+
+    await expect(service.actualizar('inexistente', { nombres: 'X' }, 'actor-1')).rejects.toThrow(
+      'Usuario no encontrado',
+    );
+  });
+});
+
+describe('UsersService.cambiarEstado() (R6/R7/D1/D2/D6)', () => {
+  function crearServicio(overrides: { actual?: Usuario | null; updateManyCount?: number }) {
+    const actual = overrides.actual === undefined ? crearUsuarioFixture({ estado: 'activo' }) : overrides.actual;
+    const findUnique = jest.fn().mockResolvedValue(actual);
+    const updateMany = jest.fn().mockResolvedValue({ count: overrides.updateManyCount ?? 1 });
+
+    const prisma = {
+      $transaction: jest.fn((callback: (tx: Prisma.TransactionClient) => unknown) =>
+        callback({ usuario: { findUnique, updateMany } } as unknown as Prisma.TransactionClient),
+      ),
+    };
+    const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
+    const sessionService = { revokeAllForUser: jest.fn().mockResolvedValue(undefined) };
+
+    const service = new UsersService(
+      prisma as unknown as PrismaService,
+      auditoria as unknown as AuditoriaService,
+      sessionService as unknown as SessionService,
+    );
+
+    return { service, findUnique, updateMany, auditoria, sessionService };
+  }
+
+  // 9.1 RED [R7]
+  it('[R7] activo → inactivo: 200, audita USUARIO_DESACTIVADO y revoca sesiones tras el commit', async () => {
+    const { service, updateMany, auditoria, sessionService } = crearServicio({
+      actual: crearUsuarioFixture({ estado: 'activo' }),
+    });
+
+    const resultado = await service.cambiarEstado('usuario-1', 'inactivo', 'actor-1');
+
+    expect(resultado).toEqual({ id: 'usuario-1', estado: 'inactivo' });
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'usuario-1', estado: { in: ['activo', 'inactivo'] } } }),
+    );
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      AUDIT_EVENT_TYPES.USUARIO_DESACTIVADO,
+      'actor-1',
+      'Usuario',
+      'usuario-1',
+      expect.objectContaining({ estado_anterior: 'activo' }),
+    );
+    expect(sessionService.revokeAllForUser).toHaveBeenCalledWith('usuario-1');
+  });
+
+  // 9.2 RED [R7]
+  it('[R7] inactivo → activo: 200, audita USUARIO_REACTIVADO, sin revocar sesiones', async () => {
+    const { service, auditoria, sessionService } = crearServicio({
+      actual: crearUsuarioFixture({ estado: 'inactivo' }),
+    });
+
+    const resultado = await service.cambiarEstado('usuario-1', 'activo', 'actor-1');
+
+    expect(resultado).toEqual({ id: 'usuario-1', estado: 'activo' });
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      AUDIT_EVENT_TYPES.USUARIO_REACTIVADO,
+      'actor-1',
+      'Usuario',
+      'usuario-1',
+      expect.objectContaining({ estado_anterior: 'inactivo' }),
+    );
+    expect(sessionService.revokeAllForUser).not.toHaveBeenCalled();
+  });
+
+  // 9.3 RED adversarial [D1][D2]
+  it('[D1][D2] destino bloqueado responde 400 ESTADO_DESTINO_NO_PERMITIDO sin tocar la fila', async () => {
+    const { service, findUnique } = crearServicio({});
+
+    let error: unknown;
+    try {
+      await service.cambiarEstado('usuario-1', 'bloqueado', 'actor-1');
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(BadRequestException);
+    expect((error as BadRequestException).getResponse()).toMatchObject({
+      codigo: 'ESTADO_DESTINO_NO_PERMITIDO',
+      valor_recibido: 'bloqueado',
+    });
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+
+  // 9.4 RED adversarial [D1][D2]
+  it('[D1][D2] fila ya bloqueada responde 409 TRANSICION_DESDE_BLOQUEADO sin cambiar estado', async () => {
+    const { service, updateMany } = crearServicio({
+      actual: crearUsuarioFixture({ estado: 'bloqueado' }),
+    });
+
+    let error: unknown;
+    try {
+      await service.cambiarEstado('usuario-1', 'activo', 'actor-1');
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeInstanceOf(ConflictException);
+    expect((error as ConflictException).getResponse()).toMatchObject({
+      codigo: 'TRANSICION_DESDE_BLOQUEADO',
+      estado_actual: 'bloqueado',
+    });
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it('404 cuando el Usuario no existe', async () => {
+    const { service } = crearServicio({ actual: null });
+
+    await expect(service.cambiarEstado('inexistente', 'activo', 'actor-1')).rejects.toThrow(
+      'Usuario no encontrado',
+    );
+  });
+
+  // 9.7 RED adversarial [D1]: repetir la misma transición es idempotente.
+  it('[D1] activo → activo es idempotente: sin auditoría, sin revocación, sin updateMany', async () => {
+    const { service, updateMany, auditoria, sessionService } = crearServicio({
+      actual: crearUsuarioFixture({ estado: 'activo' }),
+    });
+
+    const resultado = await service.cambiarEstado('usuario-1', 'activo', 'actor-1');
+
+    expect(resultado).toEqual({ id: 'usuario-1', estado: 'activo' });
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(auditoria.log).not.toHaveBeenCalled();
+    expect(sessionService.revokeAllForUser).not.toHaveBeenCalled();
   });
 });
