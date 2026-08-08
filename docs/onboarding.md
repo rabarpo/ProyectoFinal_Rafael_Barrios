@@ -23,6 +23,19 @@ Turborepo, roles de Postgres, topología de Docker Compose) ver
    ver ese archivo para la lista completa: `POSTGRES_PASSWORD`, `SEEI_MIGRATOR_PASSWORD`,
    `SEEI_APP_PASSWORD`, `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `REDIS_URL`).
 
+   Login con Google y recuperación de contraseña (backlog #5, `adrs/0017-*.md`) agregan estas
+   variables, todas opcionales en desarrollo — sin `GOOGLE_CLIENT_ID`/`GOOGLE_HOSTED_DOMAINS` el
+   login OAuth rechaza todo pedido en tiempo de request; sin `SMTP_HOST` la recuperación funciona
+   igual y el enlace sale por consola (`ConsoleEmailSender`):
+
+   | Variable | Uso |
+   |---|---|
+   | `GOOGLE_CLIENT_ID` | `audience` esperado al verificar el ID token de Google |
+   | `GOOGLE_HOSTED_DOMAINS` | Dominios institucionales permitidos, separados por coma |
+   | `RECOVERY_TTL_SECONDS` | TTL del token de recuperación en Redis (por defecto `1800`) |
+   | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | Credenciales SMTP de `SmtpEmailSender`; sin `SMTP_HOST` se usa `ConsoleEmailSender` |
+   | `APP_BASE_URL` | Base para armar el enlace de recuperación (`${APP_BASE_URL}/recuperar?token=...`) |
+
 3. **Levantar el stack completo** (Caddy + frontend + backend + worker + Postgres + Redis, con el
    override de desarrollo — bind mounts, puertos de DB/Redis publicados solo en `127.0.0.1`):
 

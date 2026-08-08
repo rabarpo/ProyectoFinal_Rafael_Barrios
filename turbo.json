@@ -13,7 +13,20 @@
     "test:e2e": {
       "dependsOn": ["^build"],
       "cache": false,
-      "env": ["DATABASE_URL", "MIGRATION_DATABASE_URL", "REDIS_URL"]
+      "env": [
+        "DATABASE_URL",
+        "MIGRATION_DATABASE_URL",
+        "REDIS_URL",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_HOSTED_DOMAINS",
+        "RECOVERY_TTL_SECONDS",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASSWORD",
+        "SMTP_FROM",
+        "APP_BASE_URL"
+      ]
     },
     "test:schema": {
       "dependsOn": ["^build"],
