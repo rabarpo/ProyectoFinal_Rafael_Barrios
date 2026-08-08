@@ -89,59 +89,59 @@ diff over budget.
 ## PR 2 — Auto-bloqueo Wiring (base = PR 1 branch)
 
 ### Phase 5: Auto-bloqueo transaction (D2)
-- [ ] 5.1 RED: 4 fallos vigentes + 1 fallo más ⇒ `Usuario.estado` becomes `'bloqueado'`,
+- [x] 5.1 RED: 4 fallos vigentes + 1 fallo más ⇒ `Usuario.estado` becomes `'bloqueado'`,
       `bloqueado_hasta ≈ now + BLOQUEO_SEGUNDOS`, exactly one `CUENTA_BLOQUEADA` row, and
       `SessionService.revokeAllForUser` leaves no `session:{id}` key for that user [R4]
-- [ ] 5.2 RED: `Usuario` with `estado==='inactivo'` reaching 5 fallos does NOT transition to
+- [x] 5.2 RED: `Usuario` with `estado==='inactivo'` reaching 5 fallos does NOT transition to
       `'bloqueado'` (`updateMany({where:{estado:'activo'}})`, not `not:'bloqueado'`) [D2][adversarial]
-- [ ] 5.3 RED: two concurrent requests that each produce the 5th fallo for the same user result in
+- [x] 5.3 RED: two concurrent requests that each produce the 5th fallo for the same user result in
       exactly one `CUENTA_BLOQUEADA` row and `estado==='bloqueado'` exactly once [D2][adversarial]
-- [ ] 5.4 Add auto-bloqueo transaction to `bloqueo.service.ts`: `tx.usuario.updateMany({where:{id,
+- [x] 5.4 Add auto-bloqueo transaction to `bloqueo.service.ts`: `tx.usuario.updateMany({where:{id,
       estado:'activo'}, data:{estado:'bloqueado', bloqueado_hasta}})`, audit `CUENTA_BLOQUEADA` only
       when `count===1`, called from `registrarFallo()` once `intentos >= INTENTOS_MAX`, followed by
       `revokeAllForUser` only when `count===1` — GREEN 5.1-5.3 [R4][D2]
-- [ ] 5.5 RED: 4 fallos + 1 éxito + 4 fallos más ⇒ account does NOT bloquear (counter reset by the
+- [x] 5.5 RED: 4 fallos + 1 éxito + 4 fallos más ⇒ account does NOT bloquear (counter reset by the
       intervening success) [R2]
 
 ### Phase 6: `AuthService` wiring — D6/D7/D8
-- [ ] 6.1 RED: `login()` against `estado==='bloqueado'` with `bloqueado_hasta` in the past does NOT
+- [x] 6.1 RED: `login()` against `estado==='bloqueado'` with `bloqueado_hasta` in the past does NOT
       reject for bloqueo cause and continues evaluating the password [R5][S3]
-- [ ] 6.2 RED: same precondition, wrong password ⇒ rejected for password cause (not bloqueo), and
+- [x] 6.2 RED: same precondition, wrong password ⇒ rejected for password cause (not bloqueo), and
       the fallo counter increments [R5]
-- [ ] 6.3 RED: same precondition, correct password ⇒ session created, and `Usuario.estado` ends
+- [x] 6.3 RED: same precondition, correct password ⇒ session created, and `Usuario.estado` ends
       `'activo'` with `bloqueado_hasta===null` (D6 sanación inside the `LOGIN_EXITOSO` transaction)
       [R5][D6]
-- [ ] 6.4 RED: `estado==='bloqueado'` with `bloqueado_hasta` still future ⇒ rejected regardless of
+- [x] 6.4 RED: `estado==='bloqueado'` with `bloqueado_hasta` still future ⇒ rejected regardless of
       password correctness, no session created [S3]
-- [ ] 6.5 Modify `apps/backend/src/auth/auth.service.ts`: replace `usuario.estado==='bloqueado'`
+- [x] 6.5 Modify `apps/backend/src/auth/auth.service.ts`: replace `usuario.estado==='bloqueado'`
       guard in `login()` with `bloqueoVigente(usuario)`; call `sanarBloqueoVencido(tx, usuario)`
       inside the existing `LOGIN_EXITOSO` transaction — GREEN 6.1-6.4 [R5][D6][D7]
-- [ ] 6.6 RED: after `LOGIN_FALLIDO` audit and before the `401` throw, `registrarFallo()` is invoked
+- [x] 6.6 RED: after `LOGIN_FALLIDO` audit and before the `401` throw, `registrarFallo()` is invoked
       with the real key when `motivo==='password_incorrecta' && usuario!==null &&
       !bloqueoVigente(usuario)`, and with the señuelo key otherwise [S2][D1][D8]
-- [ ] 6.7 RED: after the `LOGIN_EXITOSO` transaction commits and before `sessionService.crear()`,
+- [x] 6.7 RED: after the `LOGIN_EXITOSO` transaction commits and before `sessionService.crear()`,
       `resetearIntentos(usuario.id)` runs (`DEL`) [S1][D8]
-- [ ] 6.8 Wire 6.6/6.7's exact call sites into `login()` — GREEN 6.6-6.7 [S1][S2][D8]
-- [ ] 6.9 RED: `loginConGoogle()` against `bloqueoVigente(usuario)===true` is rejected the same as
+- [x] 6.8 Wire 6.6/6.7's exact call sites into `login()` — GREEN 6.6-6.7 [S1][S2][D8]
+- [x] 6.9 RED: `loginConGoogle()` against `bloqueoVigente(usuario)===true` is rejected the same as
       `login()`; against an expired `bloqueado_hasta` is NOT rejected for bloqueo cause, and its
       success transaction also sanea via `sanarBloqueoVencido(tx, usuario)` [D7][adversarial]
-- [ ] 6.10 Modify `loginConGoogle()`: replace its `estado==='bloqueado'` guard with
+- [x] 6.10 Modify `loginConGoogle()`: replace its `estado==='bloqueado'` guard with
       `bloqueoVigente(usuario)`, add `sanarBloqueoVencido(tx, usuario)` to its success transaction —
       GREEN 6.9 [D7]
-- [ ] 6.11 RED: 5 rejected OAuth logins for the same `Usuario` do NOT increment
+- [x] 6.11 RED: 5 rejected OAuth logins for the same `Usuario` do NOT increment
       `login:intentos:{userId}` (no accountable password fallo) [R3][adversarial]
-- [ ] 6.12 GREEN 6.11: confirm `loginConGoogle()`'s rejection paths never call `registrarFallo()`
+- [x] 6.12 GREEN 6.11: confirm `loginConGoogle()`'s rejection paths never call `registrarFallo()`
       [R3]
-- [ ] 6.13 Modify `apps/backend/src/auth/auth.module.ts`: register `BloqueoService` in `providers`,
+- [x] 6.13 Modify `apps/backend/src/auth/auth.module.ts`: register `BloqueoService` in `providers`,
       inject into `AuthService`
-- [ ] 6.14 Unit regression: `determinarMotivoFallo()` unchanged in signature/body — no new motivo
+- [x] 6.14 Unit regression: `determinarMotivoFallo()` unchanged in signature/body — no new motivo
       values introduced by this change [D4]
 
 ### Phase 7: End-to-end
-- [ ] 7.1 `test/auth/auth-bloqueo.e2e-spec.ts`: 5th fallo bloqueo, expired-bloqueo continues (password
+- [x] 7.1 `test/auth/auth-bloqueo.e2e-spec.ts`: 5th fallo bloqueo, expired-bloqueo continues (password
       and Google), still-vigente bloqueo rejects both, counter reset on success, `inactivo` immune to
       auto-bloqueo
-- [ ] 7.2 GREEN: `pnpm openapi:extract` completes with no live Postgres/Redis connection
+- [x] 7.2 GREEN: `pnpm openapi:extract` completes with no live Postgres/Redis connection
 
 ## PR 3 — Desbloqueo Manual + Listado (base = PR 2 branch)
 
