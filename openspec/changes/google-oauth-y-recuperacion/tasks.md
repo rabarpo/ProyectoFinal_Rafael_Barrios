@@ -156,67 +156,67 @@ route + e2e, D3); split PR3 into PR3a (`solicitar()`, D7 request leg) and PR3b (
 ## PR 3 — Recovery Flow (base = PR 2 branch)
 
 ### Phase 9: `RecoveryService.solicitar()` (D5 issue leg, D7 request leg)
-- [ ] 9.1 RED: existing correo ⇒ `SET recovery:{token} EX RECOVERY_TTL_SECONDS` (default 1800) with
+- [x] 9.1 RED: existing correo ⇒ `SET recovery:{token} EX RECOVERY_TTL_SECONDS` (default 1800) with
       the `userId` as the value, uniform `202` response, `EmailSender.send()` invoked without
       blocking the response [R6][D4][D5]
-- [ ] 9.2 RED: nonexistent correo ⇒ identical `202` body and status as 9.1, and **no**
+- [x] 9.2 RED: nonexistent correo ⇒ identical `202` body and status as 9.1, and **no**
       `recovery:{token}` key created in Redis [R6][adversarial]
-- [ ] 9.3 RED: `AuditoriaService.log(tx, 'RECUPERACION_SOLICITADA', ...)` runs inside its own
+- [x] 9.3 RED: `AuditoriaService.log(tx, 'RECUPERACION_SOLICITADA', ...)` runs inside its own
       `$transaction()` on **both** paths (existing and nonexistent correo), before the `SET` to Redis
       — `usuario_id: null` and `{ correo, emitido: false }` when the correo does not exist [R9][D7]
-- [ ] 9.4 RED: a second `solicitar()` call for the same `userId` within 60s (`recovery:cooldown:
+- [x] 9.4 RED: a second `solicitar()` call for the same `userId` within 60s (`recovery:cooldown:
       {userId}` `SET NX EX 60`) does not emit a new token or a new email, but still returns the same
       uniform `202` [D5][adversarial]
-- [ ] 9.5 Create `apps/backend/src/auth/recovery.service.ts`: `solicitar(correo)` — `findUnique`,
+- [x] 9.5 Create `apps/backend/src/auth/recovery.service.ts`: `solicitar(correo)` — `findUnique`,
       `$transaction(log RECUPERACION_SOLICITADA)` always, cooldown check, `SET recovery:{token} EX
       RECOVERY_TTL_SECONDS`, `EmailSender.send()` fire-and-forget with `.catch()` — GREEN 9.1-9.4
       [R6][R9][D4][D5][D7]
-- [ ] 9.6 GREEN: no `EventoAuditoria` payload for `RECUPERACION_SOLICITADA` ever contains the
+- [x] 9.6 GREEN: no `EventoAuditoria` payload for `RECUPERACION_SOLICITADA` ever contains the
       recovery token [adversarial]
 
 ### Phase 10: `RecoveryService.confirmar()` (D5 atomic consume + compensation, D7 confirm leg)
-- [ ] 10.1 RED: valid `recovery:{token}` ⇒ `multi().ttl(k).getdel(k).exec()` resolves `userId`
+- [x] 10.1 RED: valid `recovery:{token}` ⇒ `multi().ttl(k).getdel(k).exec()` resolves `userId`
       atomically; two concurrent `confirmar()` calls with the same token result in exactly one
       successful confirmation and exactly one `RECUPERACION_COMPLETADA` audit row [R8][D5][adversarial]
-- [ ] 10.2 RED: token not present in Redis (already used or expired) ⇒ confirmation rejected with
+- [x] 10.2 RED: token not present in Redis (already used or expired) ⇒ confirmation rejected with
       uniform `400 { message: 'Enlace inválido o expirado' }`, `password_hash` unchanged [R8]
-- [ ] 10.3 RED: token confirmed once, reused a second time with the same token ⇒ rejected, no change
+- [x] 10.3 RED: token confirmed once, reused a second time with the same token ⇒ rejected, no change
       to `password_hash` [R8][D5]
-- [ ] 10.4 RED: password shorter than 8 characters ⇒ rejected with the same uniform `400`, no Redis
+- [x] 10.4 RED: password shorter than 8 characters ⇒ rejected with the same uniform `400`, no Redis
       mutation, no transaction started
-- [ ] 10.5 RED: `Usuario` with `google_id` linked and `password_hash === null` (solo-OAuth) ⇒
+- [x] 10.5 RED: `Usuario` with `google_id` linked and `password_hash === null` (solo-OAuth) ⇒
       `confirmar()` sets `password_hash` for the first time via the same code path as a reset,
       response indistinguishable from the reset-with-existing-hash case [R7]
-- [ ] 10.6 RED: audit write failure inside the `$transaction(UPDATE password_hash + log
+- [x] 10.6 RED: audit write failure inside the `$transaction(UPDATE password_hash + log
       RECUPERACION_COMPLETADA)` triggers rollback ⇒ token is **not** deleted from Redis (compensating
       `SET k userId EX max(ttlRestante,1)` restores it), `password_hash` unchanged, sessions not
       revoked [R9][D7][adversarial]
-- [ ] 10.7 Create/extend `apps/backend/src/auth/recovery.service.ts`: `confirmar(token, password)` —
+- [x] 10.7 Create/extend `apps/backend/src/auth/recovery.service.ts`: `confirmar(token, password)` —
       `multi().ttl().getdel()`, `PasswordService.hash()` outside the transaction,
       `$transaction(UPDATE password_hash + log RECUPERACION_COMPLETADA)`, compensation `SET` on
       transaction failure — GREEN 10.1-10.6 [R7][R8][R9][D5][D7]
-- [ ] 10.8 RED: successful confirmation calls `SessionService.revokeAllForUser(userId)` and leaves no
+- [x] 10.8 RED: successful confirmation calls `SessionService.revokeAllForUser(userId)` and leaves no
       `session:{id}` key for that user in Redis [R8]
-- [ ] 10.9 GREEN 10.8 wired into `confirmar()` after the transaction commit, before the D6
+- [x] 10.9 GREEN 10.8 wired into `confirmar()` after the transaction commit, before the D6
       confirmation email [R8][D7]
-- [ ] 10.10 RED/GREEN: confirmation dispatches a best-effort D6 notice (no token, no password) via
+- [x] 10.10 RED/GREEN: confirmation dispatches a best-effort D6 notice (no token, no password) via
       `EmailSender.send()` without `await`, wrapped in `.catch()`; its failure does not alter the
       `204` response or revert any prior effect [D6]
 
 ### Phase 11: `AuthController` — recovery routes
-- [ ] 11.1 Create `apps/backend/src/auth/dto/recovery-request.dto.ts` (`RecoveryRequestDto`:
+- [x] 11.1 Create `apps/backend/src/auth/dto/recovery-request.dto.ts` (`RecoveryRequestDto`:
       `correo: string`) and `apps/backend/src/auth/dto/recovery-confirm.dto.ts`
       (`RecoveryConfirmDto`: `token: string`, `password: string`), manual validation, `@ApiProperty`
-- [ ] 11.2 Modify `apps/backend/src/auth/auth.controller.ts`: `POST auth/recovery` (`202 { mensaje:
+- [x] 11.2 Modify `apps/backend/src/auth/auth.controller.ts`: `POST auth/recovery` (`202 { mensaje:
       'Si el correo corresponde a una cuenta, se envió un enlace' }`), `POST auth/recovery/confirm`
       (`204` / `400 { message: 'Enlace inválido o expirado' }`), `@ApiOperation`/`@ApiResponse`
-- [ ] 11.3 Modify `apps/backend/src/auth/auth.module.ts`: register `RecoveryService`
+- [x] 11.3 Modify `apps/backend/src/auth/auth.module.ts`: register `RecoveryService`
 
 ### Phase 12: End-to-end + full regression
-- [ ] 12.1 `test/auth/auth-recovery.e2e-spec.ts`: solicitud with existing correo (token created,
+- [x] 12.1 `test/auth/auth-recovery.e2e-spec.ts`: solicitud with existing correo (token created,
       email dispatched, `202`), solicitud with nonexistent correo (identical `202`, no token),
       confirm with valid/used/expired token, first password on solo-OAuth account, session
       revocation, one audit row per path
-- [ ] 12.2 GREEN: `pnpm openapi:extract` completes with no live Postgres/Redis/SMTP connection [R10]
-- [ ] 12.3 Run `test:schema` + `test` + `test:e2e -- auth` together across PR1+PR2+PR3; confirm no
+- [x] 12.2 GREEN: `pnpm openapi:extract` completes with no live Postgres/Redis/SMTP connection [R10]
+- [x] 12.3 Run `test:schema` + `test` + `test:e2e -- auth` together across PR1+PR2+PR3; confirm no
       regression in `append-only-audit-engine` or `auth-server-sessions` suites
