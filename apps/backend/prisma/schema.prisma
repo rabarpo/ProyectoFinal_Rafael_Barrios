@@ -51,17 +51,21 @@ enum Turno {
 // `google_id` (google-oauth-y-recuperacion, PR1; design.md "Cambios de archivos", ADR-0017):
 // aditiva, nulable y única — el `sub` del ID token de Google, completado solo cuando la cuenta
 // se vincula (D3 de design.md); nunca se auto-provisiona un `Usuario` desde este valor.
+// `bloqueado_hasta` (bloqueo-desbloqueo-cuentas, PR1; design.md "Cambios de archivos"): aditiva y
+// nulable, mismo tipo que `creado_en` — `NULL` con `estado='bloqueado'` significa bloqueo
+// indefinido (D7); el contador de intentos fallidos vive solo en Redis, nunca en esta fila.
 model Usuario {
-  id            String        @id @default(uuid()) @db.Uuid
-  nombres       String
-  dni           String        @unique
-  codigo        String        @unique
-  correo        String        @unique
-  rol           RolUsuario
-  estado        EstadoUsuario @default(activo)
-  creado_en     DateTime      @default(now()) @db.Timestamptz(3)
-  password_hash String?
-  google_id     String?       @unique
+  id              String        @id @default(uuid()) @db.Uuid
+  nombres         String
+  dni             String        @unique
+  codigo          String        @unique
+  correo          String        @unique
+  rol             RolUsuario
+  estado          EstadoUsuario @default(activo)
+  creado_en       DateTime      @default(now()) @db.Timestamptz(3)
+  password_hash   String?
+  google_id       String?       @unique
+  bloqueado_hasta DateTime?     @db.Timestamptz(3)
 
   apoderados       Apoderado[]
   matriculas       Matricula[]
