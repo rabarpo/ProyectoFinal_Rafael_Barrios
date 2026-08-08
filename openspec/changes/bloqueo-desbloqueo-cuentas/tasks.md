@@ -146,53 +146,53 @@ diff over budget.
 ## PR 3 — Desbloqueo Manual + Listado (base = PR 2 branch)
 
 ### Phase 8: `desbloquearManual()` (D2-style guard, actor = comité)
-- [ ] 8.1 RED: `desbloquearManual(id, comiteUserId)` on `estado==='bloqueado'` resets `estado` to
+- [x] 8.1 RED: `desbloquearManual(id, comiteUserId)` on `estado==='bloqueado'` resets `estado` to
       `'activo'`, `bloqueado_hasta` to `null`, audits exactly one `CUENTA_DESBLOQUEADA` with
       `actor_usuario_id===comiteUserId`, `motivo:'manual_comite'`, then `revokeAllForUser` leaves no
       `session:{id}` key for that user [R6]
-- [ ] 8.2 RED: `desbloquearManual()` on a `Usuario` already `estado==='activo'` is idempotent —
+- [x] 8.2 RED: `desbloquearManual()` on a `Usuario` already `estado==='activo'` is idempotent —
       `desbloqueado:false`, no audit row, no `revokeAllForUser` call [D2-analog]
-- [ ] 8.3 RED: two concurrent `desbloquearManual()` calls for the same bloqueado user result in
+- [x] 8.3 RED: two concurrent `desbloquearManual()` calls for the same bloqueado user result in
       exactly one `CUENTA_DESBLOQUEADA` row [adversarial]
-- [ ] 8.4 RED: `desbloquearManual()` with a nonexistent `id` returns a not-found signal without
+- [x] 8.4 RED: `desbloquearManual()` with a nonexistent `id` returns a not-found signal without
       writing any row
-- [ ] 8.5 Add `desbloquearManual(id, actorUserId)` to `bloqueo.service.ts`: `$transaction`
+- [x] 8.5 Add `desbloquearManual(id, actorUserId)` to `bloqueo.service.ts`: `$transaction`
       `findUnique` → not found signal, `updateMany({where:{id, estado:'bloqueado'}, data:{estado:
       'activo', bloqueado_hasta:null}})`, audit only when `count===1`, `revokeAllForUser` after
       commit only when `count===1` — GREEN 8.1-8.4 [R6]
 
 ### Phase 9: `listarBloqueados()`
-- [ ] 9.1 RED: `listarBloqueados()` returns only rows with `estado==='bloqueado'`, each exposing
+- [x] 9.1 RED: `listarBloqueados()` returns only rows with `estado==='bloqueado'`, each exposing
       exactly `id`, `nombres`, `dni`, `codigo`, `bloqueado_hasta`, ordered by `[bloqueado_hasta desc,
       codigo asc]` [R7]
-- [ ] 9.2 RED: a row with `estado==='bloqueado'` and `bloqueado_hasta` already in the past still
+- [x] 9.2 RED: a row with `estado==='bloqueado'` and `bloqueado_hasta` already in the past still
       appears (no filtering on vencimiento) [R7]
-- [ ] 9.3 Add `listarBloqueados()` to `bloqueo.service.ts`: `findMany({where:{estado:'bloqueado'},
+- [x] 9.3 Add `listarBloqueados()` to `bloqueo.service.ts`: `findMany({where:{estado:'bloqueado'},
       select:{id,nombres,dni,codigo,bloqueado_hasta}, orderBy:[{bloqueado_hasta:'desc'},
       {codigo:'asc'}]})` — GREEN 9.1-9.2 [R7]
 
 ### Phase 10: `AuthController` — bloqueo routes
-- [ ] 10.1 Create `apps/backend/src/auth/dto/usuario-bloqueado.dto.ts`: `UsuarioBloqueadoDto`
+- [x] 10.1 Create `apps/backend/src/auth/dto/usuario-bloqueado.dto.ts`: `UsuarioBloqueadoDto`
       (`id`, `nombres`, `dni`, `codigo`, `bloqueado_hasta: string | null`) with `@ApiProperty`, no
       `class-validator`
-- [ ] 10.2 Modify `apps/backend/src/auth/auth.controller.ts`: `GET auth/usuarios/bloqueados`
+- [x] 10.2 Modify `apps/backend/src/auth/auth.controller.ts`: `GET auth/usuarios/bloqueados`
       (`AuthGuard`, `RolesGuard`, `@Roles('comite')`) returning `200 UsuarioBloqueadoDto[]` (bare
       array) [R7]
-- [ ] 10.3 Modify `auth.controller.ts`: `POST auth/usuarios/:id/desbloquear` (`:id` via
+- [x] 10.3 Modify `auth.controller.ts`: `POST auth/usuarios/:id/desbloquear` (`:id` via
       `ParseUUIDPipe`, no body, same guards) returning `200 { desbloqueado: boolean }` /
       `404 'Usuario no encontrado'` [R6]
-- [ ] 10.4 RED: a role other than `comite` on either route is rejected by `RolesGuard` before the
+- [x] 10.4 RED: a role other than `comite` on either route is rejected by `RolesGuard` before the
       handler runs, with no state change [R6][R7]
-- [ ] 10.5 GREEN 10.4 already covered by existing `RolesGuard`; add route-specific e2e assertions
+- [x] 10.5 GREEN 10.4 already covered by existing `RolesGuard`; add route-specific e2e assertions
       [R6][R7]
-- [ ] 10.6 RED: `POST auth/usuarios/:id/desbloquear` with a malformed `:id` returns `400`, never
+- [x] 10.6 RED: `POST auth/usuarios/:id/desbloquear` with a malformed `:id` returns `400`, never
       `500` from a Prisma `P2023` [adversarial]
 
 ### Phase 11: End-to-end + full regression
-- [ ] 11.1 `test/auth/auth-desbloqueo.e2e-spec.ts`: manual desbloqueo success, idempotent
+- [x] 11.1 `test/auth/auth-desbloqueo.e2e-spec.ts`: manual desbloqueo success, idempotent
       already-active desbloqueo, concurrent desbloqueo, role !=='comite' rejection on both routes,
       malformed/nonexistent `:id`, listado field-shape and ordering, listado includes vencido rows
-- [ ] 11.2 GREEN: `pnpm openapi:extract` completes with no live Postgres/Redis connection
-- [ ] 11.3 Run `test:schema` + `test` + `test:e2e -- auth` together across PR1+PR2+PR3; confirm no
+- [x] 11.2 GREEN: `pnpm openapi:extract` completes with no live Postgres/Redis connection
+- [x] 11.3 Run `test:schema` + `test` + `test:e2e -- auth` together across PR1+PR2+PR3; confirm no
       regression in `append-only-audit-engine`, `auth-server-sessions`, or `google-oauth-y-recuperacion`
       suites
