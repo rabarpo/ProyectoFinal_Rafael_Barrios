@@ -138,10 +138,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/usuarios/bloqueados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista las cuentas actualmente bloqueadas (panel del comité) */
+        get: operations["AuthController_listarBloqueados"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/usuarios/{id}/desbloquear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Desbloquea manualmente una cuenta (panel del comité) */
+        post: operations["AuthController_desbloquear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
+    schemas: {
+        UsuarioBloqueadoDto: {
+            /** @description ID del usuario bloqueado */
+            id: string;
+            /** @description Nombres completos del usuario */
+            nombres: string;
+            /** @description DNI del usuario */
+            dni: string;
+            /** @description Código institucional único del usuario */
+            codigo: string;
+            /** @description Fin del bloqueo (ISO 8601); null si el bloqueo es indefinido */
+            bloqueado_hasta: string | null;
+        };
+    };
     responses: never;
     parameters: never;
     requestBodies: never;
@@ -322,6 +369,86 @@ export interface operations {
             };
             /** @description Sin cookie de sesión o sesión inexistente/expirada */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_listarBloqueados: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de cuentas bloqueadas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioBloqueadoDto"][];
+                };
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_desbloquear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Desbloqueo procesado (idempotente) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Usuario no encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

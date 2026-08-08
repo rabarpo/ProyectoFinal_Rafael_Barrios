@@ -141,6 +141,74 @@
           "auth"
         ]
       }
+    },
+    "/auth/usuarios/bloqueados": {
+      "get": {
+        "operationId": "AuthController_listarBloqueados",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de cuentas bloqueadas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UsuarioBloqueadoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de comite"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista las cuentas actualmente bloqueadas (panel del comité)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/usuarios/{id}/desbloquear": {
+      "post": {
+        "operationId": "AuthController_desbloquear",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Desbloqueo procesado (idempotente)"
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de comite"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Desbloquea manualmente una cuenta (panel del comité)",
+        "tags": [
+          "auth"
+        ]
+      }
     }
   },
   "info": {
@@ -161,6 +229,40 @@
   ],
   "servers": [],
   "components": {
-    "schemas": {}
+    "schemas": {
+      "UsuarioBloqueadoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del usuario bloqueado"
+          },
+          "nombres": {
+            "type": "string",
+            "description": "Nombres completos del usuario"
+          },
+          "dni": {
+            "type": "string",
+            "description": "DNI del usuario"
+          },
+          "codigo": {
+            "type": "string",
+            "description": "Código institucional único del usuario"
+          },
+          "bloqueado_hasta": {
+            "type": "string",
+            "description": "Fin del bloqueo (ISO 8601); null si el bloqueo es indefinido",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "nombres",
+          "dni",
+          "codigo",
+          "bloqueado_hasta"
+        ]
+      }
+    }
   }
 }
