@@ -209,6 +209,296 @@
           "auth"
         ]
       }
+    },
+    "/usuarios": {
+      "post": {
+        "operationId": "UsersController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Usuario creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido (dni/correo)"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          },
+          "409": {
+            "description": "DNI/código/correo duplicado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea un Usuario para cualquiera de los cinco roles",
+        "tags": [
+          "usuarios"
+        ]
+      },
+      "get": {
+        "operationId": "UsersController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de usuarios",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UsuarioRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro rol/estado desconocido"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista usuarios, con filtro opcional por rol y estado",
+        "tags": [
+          "usuarios"
+        ]
+      }
+    },
+    "/usuarios/{id}": {
+      "get": {
+        "operationId": "UsersController_obtenerPorId",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Usuario encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta un Usuario por id",
+        "tags": [
+          "usuarios"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Usuario actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido (dni/correo)"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          },
+          "409": {
+            "description": "DNI/código/correo duplicado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Actualiza datos básicos de un Usuario (nunca el estado)",
+        "tags": [
+          "usuarios"
+        ]
+      }
+    },
+    "/usuarios/{id}/estado": {
+      "patch": {
+        "operationId": "UsersController_cambiarEstado",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Estado actualizado"
+          },
+          "400": {
+            "description": "Estado destino no permitido"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          },
+          "409": {
+            "description": "Transición desde bloqueado no permitida"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Cambia el estado activo/inactivo de un Usuario (nunca hacia/desde bloqueado)",
+        "tags": [
+          "usuarios"
+        ]
+      }
+    },
+    "/usuarios/{usuarioId}/apoderados": {
+      "post": {
+        "operationId": "ApoderadosController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Apoderado creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApoderadoRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          },
+          "409": {
+            "description": "El Usuario referenciado no es estudiante"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea un Apoderado vinculado a un Usuario con rol estudiante",
+        "tags": [
+          "apoderados"
+        ]
+      },
+      "get": {
+        "operationId": "ApoderadosController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de apoderados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApoderadoRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          },
+          "409": {
+            "description": "El Usuario referenciado no es estudiante"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista los apoderados de un Usuario con rol estudiante",
+        "tags": [
+          "apoderados"
+        ]
+      }
+    },
+    "/usuarios/{usuarioId}/apoderados/{apoderadoId}": {
+      "patch": {
+        "operationId": "ApoderadosController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Apoderado actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApoderadoRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario o Apoderado no encontrado"
+          },
+          "409": {
+            "description": "El Usuario referenciado no es estudiante"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Actualiza datos básicos de un Apoderado",
+        "tags": [
+          "apoderados"
+        ]
+      },
+      "delete": {
+        "operationId": "ApoderadosController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Apoderado eliminado"
+          },
+          "404": {
+            "description": "Usuario o Apoderado no encontrado"
+          },
+          "409": {
+            "description": "El Usuario referenciado no es estudiante"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente un Apoderado",
+        "tags": [
+          "apoderados"
+        ]
+      }
     }
   },
   "info": {
@@ -261,6 +551,93 @@
           "dni",
           "codigo",
           "bloqueado_hasta"
+        ]
+      },
+      "UsuarioRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del usuario"
+          },
+          "nombres": {
+            "type": "string",
+            "description": "Nombres completos"
+          },
+          "dni": {
+            "type": "string",
+            "description": "DNI"
+          },
+          "codigo": {
+            "type": "string",
+            "description": "Código institucional único"
+          },
+          "correo": {
+            "type": "string",
+            "description": "Correo electrónico"
+          },
+          "rol": {
+            "type": "string",
+            "description": "Rol del usuario",
+            "enum": [
+              "estudiante",
+              "docente",
+              "comite",
+              "administrador",
+              "director"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado del usuario",
+            "enum": [
+              "activo",
+              "inactivo",
+              "bloqueado"
+            ]
+          },
+          "creado_en": {
+            "type": "string",
+            "description": "Fecha de creación (ISO 8601)"
+          }
+        },
+        "required": [
+          "id",
+          "nombres",
+          "dni",
+          "codigo",
+          "correo",
+          "rol",
+          "estado",
+          "creado_en"
+        ]
+      },
+      "ApoderadoRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del apoderado"
+          },
+          "nombres": {
+            "type": "string",
+            "description": "Nombres completos del apoderado"
+          },
+          "dni": {
+            "type": "string",
+            "description": "DNI del apoderado"
+          },
+          "correo": {
+            "type": "string",
+            "description": "Correo de contacto del apoderado",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "nombres",
+          "dni",
+          "correo"
         ]
       }
     }

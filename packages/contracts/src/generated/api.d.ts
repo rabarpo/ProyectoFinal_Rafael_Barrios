@@ -172,6 +172,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/usuarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista usuarios, con filtro opcional por rol y estado */
+        get: operations["UsersController_listar"];
+        put?: never;
+        /** Crea un Usuario para cualquiera de los cinco roles */
+        post: operations["UsersController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/usuarios/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta un Usuario por id */
+        get: operations["UsersController_obtenerPorId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Actualiza datos básicos de un Usuario (nunca el estado) */
+        patch: operations["UsersController_actualizar"];
+        trace?: never;
+    };
+    "/usuarios/{id}/estado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Cambia el estado activo/inactivo de un Usuario (nunca hacia/desde bloqueado) */
+        patch: operations["UsersController_cambiarEstado"];
+        trace?: never;
+    };
+    "/usuarios/{usuarioId}/apoderados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista los apoderados de un Usuario con rol estudiante */
+        get: operations["ApoderadosController_listar"];
+        put?: never;
+        /** Crea un Apoderado vinculado a un Usuario con rol estudiante */
+        post: operations["ApoderadosController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/usuarios/{usuarioId}/apoderados/{apoderadoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Elimina físicamente un Apoderado */
+        delete: operations["ApoderadosController_eliminar"];
+        options?: never;
+        head?: never;
+        /** Actualiza datos básicos de un Apoderado */
+        patch: operations["ApoderadosController_actualizar"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -187,6 +276,40 @@ export interface components {
             codigo: string;
             /** @description Fin del bloqueo (ISO 8601); null si el bloqueo es indefinido */
             bloqueado_hasta: string | null;
+        };
+        UsuarioRespuestaDto: {
+            /** @description ID del usuario */
+            id: string;
+            /** @description Nombres completos */
+            nombres: string;
+            /** @description DNI */
+            dni: string;
+            /** @description Código institucional único */
+            codigo: string;
+            /** @description Correo electrónico */
+            correo: string;
+            /**
+             * @description Rol del usuario
+             * @enum {string}
+             */
+            rol: "estudiante" | "docente" | "comite" | "administrador" | "director";
+            /**
+             * @description Estado del usuario
+             * @enum {string}
+             */
+            estado: "activo" | "inactivo" | "bloqueado";
+            /** @description Fecha de creación (ISO 8601) */
+            creado_en: string;
+        };
+        ApoderadoRespuestaDto: {
+            /** @description ID del apoderado */
+            id: string;
+            /** @description Nombres completos del apoderado */
+            nombres: string;
+            /** @description DNI del apoderado */
+            dni: string;
+            /** @description Correo de contacto del apoderado */
+            correo: string | null;
         };
     };
     responses: never;
@@ -449,6 +572,329 @@ export interface operations {
             };
             /** @description Usuario no encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de usuarios */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioRespuestaDto"][];
+                };
+            };
+            /** @description Filtro rol/estado desconocido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usuario creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido (dni/correo) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description DNI/código/correo duplicado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_obtenerPorId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usuario encontrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioRespuestaDto"];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Usuario no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_actualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usuario actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido (dni/correo) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Usuario no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description DNI/código/correo duplicado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_cambiarEstado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Estado destino no permitido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Usuario no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Transición desde bloqueado no permitida */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApoderadosController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de apoderados */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApoderadoRespuestaDto"][];
+                };
+            };
+            /** @description Usuario no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El Usuario referenciado no es estudiante */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApoderadosController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Apoderado creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApoderadoRespuestaDto"];
+                };
+            };
+            /** @description Usuario no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El Usuario referenciado no es estudiante */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApoderadosController_eliminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Apoderado eliminado */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Usuario o Apoderado no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El Usuario referenciado no es estudiante */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApoderadosController_actualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Apoderado actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApoderadoRespuestaDto"];
+                };
+            };
+            /** @description Usuario o Apoderado no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description El Usuario referenciado no es estudiante */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
