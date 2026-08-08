@@ -10,6 +10,7 @@ import { AuthService } from './auth.service';
 import { googleOauthClientProvider } from './google-oauth.provider';
 import { GoogleOauthService } from './google-oauth.service';
 import { PasswordService } from './password.service';
+import { RecoveryService } from './recovery.service';
 import { SessionService } from './session.service';
 
 /**
@@ -28,6 +29,10 @@ import { SessionService } from './session.service';
  * necesita; importar el módulo (sin inyectar `EMAIL_SENDER` en ningún provider de PR2) no abre
  * ninguna conexión, así que el gotcha de `src/openapi.ts` sigue intacto (D8).
  * `googleOauthClientProvider` tampoco abre red al instanciarse (D2) — mismo criterio.
+ *
+ * PR3 (tarea 11.3): `RecoveryService` consume `EMAIL_SENDER` (ya importado por `EmailModule`)
+ * más `REDIS_CLIENT` (ya provisto por `redisProvider`) — ningún provider nuevo abre conexión al
+ * instanciarse, mismo criterio D8.
  */
 @Module({
   imports: [AuditoriaModule, EmailModule],
@@ -40,6 +45,7 @@ import { SessionService } from './session.service';
     AuthService,
     googleOauthClientProvider,
     GoogleOauthService,
+    RecoveryService,
   ],
 })
 export class AuthModule implements NestModule {

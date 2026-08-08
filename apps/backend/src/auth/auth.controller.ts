@@ -4,6 +4,9 @@ import { AuthGuard, type RequestConCookies } from './auth.guard';
 import { AuthService } from './auth.service';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
+import { RecoveryConfirmDto } from './dto/recovery-confirm.dto';
+import { RecoveryRequestDto } from './dto/recovery-request.dto';
+import { RecoveryService } from './recovery.service';
 import { RolesGuard } from './roles.guard';
 import type { SesionUsuario } from './sesion-usuario';
 
@@ -29,7 +32,10 @@ interface RequestConUsuario {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly recoveryService: RecoveryService,
+  ) {}
 
   @Post('login')
   @HttpCode(200)
@@ -84,6 +90,36 @@ export class AuthController {
     });
 
     return { mensaje: 'Login exitoso' };
+  }
+
+  /**
+   * google-oauth-y-recuperacion, PR3 (design.md D7, tarea 11.2, spec "Solicitud de recuperación
+   * no revela existencia del correo"). Respuesta uniforme SIEMPRE — el cuerpo y el código `202`
+   * son idénticos exista o no el correo, y también si un cooldown de 60s ya está activo (D5).
+   */
+  @Post('recovery')
+  @HttpCode(202)
+  @ApiOperation({ summary: 'Solicita un enlace de recuperación/establecimiento de contraseña' })
+  @ApiResponse({
+    status: 202,
+    description: 'Solicitud recibida (respuesta uniforme, no revela si el correo existe)',
+  })
+  async solicitarRecovery(@Body() dto: RecoveryRequestDto): Promise<{ mensaje: string }> {
+    await this.recoveryService.solicitar(dto.correo);
+    return { mensaje: 'Si el correo corresponde a una cuenta, se envió un enlace' };
+  }
+
+  /**
+   * Mismo contrato sirve para resetear una cuenta existente y para establecer la primera
+   * contraseña de una cuenta solo-OAuth (spec, tarea 11.2) — sin endpoint separado.
+   */
+  @Post('recovery/confirm')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Confirma la recuperación con el token recibido y establece la contraseña nueva' })
+  @ApiResponse({ status: 204, description: 'Contraseña actualizada, sesiones revocadas' })
+  @ApiResponse({ status: 400, description: 'Enlace inválido o expirado' })
+  async confirmarRecovery(@Body() dto: RecoveryConfirmDto): Promise<void> {
+    await this.recoveryService.confirmar(dto.token, dto.password);
   }
 
   @Post('logout')
