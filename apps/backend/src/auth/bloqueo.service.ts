@@ -117,6 +117,71 @@ export class BloqueoService {
   async resetearIntentos(userId: string): Promise<void> {
     await this.redis.del(realKey(userId)).catch(() => undefined);
   }
+
+  /**
+   * PR3 (design.md, flujo "desbloqueo manual del comité"). Análogo a D2: la transición corre
+   * como una sola sentencia condicionada dentro de `$transaction`, y solo se audita/revoca si
+   * afectó una fila. `findUnique` primero decide la señal de no-encontrado (`null`) sin escribir
+   * nada — el `AuthController` la traduce a `404`. `actorUserId` es el usuario del comité que
+   * ejecuta la acción (nunca `null`: eso es exclusivo de la expiración perezosa de D6). En READ
+   * COMMITTED, dos `desbloquearManual()` concurrentes sobre el mismo usuario dejan exactamente
+   * una fila `CUENTA_DESBLOQUEADA` — mismo razonamiento que D2 para el auto-bloqueo.
+   */
+  async desbloquearManual(
+    id: string,
+    actorUserId: string,
+  ): Promise<{ desbloqueado: boolean } | null> {
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      const usuario = await tx.usuario.findUnique({ where: { id } });
+      if (usuario === null) {
+        return { found: false as const, count: 0 };
+      }
+
+      const { count } = await tx.usuario.updateMany({
+        where: { id, estado: 'bloqueado' },
+        data: { estado: 'activo', bloqueado_hasta: null },
+      });
+
+      if (count === 1) {
+        await this.auditoria.log(
+          tx,
+          AUDIT_EVENT_TYPES.CUENTA_DESBLOQUEADA,
+          actorUserId,
+          'Usuario',
+          id,
+          { motivo: 'manual_comite' } as Prisma.InputJsonValue,
+        );
+      }
+
+      return { found: true as const, count };
+    });
+
+    if (!resultado.found) {
+      return null;
+    }
+
+    if (resultado.count === 1) {
+      await this.sessionService.revokeAllForUser(id);
+    }
+
+    return { desbloqueado: resultado.count === 1 };
+  }
+
+  /**
+   * PR3 (design.md "Contratos"). Sin filtros ni paginación (D3, alcance confirmado): el `estado`
+   * de la fila es la verdad durable, no se filtra por `bloqueado_hasta` vencido. `orderBy` deja
+   * arriba los bloqueos indefinidos (`bloqueado_hasta` NULL), que son los que más exigen acción
+   * manual.
+   */
+  async listarBloqueados(): Promise<
+    Array<Pick<Usuario, 'id' | 'nombres' | 'dni' | 'codigo' | 'bloqueado_hasta'>>
+  > {
+    return this.prisma.usuario.findMany({
+      where: { estado: 'bloqueado' },
+      select: { id: true, nombres: true, dni: true, codigo: true, bloqueado_hasta: true },
+      orderBy: [{ bloqueado_hasta: 'desc' }, { codigo: 'asc' }],
+    });
+  }
 }
 
 /**

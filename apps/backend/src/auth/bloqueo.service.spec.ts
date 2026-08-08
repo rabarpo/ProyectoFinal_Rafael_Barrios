@@ -271,6 +271,163 @@ describe('bloqueoVigente() (D7)', () => {
   });
 });
 
+/**
+ * bloqueo-desbloqueo-cuentas, PR3 (design.md D2-análogo, tareas 8.1-8.4). Mismo criterio unit que
+ * la describe de auto-bloqueo de arriba: mockea `prisma`/`auditoria`/`sessionService` para aislar
+ * la lógica del `count===1`/`found`. La concurrencia real (dos desbloqueos simultáneos) corre
+ * contra Postgres real en `test/auth/auth-desbloqueo.e2e-spec.ts`.
+ */
+describe('BloqueoService — desbloquearManual() (D2-análogo)', () => {
+  let redis: Redis;
+
+  beforeAll(() => {
+    redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6380');
+  });
+
+  afterAll(async () => {
+    await redis.quit();
+  });
+
+  function crearServiceConMocks(usuarioEncontrado: { id: string } | null, count: number) {
+    const findUnique = jest.fn().mockResolvedValue(usuarioEncontrado);
+    const updateMany = jest.fn().mockResolvedValue({ count });
+    const create = jest.fn().mockResolvedValue(undefined);
+    const tx = { usuario: { findUnique, updateMany }, eventoAuditoria: { create } };
+    const prisma = {
+      $transaction: jest.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(tx)),
+    } as unknown as ConstructorParameters<typeof BloqueoService>[1];
+    const auditoria = {
+      log: jest.fn(async (txArg: unknown, ...args: unknown[]) => {
+        const [eventType, actorId, entityType, entityId, payload] = args;
+        await (txArg as { eventoAuditoria: { create: typeof create } }).eventoAuditoria.create({
+          data: { event_type: eventType, actor_usuario_id: actorId, entity_type: entityType, entity_id: entityId, payload },
+        });
+      }),
+    } as unknown as ConstructorParameters<typeof BloqueoService>[2];
+    const revokeAllForUser = jest.fn().mockResolvedValue(undefined);
+    const sessionService = { revokeAllForUser } as unknown as ConstructorParameters<
+      typeof BloqueoService
+    >[3];
+    const service = new BloqueoService(redis, prisma, auditoria, sessionService);
+    return { service, prisma, findUnique, updateMany, create, revokeAllForUser };
+  }
+
+  // 8.1 [R6]
+  it('[R6] desbloquea una cuenta bloqueada: resetea estado/bloqueado_hasta, audita con actor=comité y revoca sesiones', async () => {
+    const { service, findUnique, updateMany, create, revokeAllForUser } = crearServiceConMocks(
+      { id: 'usuario-desbloqueo-1' },
+      1,
+    );
+
+    const resultado = await service.desbloquearManual('usuario-desbloqueo-1', 'comite-1');
+
+    expect(findUnique).toHaveBeenCalledWith({ where: { id: 'usuario-desbloqueo-1' } });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'usuario-desbloqueo-1', estado: 'bloqueado' },
+      data: { estado: 'activo', bloqueado_hasta: null },
+    });
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          event_type: AUDIT_EVENT_TYPES.CUENTA_DESBLOQUEADA,
+          actor_usuario_id: 'comite-1',
+          entity_type: 'Usuario',
+          entity_id: 'usuario-desbloqueo-1',
+          payload: { motivo: 'manual_comite' },
+        }),
+      }),
+    );
+    expect(revokeAllForUser).toHaveBeenCalledWith('usuario-desbloqueo-1');
+    expect(resultado).toEqual({ desbloqueado: true });
+  });
+
+  // 8.2 [D2-analog]
+  it('[D2-analog] es idempotente sobre una cuenta ya activa: desbloqueado=false, sin auditoría ni revocación', async () => {
+    const { service, create, revokeAllForUser } = crearServiceConMocks(
+      { id: 'usuario-desbloqueo-2' },
+      0,
+    );
+
+    const resultado = await service.desbloquearManual('usuario-desbloqueo-2', 'comite-1');
+
+    expect(create).not.toHaveBeenCalled();
+    expect(revokeAllForUser).not.toHaveBeenCalled();
+    expect(resultado).toEqual({ desbloqueado: false });
+  });
+
+  // 8.4
+  it('con un id inexistente devuelve la señal de no-encontrado sin escribir ninguna fila', async () => {
+    const { service, updateMany, create, revokeAllForUser } = crearServiceConMocks(null, 0);
+
+    const resultado = await service.desbloquearManual('usuario-inexistente', 'comite-1');
+
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+    expect(revokeAllForUser).not.toHaveBeenCalled();
+    expect(resultado).toBeNull();
+  });
+});
+
+/**
+ * bloqueo-desbloqueo-cuentas, PR3 (design.md "Contratos", tareas 9.1-9.2).
+ */
+describe('BloqueoService — listarBloqueados()', () => {
+  let redis: Redis;
+
+  beforeAll(() => {
+    redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6380');
+  });
+
+  afterAll(async () => {
+    await redis.quit();
+  });
+
+  function crearServiceConFindMany(filas: unknown[]) {
+    const findMany = jest.fn().mockResolvedValue(filas);
+    const prisma = { usuario: { findMany } } as unknown as ConstructorParameters<
+      typeof BloqueoService
+    >[1];
+    const auditoria = {} as unknown as ConstructorParameters<typeof BloqueoService>[2];
+    const sessionService = {} as unknown as ConstructorParameters<typeof BloqueoService>[3];
+    const service = new BloqueoService(redis, prisma, auditoria, sessionService);
+    return { service, findMany };
+  }
+
+  // 9.1 [R7]
+  it('[R7] consulta solo estado=bloqueado, campos mínimos, ordenado por bloqueado_hasta desc y codigo asc', async () => {
+    const filas = [{ id: '1', nombres: 'A', dni: '1', codigo: 'a', bloqueado_hasta: null }];
+    const { service, findMany } = crearServiceConFindMany(filas);
+
+    const resultado = await service.listarBloqueados();
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: { estado: 'bloqueado' },
+      select: { id: true, nombres: true, dni: true, codigo: true, bloqueado_hasta: true },
+      orderBy: [{ bloqueado_hasta: 'desc' }, { codigo: 'asc' }],
+    });
+    expect(resultado).toBe(filas);
+  });
+
+  // 9.2 [R7]
+  it('[R7] no filtra por vencimiento: una fila con bloqueado_hasta pasado igual llega en el resultado del findMany', async () => {
+    const filaVencida = {
+      id: '2',
+      nombres: 'B',
+      dni: '2',
+      codigo: 'b',
+      bloqueado_hasta: new Date(Date.now() - 60_000),
+    };
+    const { service, findMany } = crearServiceConFindMany([filaVencida]);
+
+    const resultado = await service.listarBloqueados();
+
+    // El filtrado por vencimiento no forma parte del `where` — se confirma en la aserción anterior;
+    // acá solo se confirma que la fila vencida efectivamente atraviesa la capa sin descartarse.
+    expect(resultado).toEqual([filaVencida]);
+    expect(findMany.mock.calls[0][0].where).toEqual({ estado: 'bloqueado' });
+  });
+});
+
 describe('sanarBloqueoVencido() (D6)', () => {
   function crearTxMock(count: number) {
     const updateMany = jest.fn().mockResolvedValue({ count });
