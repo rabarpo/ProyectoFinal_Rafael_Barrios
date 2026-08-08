@@ -5,14 +5,37 @@ import { AUDIT_EVENT_TYPES } from '../auditoria/audit-event-types';
 import { BloqueoService, bloqueoVigente, sanarBloqueoVencido } from './bloqueo.service';
 
 /**
- * bloqueo-desbloqueo-cuentas, PR1 (design.md D1/D5/D7 — fundación pura, sin wiring a
- * `AuthService` todavía). Corre contra un Redis real (efímero, `infra/docker/docker-compose.
- * test.yml`, mismo criterio que `recovery.service.spec.ts`/`session.service.spec.ts`): el
- * `SET NX` + `INCR` atómico y la ventana fija (TTL no reiniciado) no son simulables con mocks.
- * `bloqueoVigente()`/`sanarBloqueoVencido()` son helpers puros — el segundo se prueba con un
- * `tx` de Prisma mockeado, sin Postgres real (reservado a `test/auth/auth-bloqueo.e2e-spec.ts`
- * de PR2).
+ * bloqueo-desbloqueo-cuentas. PR1 (design.md D1/D5/D7 — fundación pura) dejó estas pruebas contra
+ * un Redis real (efímero, `infra/docker/docker-compose.test.yml`, mismo criterio que
+ * `recovery.service.spec.ts`/`session.service.spec.ts`): el `SET NX` + `INCR` atómico y la
+ * ventana fija (TTL no reiniciado) no son simulables con mocks. PR2 (design.md D2) agrega
+ * `prisma`/`auditoria`/`sessionService` al constructor para la transición de auto-bloqueo — estas
+ * pruebas de PR1 nunca cruzan el umbral (`INTENTOS_MAX=5` por defecto), así que se les pasan
+ * mocks que fallan la prueba si llegaran a invocarse. `bloqueoVigente()`/`sanarBloqueoVencido()`
+ * son helpers puros — el segundo se prueba con un `tx` de Prisma mockeado, sin Postgres real
+ * (la transición de auto-bloqueo en sí se cubre en `test/auth/auth-bloqueo.e2e-spec.ts`, PR2).
  */
+function crearMocksDependenciasBloqueo() {
+  const noDeberiaLlamarse = () => {
+    throw new Error('no se esperaba invocar esta dependencia en una prueba bajo el umbral');
+  };
+  const prisma = { $transaction: jest.fn(noDeberiaLlamarse) } as unknown as ConstructorParameters<
+    typeof BloqueoService
+  >[1];
+  const auditoria = { log: jest.fn(noDeberiaLlamarse) } as unknown as ConstructorParameters<
+    typeof BloqueoService
+  >[2];
+  const sessionService = {
+    revokeAllForUser: jest.fn(noDeberiaLlamarse),
+  } as unknown as ConstructorParameters<typeof BloqueoService>[3];
+  return { prisma, auditoria, sessionService };
+}
+
+function crearService(redisClient: Redis): BloqueoService {
+  const { prisma, auditoria, sessionService } = crearMocksDependenciasBloqueo();
+  return new BloqueoService(redisClient, prisma, auditoria, sessionService);
+}
+
 describe('BloqueoService — registrarFallo()/resetearIntentos() (D1/D5)', () => {
   let redis: Redis;
 
@@ -30,7 +53,7 @@ describe('BloqueoService — registrarFallo()/resetearIntentos() (D1/D5)', () =>
 
   // 3.1 [R2]
   it('[R2] primer fallo real fija login:intentos:{userId} en 1 con TTL de la ventana', async () => {
-    const service = new BloqueoService(redis);
+    const service = crearService(redis);
 
     await service.registrarFallo({ id: 'usuario-1' }, 'codigo-1', 'password_incorrecta');
 
@@ -43,7 +66,7 @@ describe('BloqueoService — registrarFallo()/resetearIntentos() (D1/D5)', () =>
 
   // 3.2 [D1]
   it('[D1] fallos repetidos incrementan sin reiniciar el TTL (ventana fija, no deslizante)', async () => {
-    const service = new BloqueoService(redis);
+    const service = crearService(redis);
     const usuario = { id: 'usuario-2' };
 
     await service.registrarFallo(usuario, 'codigo-2', 'password_incorrecta');
@@ -62,7 +85,7 @@ describe('BloqueoService — registrarFallo()/resetearIntentos() (D1/D5)', () =>
 
   // 3.3 [D1][adversarial]
   it('[D1][adversarial] sin usuario contable, registra en la clave señuelo con el mismo par SET NX + INCR', async () => {
-    const service = new BloqueoService(redis);
+    const service = crearService(redis);
     const codigo = 'CODIGO-INEXISTENTE';
 
     await service.registrarFallo(null, codigo, 'usuario_no_encontrado');
@@ -82,7 +105,7 @@ describe('BloqueoService — registrarFallo()/resetearIntentos() (D1/D5)', () =>
 
   // 3.4 [R2]
   it('[R2] resetearIntentos borra el contador y es no-op si la clave no existe', async () => {
-    const service = new BloqueoService(redis);
+    const service = crearService(redis);
     await redis.set('login:intentos:usuario-3', '4', 'EX', 900);
 
     await service.resetearIntentos('usuario-3');
@@ -100,7 +123,7 @@ describe('BloqueoService — registrarFallo()/resetearIntentos() (D1/D5)', () =>
       retryStrategy: () => null,
       connectTimeout: 200,
     });
-    const service = new BloqueoService(redisRoto);
+    const service = crearService(redisRoto);
 
     await expect(
       service.registrarFallo({ id: 'usuario-roto' }, 'codigo-roto', 'password_incorrecta'),
@@ -108,6 +131,119 @@ describe('BloqueoService — registrarFallo()/resetearIntentos() (D1/D5)', () =>
     await expect(service.resetearIntentos('usuario-roto')).resolves.toBeUndefined();
 
     redisRoto.disconnect();
+  });
+});
+
+/**
+ * bloqueo-desbloqueo-cuentas, PR2 (design.md D2, tareas 5.1-5.5). Unit-level: mockea
+ * `prisma`/`auditoria`/`sessionService` para aislar la lógica de disparo del umbral
+ * (`intentos >= INTENTOS_MAX`) y la condición `count===1` de la sentencia de bloqueo. La
+ * concurrencia real (dos requests que cruzan el umbral a la vez) y el estado `inactivo` inmune
+ * corren contra Postgres real en `test/auth/auth-bloqueo.e2e-spec.ts`.
+ */
+describe('BloqueoService — registrarFallo() dispara la transición de auto-bloqueo (D2)', () => {
+  let redis: Redis;
+
+  beforeAll(() => {
+    redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6380');
+  });
+
+  afterAll(async () => {
+    await redis.quit();
+  });
+
+  beforeEach(async () => {
+    await redis.flushdb();
+  });
+
+  function crearServiceConMocks(count: number) {
+    const updateMany = jest.fn().mockResolvedValue({ count });
+    const create = jest.fn().mockResolvedValue(undefined);
+    const tx = { usuario: { updateMany }, eventoAuditoria: { create } };
+    const prisma = {
+      $transaction: jest.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(tx)),
+    } as unknown as ConstructorParameters<typeof BloqueoService>[1];
+    const auditoria = {
+      log: jest.fn(async (txArg: unknown, ...args: unknown[]) => {
+        const [eventType, actorId, entityType, entityId, payload] = args;
+        await (txArg as { eventoAuditoria: { create: typeof create } }).eventoAuditoria.create({
+          data: { event_type: eventType, actor_usuario_id: actorId, entity_type: entityType, entity_id: entityId, payload },
+        });
+      }),
+    } as unknown as ConstructorParameters<typeof BloqueoService>[2];
+    const revokeAllForUser = jest.fn().mockResolvedValue(undefined);
+    const sessionService = { revokeAllForUser } as unknown as ConstructorParameters<
+      typeof BloqueoService
+    >[3];
+    const service = new BloqueoService(redis, prisma, auditoria, sessionService);
+    return { service, prisma, updateMany, create, revokeAllForUser };
+  }
+
+  // 5.4 (bajo el umbral): 4 fallos consecutivos no disparan ninguna transacción de bloqueo.
+  it('[D2] por debajo del umbral, registrarFallo nunca abre la transacción de bloqueo', async () => {
+    const { service, prisma } = crearServiceConMocks(1);
+
+    for (let i = 0; i < 4; i += 1) {
+      await service.registrarFallo({ id: 'usuario-umbral-1' }, 'codigo', 'password_incorrecta');
+    }
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // 5.1 [R4]: el quinto fallo dispara updateMany(estado activo -> bloqueado), audita y revoca.
+  it('[R4] el quinto fallo dispara la transición: updateMany condicionado a estado activo, audita y revoca sesiones', async () => {
+    const { service, prisma, updateMany, create, revokeAllForUser } = crearServiceConMocks(1);
+
+    for (let i = 0; i < 5; i += 1) {
+      await service.registrarFallo({ id: 'usuario-umbral-2' }, 'codigo', 'password_incorrecta');
+    }
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'usuario-umbral-2', estado: 'activo' },
+      data: { estado: 'bloqueado', bloqueado_hasta: expect.any(Date) },
+    });
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          event_type: AUDIT_EVENT_TYPES.CUENTA_BLOQUEADA,
+          actor_usuario_id: null,
+          entity_type: 'Usuario',
+          entity_id: 'usuario-umbral-2',
+          payload: expect.objectContaining({ motivo: 'intentos_fallidos', intentos: 5 }),
+        }),
+      }),
+    );
+    expect(revokeAllForUser).toHaveBeenCalledWith('usuario-umbral-2');
+  });
+
+  // 5.4 [D2][adversarial]: si el updateMany no afectó fila (count===0, p. ej. ya bloqueado por
+  // una carrera concurrente), no audita ni revoca de nuevo.
+  it('[D2][adversarial] cuando el updateMany no afecta ninguna fila (count===0), no audita ni revoca', async () => {
+    const { service, create, revokeAllForUser } = crearServiceConMocks(0);
+
+    for (let i = 0; i < 5; i += 1) {
+      await service.registrarFallo({ id: 'usuario-umbral-3' }, 'codigo', 'password_incorrecta');
+    }
+
+    expect(create).not.toHaveBeenCalled();
+    expect(revokeAllForUser).not.toHaveBeenCalled();
+  });
+
+  // 5.5 [R2]: 4 fallos + 1 éxito (resetearIntentos) + 4 fallos más no cruza el umbral.
+  it('[R2] un reseteo intermedio hace que 4+4 fallos no crucen el umbral de 5', async () => {
+    const { service, prisma } = crearServiceConMocks(1);
+    const usuario = { id: 'usuario-reset-1' };
+
+    for (let i = 0; i < 4; i += 1) {
+      await service.registrarFallo(usuario, 'codigo', 'password_incorrecta');
+    }
+    await service.resetearIntentos(usuario.id);
+    for (let i = 0; i < 4; i += 1) {
+      await service.registrarFallo(usuario, 'codigo', 'password_incorrecta');
+    }
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });
 
