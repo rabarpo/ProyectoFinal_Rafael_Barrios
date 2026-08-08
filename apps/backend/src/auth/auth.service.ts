@@ -14,12 +14,14 @@ export type MotivoLoginFallido =
   | 'usuario_inexistente'
   | 'password_ausente'
   | 'password_incorrecta'
-  | 'usuario_bloqueado';
+  | 'usuario_bloqueado'
+  | 'usuario_inactivo';
 
 export type MotivoLoginOAuthFallido =
   | 'token_invalido'
   | 'usuario_inexistente'
   | 'usuario_bloqueado'
+  | 'usuario_inactivo'
   | 'vinculacion_requerida'
   | 'password_incorrecta'
   | 'google_id_conflicto';
@@ -63,12 +65,26 @@ export class AuthService {
    * señuelo. La rama exitosa sana el bloqueo vencido (D6) dentro de la misma transacción que
    * audita `LOGIN_EXITOSO`, y resetea el contador (`DEL`) DESPUÉS del commit y ANTES de
    * `sessionService.crear()` — así `crear()` sigue siendo el último efecto de Redis (D7 de #4).
+   *
+   * administracion-usuarios-apoderados, PR3 (design.md D7, tarea 12.8): `usuario.estado ===
+   * 'inactivo'` se evalúa junto a `bloqueoVigente()`, nunca antes de `passwordService.verificar()`
+   * — preserva el argumento anti-oráculo de D3 (la contraseña siempre se verifica, incluso contra
+   * el hash señuelo, así que el timing no distingue "inactivo" de "contraseña incorrecta"). No
+   * cuenta para el bloqueo por fuerza bruta de `bloqueo-desbloqueo-cuentas`: `contable` más abajo
+   * ya exige `motivo === 'password_incorrecta'`, que `determinarMotivoFallo()` nunca devuelve para
+   * un `Usuario` inactivo.
    */
   async login(dto: LoginDto): Promise<ResultadoLogin> {
     const usuario = await this.prisma.usuario.findUnique({ where: { codigo: dto.codigo } });
     const passwordValida = await this.passwordService.verificar(dto.password, usuario?.password_hash);
 
-    if (!usuario || !usuario.password_hash || !passwordValida || bloqueoVigente(usuario)) {
+    if (
+      !usuario ||
+      !usuario.password_hash ||
+      !passwordValida ||
+      bloqueoVigente(usuario) ||
+      usuario.estado === 'inactivo'
+    ) {
       const motivo = this.determinarMotivoFallo(usuario, passwordValida);
       await this.auditarLoginFallido(dto.codigo, usuario, motivo);
 
@@ -136,6 +152,14 @@ export class AuthService {
     // solo en `login()` haría que un bloqueo vencido siguiera rechazando OAuth para siempre).
     if (bloqueoVigente(usuario)) {
       await this.auditarLoginOAuthFallido(correo, usuario.id, 'usuario_bloqueado');
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    // administracion-usuarios-apoderados, PR3 (design.md D7, tarea 12.8): mismo punto que el
+    // chequeo de `bloqueoVigente()` de arriba — un Usuario dado de baja rechaza OAuth igual que
+    // password, sin distinguir la causa en la respuesta.
+    if (usuario.estado === 'inactivo') {
+      await this.auditarLoginOAuthFallido(correo, usuario.id, 'usuario_inactivo');
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -282,6 +306,9 @@ export class AuthService {
     if (!usuario) return 'usuario_inexistente';
     if (!usuario.password_hash) return 'password_ausente';
     if (!passwordValida) return 'password_incorrecta';
+    // administracion-usuarios-apoderados, PR3 (design.md D7, tarea 12.2): nueva rama antes del
+    // fallback `usuario_bloqueado` — motivo interno distinguible, nunca expuesto en la respuesta.
+    if (usuario.estado === 'inactivo') return 'usuario_inactivo';
     return 'usuario_bloqueado';
   }
 

@@ -310,6 +310,52 @@ describe('AuthService.login — orquestación D3/D7', () => {
 
     expect(bloqueoService.registrarFallo).toHaveBeenCalledWith(null, 'no-existe', 'usuario_inexistente');
   });
+
+  /**
+   * administracion-usuarios-apoderados, PR3 (design.md D7, tareas 12.1-12.4, 12.7). La guarda
+   * `estado === 'inactivo'` se evalúa junto a `bloqueoVigente()`, nunca antes de la verificación de
+   * contraseña (anti-oráculo de D3/#4), y su rechazo nunca es contable para el bloqueo por fuerza
+   * bruta de `bloqueo-desbloqueo-cuentas`.
+   */
+  // 12.1/12.4 RED [R8]
+  it('[R8] Usuario.estado=inactivo con contraseña válida rechaza 401 sin crear sesión ni contar el intento', async () => {
+    const usuarioInactivo = { ...usuarioActivo, estado: 'inactivo' as const };
+    const { service, sessionService, auditoria, bloqueoService, passwordService } = crearServicio({
+      usuario: usuarioInactivo,
+      passwordValida: true,
+    });
+
+    await expect(
+      service.login({ codigo: 'seed-comite', password: 'correcta' }),
+    ).rejects.toThrow(UnauthorizedException);
+
+    // 12.7: PasswordService.verificar() corre siempre — el anti-oráculo de timing se preserva.
+    expect(passwordService.verificar).toHaveBeenCalled();
+    expect(sessionService.crear).not.toHaveBeenCalled();
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      AUDIT_EVENT_TYPES.LOGIN_FALLIDO,
+      'usuario-1',
+      'Usuario',
+      'usuario-1',
+      expect.objectContaining({ motivo: 'usuario_inactivo' }),
+    );
+    // 12.4: rechazo no contable — registrarFallo() recibe null, nunca la clave real del usuario.
+    expect(bloqueoService.registrarFallo).toHaveBeenCalledWith(null, 'seed-comite', 'usuario_inactivo');
+  });
+
+  // 12.2/12.3 RED [R8]: determinarMotivoFallo() antepone usuario_inactivo al fallback usuario_bloqueado.
+  it('[R8] Usuario.estado=inactivo tiene prioridad sobre el fallback usuario_bloqueado en determinarMotivoFallo', async () => {
+    const usuarioInactivo = { ...usuarioActivo, estado: 'inactivo' as const };
+    const { service, auditoria } = crearServicio({ usuario: usuarioInactivo, passwordValida: true });
+
+    await expect(
+      service.login({ codigo: 'seed-comite', password: 'correcta' }),
+    ).rejects.toThrow(UnauthorizedException);
+
+    const [, , , , , payload] = auditoria.log.mock.calls[0];
+    expect((payload as { motivo: string }).motivo).toBe('usuario_inactivo');
+  });
 });
 
 describe('AuthService.logout — D7 (auditoría antes de revocar en Redis)', () => {
@@ -900,5 +946,31 @@ describe('AuthService.loginConGoogle — D3 máquina de 8 estados / D7', () => {
 
     await expect(service.loginConGoogle('token-valido')).rejects.toThrow(UnauthorizedException);
     expect(bloqueoService.registrarFallo).not.toHaveBeenCalled();
+  });
+
+  // administracion-usuarios-apoderados, PR3 (design.md D7, tareas 12.5/12.6).
+  // 12.5/12.6 RED [R8]
+  it('[R8] Usuario.estado=inactivo rechaza OAuth con 401, sin sesión, auditando usuario_inactivo', async () => {
+    const usuarioInactivo: UsuarioFixture = {
+      id: 'u1',
+      correo: CORREO,
+      google_id: SUB,
+      password_hash: 'hash-existente',
+      estado: 'inactivo',
+      bloqueado_hasta: null,
+      rol: 'comite',
+    };
+    const { service, sessionService, auditoria } = crearServicio({ usuarioPorCorreo: usuarioInactivo });
+
+    await expect(service.loginConGoogle('token-valido')).rejects.toThrow(UnauthorizedException);
+    expect(sessionService.crear).not.toHaveBeenCalled();
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      AUDIT_EVENT_TYPES.LOGIN_OAUTH_FALLIDO,
+      'u1',
+      'Usuario',
+      'u1',
+      expect.objectContaining({ motivo: 'usuario_inactivo' }),
+    );
   });
 });
