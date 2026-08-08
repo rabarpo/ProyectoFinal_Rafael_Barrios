@@ -34,6 +34,12 @@ import { SessionService } from './session.service';
  * PR3 (tarea 11.3): `RecoveryService` consume `EMAIL_SENDER` (ya importado por `EmailModule`)
  * más `REDIS_CLIENT` (ya provisto por `redisProvider`) — ningún provider nuevo abre conexión al
  * instanciarse, mismo criterio D8.
+ *
+ * administracion-usuarios-apoderados, PR1 (design.md D3, tarea 1.1): `exports: [SessionService]`
+ * aditivo. `UsersModule` necesita revocar sesiones al desactivar un `Usuario` (D6) y `AuthGuard`
+ * se resuelve en el contexto del módulo que declara el controlador — sin este export, `UsersModule`
+ * no podría inyectar `SessionService`. Redeclarar `SessionService`/`redisProvider` ahí abriría un
+ * segundo cliente Redis y una segunda instancia de sesiones; descartado (design.md D3).
  */
 @Module({
   imports: [AuditoriaModule, EmailModule],
@@ -49,6 +55,7 @@ import { SessionService } from './session.service';
     GoogleOauthService,
     RecoveryService,
   ],
+  exports: [SessionService],
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

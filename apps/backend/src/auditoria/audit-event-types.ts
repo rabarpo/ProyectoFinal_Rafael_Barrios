@@ -11,6 +11,9 @@
 // bloqueo-desbloqueo-cuentas (PR1, tarea 2.1; design.md "Cambios de archivos"): claves aditivas
 // para la transición automática a `bloqueado` (fuerza bruta, D2) y el desbloqueo por doble vía
 // (expiración perezosa D6, manual del comité). Tampoco tocan la cláusula `WHEN` de ADR-0016.
+// administracion-usuarios-apoderados (PR1, tarea 2.1; design.md D4): claves aditivas para el CRUD
+// de `Usuario`/`Apoderado`. Ninguna de las siete toca un `Voto`, así que tampoco activan la
+// obligación versionada de ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4].
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
@@ -23,6 +26,13 @@ export const AUDIT_EVENT_TYPES = {
   RECUPERACION_COMPLETADA: 'RECUPERACION_COMPLETADA',
   CUENTA_BLOQUEADA: 'CUENTA_BLOQUEADA',
   CUENTA_DESBLOQUEADA: 'CUENTA_DESBLOQUEADA',
+  USUARIO_CREADO: 'USUARIO_CREADO',
+  USUARIO_ACTUALIZADO: 'USUARIO_ACTUALIZADO',
+  USUARIO_DESACTIVADO: 'USUARIO_DESACTIVADO',
+  USUARIO_REACTIVADO: 'USUARIO_REACTIVADO',
+  APODERADO_CREADO: 'APODERADO_CREADO',
+  APODERADO_ACTUALIZADO: 'APODERADO_ACTUALIZADO',
+  APODERADO_ELIMINADO: 'APODERADO_ELIMINADO',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];
