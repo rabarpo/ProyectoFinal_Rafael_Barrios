@@ -41,50 +41,50 @@ diff over budget.
 ## PR 1 — Foundation (base = feature/tracker branch)
 
 ### Phase 1: Schema — `bloqueado_hasta`
-- [ ] 1.1 Add `bloqueado_hasta DateTime? @db.Timestamptz(3)` to `Usuario` in
+- [x] 1.1 Add `bloqueado_hasta DateTime? @db.Timestamptz(3)` to `Usuario` in
       `apps/backend/prisma/schema.prisma` [R1]
-- [ ] 1.2 Generate migration `<ts>_bloqueado_hasta_usuario`, additive nullable, stacked after
+- [x] 1.2 Generate migration `<ts>_bloqueado_hasta_usuario`, additive nullable, stacked after
       `<ts>_google_id_usuario`
-- [ ] 1.3 RED: `test/schema/usuario.spec.ts` asserts `bloqueado_hasta` exists, nullable
+- [x] 1.3 RED: `test/schema/usuario.spec.ts` asserts `bloqueado_hasta` exists, nullable
       `timestamptz(3)` — fails pre-migration [R1]
-- [ ] 1.4 GREEN 1.3 via 1.2's migration
+- [x] 1.4 GREEN 1.3 via 1.2's migration
 
 ### Phase 2: Audit event types (additive)
-- [ ] 2.1 Modify `apps/backend/src/auditoria/audit-event-types.ts`: add `CUENTA_BLOQUEADA`,
+- [x] 2.1 Modify `apps/backend/src/auditoria/audit-event-types.ts`: add `CUENTA_BLOQUEADA`,
       `CUENTA_DESBLOQUEADA` to `AUDIT_EVENT_TYPES`, additive only [R4][R6]
-- [ ] 2.2 GREEN: `test/schema/auditoria.spec.ts` confirms ADR-0016 trigger's `WHEN` clause still
+- [x] 2.2 GREEN: `test/schema/auditoria.spec.ts` confirms ADR-0016 trigger's `WHEN` clause still
       lists only `VOTO`/`RECHAZO`, unaffected by the two new keys [R4][R6]
 
 ### Phase 3: `BloqueoService` — counter and pure helpers (D1/D5/D7)
-- [ ] 3.1 RED: `registrarFallo()` on a real `Usuario` sets `login:intentos:{userId}` to `1` with
+- [x] 3.1 RED: `registrarFallo()` on a real `Usuario` sets `login:intentos:{userId}` to `1` with
       TTL `INTENTOS_VENTANA_SEGUNDOS` (900) on the first fallo [R2]
-- [ ] 3.2 RED: repeated `registrarFallo()` calls increment without resetting the TTL (fixed, not
+- [x] 3.2 RED: repeated `registrarFallo()` calls increment without resetting the TTL (fixed, not
       sliding, window) [R2][D1]
-- [ ] 3.3 RED: when no accountable `Usuario` exists, `registrarFallo(null, codigo, motivo)` writes
+- [x] 3.3 RED: when no accountable `Usuario` exists, `registrarFallo(null, codigo, motivo)` writes
       to `login:intentos:anon:{sha256(codigo.trim().toLowerCase()).slice(0,32)}` using the exact
       same `SET NX` + `INCR` pair, never a real `login:intentos:{userId}` key [D1][adversarial]
-- [ ] 3.4 RED: `resetearIntentos(userId)` issues `DEL login:intentos:{userId}` and is a no-op when
+- [x] 3.4 RED: `resetearIntentos(userId)` issues `DEL login:intentos:{userId}` and is a no-op when
       the key does not exist [R2]
-- [ ] 3.5 RED: `registrarFallo()`/`resetearIntentos()` never throw when Redis is unreachable
+- [x] 3.5 RED: `registrarFallo()`/`resetearIntentos()` never throw when Redis is unreachable
       (`.catch(() => undefined)`) [D5][adversarial]
-- [ ] 3.6 Create `apps/backend/src/auth/bloqueo.service.ts`: `registrarFallo(usuario, codigo,
+- [x] 3.6 Create `apps/backend/src/auth/bloqueo.service.ts`: `registrarFallo(usuario, codigo,
       motivo)`, `resetearIntentos(userId)` — GREEN 3.1-3.5 [R2][D1][D5]
-- [ ] 3.7 RED: `bloqueoVigente(usuario)` — `true` only when `estado==='bloqueado'` and
+- [x] 3.7 RED: `bloqueoVigente(usuario)` — `true` only when `estado==='bloqueado'` and
       (`bloqueado_hasta===null` or `bloqueado_hasta` in the future); `false` for `estado!=='bloqueado'`
       regardless of `bloqueado_hasta` [D7]
-- [ ] 3.8 Add exported pure function `bloqueoVigente()` to `bloqueo.service.ts` — GREEN 3.7 [D7]
-- [ ] 3.9 RED: `sanarBloqueoVencido(tx, usuario)` — `updateMany({estado:'bloqueado',
+- [x] 3.8 Add exported pure function `bloqueoVigente()` to `bloqueo.service.ts` — GREEN 3.7 [D7]
+- [x] 3.9 RED: `sanarBloqueoVencido(tx, usuario)` — `updateMany({estado:'bloqueado',
       bloqueado_hasta:{lt: now}}) → activo/null`; audits `CUENTA_DESBLOQUEADA` with `actor: null`,
       `motivo: 'expiracion_automatica'` only when `count===1`; no-op when `bloqueado_hasta` still
       future or row already `activo` [R5][D6]
-- [ ] 3.10 Add `sanarBloqueoVencido(tx, usuario)` to `bloqueo.service.ts` — GREEN 3.9 [R5][D6]
+- [x] 3.10 Add `sanarBloqueoVencido(tx, usuario)` to `bloqueo.service.ts` — GREEN 3.9 [R5][D6]
 
 ### Phase 4: Env wiring
-- [ ] 4.1 Modify `turbo.json`: `test:e2e.env` += `LOGIN_INTENTOS_MAX`,
+- [x] 4.1 Modify `turbo.json`: `test:e2e.env` += `LOGIN_INTENTOS_MAX`,
       `LOGIN_INTENTOS_VENTANA_SEGUNDOS`, `LOGIN_BLOQUEO_SEGUNDOS`
-- [ ] 4.2 Modify `README.md` / `docs/onboarding.md`: document the three variables alongside
+- [x] 4.2 Modify `README.md` / `docs/onboarding.md`: document the three variables alongside
       `SESSION_TTL_SECONDS`/`RECOVERY_TTL_SECONDS`
-- [ ] 4.3 GREEN: `pnpm openapi:extract` still completes with no Postgres/Redis connection
+- [x] 4.3 GREEN: `pnpm openapi:extract` still completes with no Postgres/Redis connection
 
 ## PR 2 — Auto-bloqueo Wiring (base = PR 1 branch)
 
