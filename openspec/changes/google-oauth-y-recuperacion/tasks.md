@@ -92,65 +92,65 @@ route + e2e, D3); split PR3 into PR3a (`solicitar()`, D7 request leg) and PR3b (
 ## PR 2 — Google OAuth Login (base = PR 1 branch)
 
 ### Phase 6: `GoogleOauthService` (D2, fail-closed)
-- [ ] 6.1 RED: `google-oauth.service.spec.ts` — `GOOGLE_CLIENT_ID` or `GOOGLE_HOSTED_DOMAINS` unset
+- [x] 6.1 RED: `google-oauth.service.spec.ts` — `GOOGLE_CLIENT_ID` or `GOOGLE_HOSTED_DOMAINS` unset
       or empty ⇒ every `verificar()` call rejects at request time (no exception thrown at
       construction/`onModuleInit`) [R2][D2]
-- [ ] 6.2 RED: token with `hd` absent is rejected (personal `@gmail.com` accounts must not pass)
+- [x] 6.2 RED: token with `hd` absent is rejected (personal `@gmail.com` accounts must not pass)
       [R2][D2]
-- [ ] 6.3 RED: token with `hd` present but not in `GOOGLE_HOSTED_DOMAINS` (normalized
+- [x] 6.3 RED: token with `hd` present but not in `GOOGLE_HOSTED_DOMAINS` (normalized
       `trim().toLowerCase()`) is rejected [R2][D2]
-- [ ] 6.4 RED: token with `email_verified === false` is rejected [R2][D2]
-- [ ] 6.5 RED: token with `aud !== GOOGLE_CLIENT_ID` (audience mismatch) is rejected [R2][D2]
-- [ ] 6.6 Create `apps/backend/src/auth/google-oauth.provider.ts` (`GOOGLE_OAUTH_CLIENT` token,
+- [x] 6.4 RED: token with `email_verified === false` is rejected [R2][D2]
+- [x] 6.5 RED: token with `aud !== GOOGLE_CLIENT_ID` (audience mismatch) is rejected [R2][D2]
+- [x] 6.6 Create `apps/backend/src/auth/google-oauth.provider.ts` (`GOOGLE_OAUTH_CLIENT` token,
       `OAuth2Client`, substitutable via `overrideProvider` in tests)
-- [ ] 6.7 Create `apps/backend/src/auth/google-oauth.service.ts`: `verificar(idToken)` calling
+- [x] 6.7 Create `apps/backend/src/auth/google-oauth.service.ts`: `verificar(idToken)` calling
       `verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID })`, validating `email_verified`, `hd`
       membership, returning the validated payload — GREEN 6.1-6.5 [R2][D2]
-- [ ] 6.8 GREEN: a syntactically valid but signature-invalid token is rejected without reaching the
+- [x] 6.8 GREEN: a syntactically valid but signature-invalid token is rejected without reaching the
       domain checks (library-level rejection surfaces as the same uniform failure) [R2]
 
 ### Phase 7: `AuthService.loginConGoogle` — D3 state machine
-- [ ] 7.1 RED: correo not matching any `Usuario` ⇒ uniform `401`, no `Usuario` created, audits
+- [x] 7.1 RED: correo not matching any `Usuario` ⇒ uniform `401`, no `Usuario` created, audits
       `LOGIN_OAUTH_FALLIDO` `{ correo, motivo: 'usuario_inexistente' }` [R3][D3#1]
-- [ ] 7.2 RED: `estado === 'bloqueado'` ⇒ uniform `401`, audits `LOGIN_OAUTH_FALLIDO`
+- [x] 7.2 RED: `estado === 'bloqueado'` ⇒ uniform `401`, audits `LOGIN_OAUTH_FALLIDO`
       `motivo: 'usuario_bloqueado'` [D3#2]
-- [ ] 7.3 RED: `google_id === sub` (already linked) ⇒ session + cookie without requiring `password`
+- [x] 7.3 RED: `google_id === sub` (already linked) ⇒ session + cookie without requiring `password`
       in the body, audits `LOGIN_OAUTH_EXITOSO` `vinculacion: 'ya_vinculada'` [R4][R5][D3#3]
-- [ ] 7.4 RED: `google_id === null && password_hash === null` (TOFU, case 4) ⇒ links `google_id` +
+- [x] 7.4 RED: `google_id === null && password_hash === null` (TOFU, case 4) ⇒ links `google_id` +
       creates session, audits `…_EXITOSO` `vinculacion: 'primer_uso'` [R4][D3#4]
-- [ ] 7.5 RED: `google_id === null`, `password_hash` present, no `password` in body ⇒ `409
+- [x] 7.5 RED: `google_id === null`, `password_hash` present, no `password` in body ⇒ `409
       { codigo: 'VINCULACION_REQUERIDA' }`, no session, no linking, audits `LOGIN_OAUTH_FALLIDO`
       `motivo: 'vinculacion_requerida'` [R4][D3#5]
-- [ ] 7.6 RED: same precondition as 7.5, correct `password` supplied ⇒ links `google_id` + creates
+- [x] 7.6 RED: same precondition as 7.5, correct `password` supplied ⇒ links `google_id` + creates
       session, audits `…_EXITOSO` `vinculacion: 'password_confirmada'` [R4][D3#6]
-- [ ] 7.7 RED: same precondition as 7.5, incorrect `password` ⇒ uniform `401`, audits
+- [x] 7.7 RED: same precondition as 7.5, incorrect `password` ⇒ uniform `401`, audits
       `LOGIN_OAUTH_FALLIDO` `motivo: 'password_incorrecta'` [R4][D3#7]
-- [ ] 7.8 RED: `google_id !== null && !== sub`, or `sub` already linked to a **different** `Usuario`
+- [x] 7.8 RED: `google_id !== null && !== sub`, or `sub` already linked to a **different** `Usuario`
       ⇒ uniform `401` (not a `500` from `P2002`), audits `LOGIN_OAUTH_FALLIDO`
       `motivo: 'google_id_conflicto'` [D3#8][adversarial]
-- [ ] 7.9 Modify `apps/backend/src/auth/auth.service.ts`: add `loginConGoogle(idToken, password?)`
+- [x] 7.9 Modify `apps/backend/src/auth/auth.service.ts`: add `loginConGoogle(idToken, password?)`
       implementing D3's 8-state table — GREEN 7.1-7.8 [R2][R3][R4][R5][D3]
-- [ ] 7.10 RED: audit write failure inside the `$transaction()` for any of the `…_EXITOSO` branches
+- [x] 7.10 RED: audit write failure inside the `$transaction()` for any of the `…_EXITOSO` branches
       leaves no `session:{id}` key in Redis and no cookie issued [R9][D7]
-- [ ] 7.11 GREEN 7.10 via transaction ordering: `$transaction(log + UPDATE google_id when linking)`
+- [x] 7.11 GREEN 7.10 via transaction ordering: `$transaction(log + UPDATE google_id when linking)`
       commits before `SessionService.crear(userId, rol, sessionId)` runs, `sessionId` pre-generated
       [R9][D7]
 
 ### Phase 8: `AuthController` — `POST auth/google`
-- [ ] 8.1 Create `apps/backend/src/auth/dto/google-login.dto.ts`: `GoogleLoginDto`
+- [x] 8.1 Create `apps/backend/src/auth/dto/google-login.dto.ts`: `GoogleLoginDto`
       (`idToken: string`, `password?: string`) with `@ApiProperty`, manual validation (no
       `class-validator` installed)
-- [ ] 8.2 Modify `apps/backend/src/auth/auth.controller.ts`: `POST auth/google` — `200` + cookie
+- [x] 8.2 Modify `apps/backend/src/auth/auth.controller.ts`: `POST auth/google` — `200` + cookie
       `seei_session` / `401 { message: 'Credenciales inválidas' }` / `409 { codigo:
       'VINCULACION_REQUERIDA' }`, `@ApiOperation`/`@ApiResponse`
-- [ ] 8.3 Modify `apps/backend/src/auth/auth.module.ts`: import `EmailModule`, register
+- [x] 8.3 Modify `apps/backend/src/auth/auth.module.ts`: import `EmailModule`, register
       `GoogleOauthService` + `GOOGLE_OAUTH_CLIENT` provider
-- [ ] 8.4 `test/auth/auth-google.e2e-spec.ts`: exercise the 8 states of D3 end to end using
+- [x] 8.4 `test/auth/auth-google.e2e-spec.ts`: exercise the 8 states of D3 end to end using
       `overrideProvider(GOOGLE_OAUTH_CLIENT)` with a stub client, asserting response code/body,
       Redis session presence/absence, `Usuario.google_id`, and exactly one audit row per path
-- [ ] 8.5 RED/GREEN (adversarial): no HTTP response body, log line, or `EventoAuditoria` payload
+- [x] 8.5 RED/GREEN (adversarial): no HTTP response body, log line, or `EventoAuditoria` payload
       across any OAuth login path contains the raw ID token or the submitted `password` [adversarial]
-- [ ] 8.6 GREEN: `pnpm openapi:extract` still completes with no live Google/Postgres/Redis connection
+- [x] 8.6 GREEN: `pnpm openapi:extract` still completes with no live Google/Postgres/Redis connection
       [R2][D2]
 
 ## PR 3 — Recovery Flow (base = PR 2 branch)
