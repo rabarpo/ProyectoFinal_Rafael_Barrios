@@ -6,6 +6,8 @@ import { AuthModule } from '../auth/auth.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { AniosEscolaresController } from './anios-escolares.controller';
 import { AniosEscolaresService } from './anios-escolares.service';
+import { AulasController } from './aulas.controller';
+import { AulasService } from './aulas.service';
 import { GradosController } from './grados.controller';
 import { GradosService } from './grados.service';
 import { NivelesController } from './niveles.controller';
@@ -20,22 +22,41 @@ import { SeccionesService } from './secciones.service';
  *
  * `AcademicoModule implements NestModule` desde PR2 (D0, snippet literal de la tarea 1.1).
  * `cookieParser()` se extiende a cada controlador nuevo (`NivelesController`, `GradosController`
- * desde PR4, `SeccionesController` desde PR5) conforme se registra en los PR siguientes (D6 de
- * `auth-server-sessions`, nunca en `main.ts`); omitir un controlador de `forRoutes(...)` hace que
- * todas sus rutas respondan `401`.
+ * desde PR4, `SeccionesController` desde PR5, `AulasController` desde PR6) conforme se registra en
+ * los PR siguientes (D6 de `auth-server-sessions`, nunca en `main.ts`); omitir un controlador de
+ * `forRoutes(...)` hace que todas sus rutas respondan `401`.
  *
  * Ningún provider abre conexión al instanciarse, así que `src/openapi.ts` sigue extrayendo el
  * contrato sin Postgres ni Redis vivos (gotcha D1 de `system-scaffolding`).
  */
 @Module({
   imports: [AuthModule, AuditoriaModule],
-  controllers: [AniosEscolaresController, NivelesController, GradosController, SeccionesController],
-  providers: [PrismaService, AniosEscolaresService, NivelesService, GradosService, SeccionesService],
+  controllers: [
+    AniosEscolaresController,
+    NivelesController,
+    GradosController,
+    SeccionesController,
+    AulasController,
+  ],
+  providers: [
+    PrismaService,
+    AniosEscolaresService,
+    NivelesService,
+    GradosService,
+    SeccionesService,
+    AulasService,
+  ],
 })
 export class AcademicoModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer
       .apply(cookieParser())
-      .forRoutes(AniosEscolaresController, NivelesController, GradosController, SeccionesController);
+      .forRoutes(
+        AniosEscolaresController,
+        NivelesController,
+        GradosController,
+        SeccionesController,
+        AulasController,
+      );
   }
 }

@@ -426,6 +426,43 @@ export interface paths {
         patch: operations["SeccionesController_actualizar"];
         trace?: never;
     };
+    "/aulas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista aulas, con filtro opcional por grado_id, seccion_id, anio_escolar_id y turno */
+        get: operations["AulasController_listar"];
+        put?: never;
+        /** Crea un Aula acotada a un Grado, una Seccion y un AnioEscolar existentes y coherentes */
+        post: operations["AulasController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aulas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta un Aula por id */
+        get: operations["AulasController_obtenerPorId"];
+        put?: never;
+        post?: never;
+        /** Elimina físicamente un Aula sin Matricula/ProcesoAula dependiente */
+        delete: operations["AulasController_eliminar"];
+        options?: never;
+        head?: never;
+        /** Actualiza el turno de un Aula (nunca su Grado/Seccion/AnioEscolar) */
+        patch: operations["AulasController_actualizar"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -506,6 +543,21 @@ export interface components {
             /** @description ID del Grado al que pertenece la sección */
             grado_id: string;
             /** @description ID del AnioEscolar al que pertenece la sección */
+            anio_escolar_id: string;
+        };
+        AulaRespuestaDto: {
+            /** @description ID del aula */
+            id: string;
+            /**
+             * @description Turno del aula
+             * @enum {string}
+             */
+            turno: "manana" | "tarde";
+            /** @description ID del Grado al que pertenece el aula */
+            grado_id: string;
+            /** @description ID de la Seccion a la que pertenece el aula */
+            seccion_id: string;
+            /** @description ID del AnioEscolar al que pertenece el aula */
             anio_escolar_id: string;
         };
     };
@@ -1789,6 +1841,181 @@ export interface operations {
             };
             /** @description Nombre duplicado dentro de la combinación */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AulasController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de aulas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AulaRespuestaDto"][];
+                };
+            };
+            /** @description Filtro malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AulasController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aula creada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AulaRespuestaDto"];
+                };
+            };
+            /** @description turno fuera de {manana, tarde} */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Grado/Seccion/AnioEscolar inexistente, combinación duplicada o incoherencia jerárquica */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AulasController_obtenerPorId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aula encontrada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AulaRespuestaDto"];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aula no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AulasController_eliminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aula eliminada */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aula no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Existe Matricula o ProcesoAula dependiente */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AulasController_actualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aula actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AulaRespuestaDto"];
+                };
+            };
+            /** @description turno fuera de {manana, tarde} */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aula no encontrada */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

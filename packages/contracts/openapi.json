@@ -1142,6 +1142,164 @@
           "secciones"
         ]
       }
+    },
+    "/aulas": {
+      "post": {
+        "operationId": "AulasController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Aula creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AulaRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "turno fuera de {manana, tarde}"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          },
+          "409": {
+            "description": "Grado/Seccion/AnioEscolar inexistente, combinación duplicada o incoherencia jerárquica"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea un Aula acotada a un Grado, una Seccion y un AnioEscolar existentes y coherentes",
+        "tags": [
+          "aulas"
+        ]
+      },
+      "get": {
+        "operationId": "AulasController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de aulas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AulaRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro malformado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista aulas, con filtro opcional por grado_id, seccion_id, anio_escolar_id y turno",
+        "tags": [
+          "aulas"
+        ]
+      }
+    },
+    "/aulas/{id}": {
+      "get": {
+        "operationId": "AulasController_obtenerPorId",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Aula encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AulaRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "Aula no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta un Aula por id",
+        "tags": [
+          "aulas"
+        ]
+      },
+      "patch": {
+        "operationId": "AulasController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Aula actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AulaRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "turno fuera de {manana, tarde}"
+          },
+          "404": {
+            "description": "Aula no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Actualiza el turno de un Aula (nunca su Grado/Seccion/AnioEscolar)",
+        "tags": [
+          "aulas"
+        ]
+      },
+      "delete": {
+        "operationId": "AulasController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Aula eliminada"
+          },
+          "404": {
+            "description": "Aula no encontrada"
+          },
+          "409": {
+            "description": "Existe Matricula o ProcesoAula dependiente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente un Aula sin Matricula/ProcesoAula dependiente",
+        "tags": [
+          "aulas"
+        ]
+      }
     }
   },
   "info": {
@@ -1368,6 +1526,42 @@
           "id",
           "nombre",
           "grado_id",
+          "anio_escolar_id"
+        ]
+      },
+      "AulaRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del aula"
+          },
+          "turno": {
+            "type": "string",
+            "description": "Turno del aula",
+            "enum": [
+              "manana",
+              "tarde"
+            ]
+          },
+          "grado_id": {
+            "type": "string",
+            "description": "ID del Grado al que pertenece el aula"
+          },
+          "seccion_id": {
+            "type": "string",
+            "description": "ID de la Seccion a la que pertenece el aula"
+          },
+          "anio_escolar_id": {
+            "type": "string",
+            "description": "ID del AnioEscolar al que pertenece el aula"
+          }
+        },
+        "required": [
+          "id",
+          "turno",
+          "grado_id",
+          "seccion_id",
           "anio_escolar_id"
         ]
       }
