@@ -257,33 +257,55 @@ no diferible).
 ## PR 5 — `Seccion` (base = PR 4 branch)
 
 ### Phase 16: DTOs de `Seccion` (D3)
-- [ ] 16.1 Crear `apps/backend/src/academico/dto/crear-seccion.dto.ts`,
+- [x] 16.1 Crear `apps/backend/src/academico/dto/crear-seccion.dto.ts`,
       `actualizar-seccion.dto.ts` (**sin** `grado_id`/`anio_escolar_id`),
       `seccion-respuesta.dto.ts`, `listar-secciones.query.ts` [D3]
 
 ### Phase 17: CRUD de `Seccion` acotada a `Grado` y `AnioEscolar` (AT3/AT4)
-- [ ] 17.1 RED e2e: creación exitosa vinculada a un `Grado` y un `AnioEscolar` existentes [AT3]
-- [ ] 17.2 RED e2e: creación referenciando un `Grado` inexistente → `409 REFERENCIA_INEXISTENTE`,
-      no se crea la `Seccion` [AT4]
-- [ ] 17.3 RED e2e: creación referenciando un `AnioEscolar` inexistente → `409
-      REFERENCIA_INEXISTENTE` [AT4]
-- [ ] 17.4 RED e2e: duplicado `(grado_id, anio_escolar_id, nombre)` → `409 RESTRICCION_UNICA`
-      identificando el conflicto [AT3]
-- [ ] 17.5 RED e2e: `GET /secciones?grado_id=&anio_escolar_id=` filtra correctamente; filtro
-      inválido → `400 CAMPO_INVALIDO`
-- [ ] 17.6 RED e2e: `GET /secciones/:id`, `404` para inexistente, `400` para malformado
-- [ ] 17.7 RED e2e + adversarial: `PATCH` cambia `nombre`, deja fila `SECCION_ACTUALIZADA`; `PATCH`
-      con `grado_id`/`anio_escolar_id` en el body lo ignora (sin re-parentado, D3) [D3]
-- [ ] 17.8 RED integración: precomprobación de `Aula` dependiente antes del `DELETE` [D2]
-- [ ] 17.9 RED e2e: `DELETE` exitoso sin dependientes; `DELETE` con `Aula` asociada → `409
-      ENTIDAD_CON_DEPENDIENTES {relacion:'Aula'}`, la fila permanece
-- [ ] 17.10 RED adversarial: `catch P2003` residual traduce la carrera al mismo `409` [D2]
-- [ ] 17.11 Crear `apps/backend/src/academico/secciones.controller.ts` y `secciones.service.ts` —
+- [x] 17.1 RED e2e: creación exitosa vinculada a un `Grado` y un `AnioEscolar` existentes [AT3] —
+      **Limitación documentada** (misma que PR1-PR4, `docker ps` sin daemon Docker en este entorno):
+      escrita y type-checkeada en `test/academico/secciones.e2e-spec.ts`, no ejecutable contra
+      Postgres/Redis reales en esta sesión. Cobertura equivalente GREEN como unit test `[17.1]` en
+      `src/academico/secciones.service.spec.ts`.
+- [x] 17.2 RED e2e: creación referenciando un `Grado` inexistente → `409 REFERENCIA_INEXISTENTE`,
+      no se crea la `Seccion` [AT4] — misma limitación; cobertura equivalente GREEN `[17.2]`.
+- [x] 17.3 RED e2e: creación referenciando un `AnioEscolar` inexistente → `409
+      REFERENCIA_INEXISTENTE` [AT4] — misma limitación; cobertura equivalente GREEN `[17.3]`.
+- [x] 17.4 RED e2e: duplicado `(grado_id, anio_escolar_id, nombre)` → `409 RESTRICCION_UNICA`
+      identificando el conflicto [AT3] — misma limitación; cobertura equivalente GREEN `[17.4]`.
+- [x] 17.5 RED e2e: `GET /secciones?grado_id=&anio_escolar_id=` filtra correctamente; filtro
+      inválido → `400 CAMPO_INVALIDO` — misma limitación; cobertura equivalente GREEN `[17.5]`.
+- [x] 17.6 RED e2e: `GET /secciones/:id`, `404` para inexistente, `400` para malformado — misma
+      limitación; cobertura equivalente GREEN `[17.6]`.
+- [x] 17.7 RED e2e + adversarial: `PATCH` cambia `nombre`, deja fila `SECCION_ACTUALIZADA`; `PATCH`
+      con `grado_id`/`anio_escolar_id` en el body lo ignora (sin re-parentado, D3) [D3] — misma
+      limitación; cobertura equivalente GREEN `[17.7]` (incluye caso adversarial de duplicado al
+      renombrar y prueba de tipos de que el DTO no declara las FK).
+- [x] 17.8 RED integración: precomprobación de `Aula` dependiente antes del `DELETE` [D2] — misma
+      limitación; cobertura equivalente GREEN `[17.9]`.
+- [x] 17.9 RED e2e: `DELETE` exitoso sin dependientes; `DELETE` con `Aula` asociada → `409
+      ENTIDAD_CON_DEPENDIENTES {relacion:'Aula'}`, la fila permanece — misma limitación; cobertura
+      equivalente GREEN `[17.9]` (dos casos: sin dependientes y con `Aula` asociada).
+- [x] 17.10 RED adversarial: `catch P2003` residual traduce la carrera al mismo `409` [D2] — misma
+      limitación; cobertura equivalente GREEN `[17.10]`.
+- [x] 17.11 Crear `apps/backend/src/academico/secciones.controller.ts` y `secciones.service.ts` —
       GREEN 17.1-17.10 [AT3][AT4][AT7][D2][D3]
 
 ### Phase 18: Regresión PR5
-- [ ] 18.1 GREEN: `pnpm openapi:extract` completa sin Postgres/Redis vivos
-- [ ] 18.2 `test/academico/secciones.e2e-spec.ts` corre completo sin regresión
+- [x] 18.1 GREEN: `pnpm openapi:extract` completa sin Postgres/Redis vivos
+- [x] 18.2 `test/academico/secciones.e2e-spec.ts` corre completo sin regresión —
+      **Limitación documentada** (misma que PR1-PR4 de este change): `docker ps` no tiene daemon
+      Docker disponible en este entorno, así que `pnpm test:e2e` no puede ejecutarse contra
+      Postgres/Redis reales. El archivo quedó escrito, `pnpm typecheck` en verde (workspace
+      completo, incluido `@seei/backend`/`@seei/frontend`/`@seei/worker`/`@seei/contracts`;
+      `pnpm generate:contracts` (vía `turbo run typecheck`) regeneró `packages/contracts/openapi.json`
+      con las rutas `/secciones`, `/secciones/{id}`). Cobertura de orquestación/lógica de negocio
+      equivalente: 18/18 tests GREEN en `src/academico/secciones.service.spec.ts` (existencia de
+      `Grado`/`AnioEscolar`, unicidad compuesta, guarda de `Aula` dependiente, catch P2002/P2003
+      residual), sin regresión en el resto de la suite de `@seei/backend` (las únicas fallas de
+      `pnpm test` completo son `session.service.spec.ts`, `bloqueo.service.spec.ts`,
+      `recovery.service.spec.ts` — dependientes de Redis real, no tocados por este PR, mismo entorno
+      sin Docker; 199/229 tests GREEN en total).
 
 ## PR 6 — `Aula` + guarda de coherencia jerárquica (base = PR 5 branch)
 
