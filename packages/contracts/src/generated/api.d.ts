@@ -389,6 +389,43 @@ export interface paths {
         patch: operations["GradosController_actualizar"];
         trace?: never;
     };
+    "/secciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista secciones, con filtro opcional por grado_id y anio_escolar_id */
+        get: operations["SeccionesController_listar"];
+        put?: never;
+        /** Crea una Seccion acotada a un Grado y un AnioEscolar existentes */
+        post: operations["SeccionesController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/secciones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta una Seccion por id */
+        get: operations["SeccionesController_obtenerPorId"];
+        put?: never;
+        post?: never;
+        /** Elimina físicamente una Seccion sin Aula dependiente */
+        delete: operations["SeccionesController_eliminar"];
+        options?: never;
+        head?: never;
+        /** Actualiza el nombre de una Seccion (nunca su Grado/AnioEscolar) */
+        patch: operations["SeccionesController_actualizar"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -460,6 +497,16 @@ export interface components {
             nombre: string;
             /** @description ID del Nivel al que pertenece el grado */
             nivel_id: string;
+        };
+        SeccionRespuestaDto: {
+            /** @description ID de la sección */
+            id: string;
+            /** @description Nombre de la sección, único dentro de (grado_id, anio_escolar_id) */
+            nombre: string;
+            /** @description ID del Grado al que pertenece la sección */
+            grado_id: string;
+            /** @description ID del AnioEscolar al que pertenece la sección */
+            anio_escolar_id: string;
         };
     };
     responses: never;
@@ -1573,6 +1620,174 @@ export interface operations {
                 content?: never;
             };
             /** @description Nombre duplicado dentro del Nivel */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SeccionesController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de secciones */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionRespuestaDto"][];
+                };
+            };
+            /** @description grado_id/anio_escolar_id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SeccionesController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Seccion creada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionRespuestaDto"];
+                };
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Grado/AnioEscolar inexistente o nombre duplicado dentro de la combinación */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SeccionesController_obtenerPorId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Seccion encontrada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionRespuestaDto"];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Seccion no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SeccionesController_eliminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Seccion eliminada */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Seccion no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Existe Aula dependiente */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SeccionesController_actualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Seccion actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionRespuestaDto"];
+                };
+            };
+            /** @description Seccion no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Nombre duplicado dentro de la combinación */
             409: {
                 headers: {
                     [name: string]: unknown;

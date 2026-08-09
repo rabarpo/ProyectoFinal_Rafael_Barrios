@@ -987,6 +987,161 @@
           "grados"
         ]
       }
+    },
+    "/secciones": {
+      "post": {
+        "operationId": "SeccionesController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Seccion creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeccionRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          },
+          "409": {
+            "description": "Grado/AnioEscolar inexistente o nombre duplicado dentro de la combinación"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea una Seccion acotada a un Grado y un AnioEscolar existentes",
+        "tags": [
+          "secciones"
+        ]
+      },
+      "get": {
+        "operationId": "SeccionesController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de secciones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SeccionRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "grado_id/anio_escolar_id malformado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista secciones, con filtro opcional por grado_id y anio_escolar_id",
+        "tags": [
+          "secciones"
+        ]
+      }
+    },
+    "/secciones/{id}": {
+      "get": {
+        "operationId": "SeccionesController_obtenerPorId",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Seccion encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeccionRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "Seccion no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta una Seccion por id",
+        "tags": [
+          "secciones"
+        ]
+      },
+      "patch": {
+        "operationId": "SeccionesController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Seccion actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeccionRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Seccion no encontrada"
+          },
+          "409": {
+            "description": "Nombre duplicado dentro de la combinación"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Actualiza el nombre de una Seccion (nunca su Grado/AnioEscolar)",
+        "tags": [
+          "secciones"
+        ]
+      },
+      "delete": {
+        "operationId": "SeccionesController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Seccion eliminada"
+          },
+          "404": {
+            "description": "Seccion no encontrada"
+          },
+          "409": {
+            "description": "Existe Aula dependiente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente una Seccion sin Aula dependiente",
+        "tags": [
+          "secciones"
+        ]
+      }
     }
   },
   "info": {
@@ -1187,6 +1342,33 @@
           "id",
           "nombre",
           "nivel_id"
+        ]
+      },
+      "SeccionRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID de la sección"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre de la sección, único dentro de (grado_id, anio_escolar_id)"
+          },
+          "grado_id": {
+            "type": "string",
+            "description": "ID del Grado al que pertenece la sección"
+          },
+          "anio_escolar_id": {
+            "type": "string",
+            "description": "ID del AnioEscolar al que pertenece la sección"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "grado_id",
+          "anio_escolar_id"
         ]
       }
     }
