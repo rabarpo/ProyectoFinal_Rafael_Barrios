@@ -654,6 +654,339 @@
           "anios-escolares"
         ]
       }
+    },
+    "/anios-escolares/{id}/activar": {
+      "patch": {
+        "operationId": "AniosEscolaresController_activar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "AnioEscolar activado (o ya estaba activo, cambio=false)"
+          },
+          "404": {
+            "description": "AnioEscolar no encontrado"
+          },
+          "409": {
+            "description": "Activación concurrente sobre el índice único parcial"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Activa un AnioEscolar, desactivando el previamente activo (idempotente)",
+        "tags": [
+          "anios-escolares"
+        ]
+      }
+    },
+    "/niveles": {
+      "post": {
+        "operationId": "NivelesController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Nivel creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NivelRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          },
+          "409": {
+            "description": "Nombre duplicado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea un Nivel",
+        "tags": [
+          "niveles"
+        ]
+      },
+      "get": {
+        "operationId": "NivelesController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de niveles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NivelRespuestaDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista niveles",
+        "tags": [
+          "niveles"
+        ]
+      }
+    },
+    "/niveles/{id}": {
+      "get": {
+        "operationId": "NivelesController_obtenerPorId",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Nivel encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NivelRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "Nivel no encontrado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta un Nivel por id",
+        "tags": [
+          "niveles"
+        ]
+      },
+      "patch": {
+        "operationId": "NivelesController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Nivel actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NivelRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nivel no encontrado"
+          },
+          "409": {
+            "description": "Nombre duplicado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Actualiza el nombre de un Nivel",
+        "tags": [
+          "niveles"
+        ]
+      },
+      "delete": {
+        "operationId": "NivelesController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Nivel eliminado"
+          },
+          "404": {
+            "description": "Nivel no encontrado"
+          },
+          "409": {
+            "description": "Existe Grado dependiente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente un Nivel sin Grado dependiente",
+        "tags": [
+          "niveles"
+        ]
+      }
+    },
+    "/grados": {
+      "post": {
+        "operationId": "GradosController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Grado creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradoRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          },
+          "409": {
+            "description": "Nivel inexistente o nombre duplicado dentro del Nivel"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea un Grado acotado a un Nivel existente",
+        "tags": [
+          "grados"
+        ]
+      },
+      "get": {
+        "operationId": "GradosController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de grados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GradoRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "nivel_id malformado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista grados, con filtro opcional por nivel_id",
+        "tags": [
+          "grados"
+        ]
+      }
+    },
+    "/grados/{id}": {
+      "get": {
+        "operationId": "GradosController_obtenerPorId",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Grado encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradoRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "Grado no encontrado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta un Grado por id",
+        "tags": [
+          "grados"
+        ]
+      },
+      "patch": {
+        "operationId": "GradosController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Grado actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradoRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Grado no encontrado"
+          },
+          "409": {
+            "description": "Nombre duplicado dentro del Nivel"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Actualiza el nombre de un Grado (nunca su Nivel)",
+        "tags": [
+          "grados"
+        ]
+      },
+      "delete": {
+        "operationId": "GradosController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Grado eliminado"
+          },
+          "404": {
+            "description": "Grado no encontrado"
+          },
+          "409": {
+            "description": "Existe Seccion o Aula dependiente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente un Grado sin Seccion/Aula dependiente",
+        "tags": [
+          "grados"
+        ]
+      }
     }
   },
   "info": {
@@ -815,6 +1148,45 @@
           "id",
           "nombre",
           "activo"
+        ]
+      },
+      "NivelRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del nivel"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre único del nivel"
+          }
+        },
+        "required": [
+          "id",
+          "nombre"
+        ]
+      },
+      "GradoRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del grado"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre del grado, único dentro de su Nivel"
+          },
+          "nivel_id": {
+            "type": "string",
+            "description": "ID del Nivel al que pertenece el grado"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "nivel_id"
         ]
       }
     }
