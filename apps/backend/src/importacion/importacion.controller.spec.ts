@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, StreamableFile } from '@nestjs/common';
 import type { ImportacionService } from './importacion.service';
 import { ArchivoMulter, ImportacionController, filtroArchivoPadron } from './importacion.controller';
 
@@ -52,7 +52,9 @@ describe('filtroArchivoPadron() (D7: allowlist .xlsx/.csv, nunca .xlsm)', () => 
 });
 
 describe('ImportacionController.importarPadron()', () => {
-  function construirControlador(overrides: { importar?: jest.Mock } = {}) {
+  function construirControlador(
+    overrides: { importar?: jest.Mock; obtenerCsvErrores?: jest.Mock } = {},
+  ) {
     const importacionService = {
       importar: overrides.importar ?? jest.fn().mockResolvedValue({
         importacion_id: 'imp-1',
@@ -62,6 +64,7 @@ describe('ImportacionController.importarPadron()', () => {
         filas_invalidas: 0,
         errores: [],
       }),
+      obtenerCsvErrores: overrides.obtenerCsvErrores ?? jest.fn().mockResolvedValue(null),
     };
     const controller = new ImportacionController(importacionService as unknown as ImportacionService);
     return { controller, importacionService };
@@ -102,5 +105,39 @@ describe('ImportacionController.importarPadron()', () => {
       controller.importarPadron(undefined, { usuario: { userId: 'actor-1' } } as never),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(importacionService.importar).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * importacion-excel, PR3 (design.md D4, "Data Flow", tarea 3.3, spec "Reporte de errores
+ * descargable en CSV"). `@Roles('administrador', 'director')` a nivel de clase ya cubre esta ruta
+ * (mismo guard que `importarPadron`); aquí se prueba la orquestación del handler.
+ */
+describe('ImportacionController.descargarErroresCsv()', () => {
+  function construirControlador(overrides: { obtenerCsvErrores?: jest.Mock } = {}) {
+    const importacionService = {
+      importar: jest.fn(),
+      obtenerCsvErrores: overrides.obtenerCsvErrores ?? jest.fn().mockResolvedValue(null),
+    };
+    const controller = new ImportacionController(importacionService as unknown as ImportacionService);
+    return { controller, importacionService };
+  }
+
+  it('devuelve un StreamableFile con el contenido CSV cuando la importación existe en Redis', async () => {
+    const csv = '﻿fila,campo,motivo,valor_recibido\r\n1,correo,formato,no-es-un-correo\r\n';
+    const { controller, importacionService } = construirControlador({
+      obtenerCsvErrores: jest.fn().mockResolvedValue(csv),
+    });
+
+    const resultado = await controller.descargarErroresCsv('imp-1');
+
+    expect(importacionService.obtenerCsvErrores).toHaveBeenCalledWith('imp-1');
+    expect(resultado).toBeInstanceOf(StreamableFile);
+  });
+
+  it('responde 404 cuando la importación no existe o el reporte expiró en Redis', async () => {
+    const { controller } = construirControlador({ obtenerCsvErrores: jest.fn().mockResolvedValue(null) });
+
+    await expect(controller.descargarErroresCsv('imp-inexistente')).rejects.toBeInstanceOf(NotFoundException);
   });
 });

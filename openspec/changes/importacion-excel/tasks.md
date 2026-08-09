@@ -50,9 +50,9 @@ Chain strategy: pending
 
 ## Phase 3: CSV de errores + auditoría agregada + wiring (PR 3)
 
-- [ ] 3.1 RED+GREEN: `padron-csv.ts` — serialización CSV (BOM UTF-8, escape RFC 4180, prefijo anti-fórmula) (D5).
-- [ ] 3.2 RED+GREEN: `importacion.service.ts` — `SETEX importacion:errores:{id}` TTL 24h en Redis y evento único `PADRON_IMPORTADO` con conteos, en `$transaction` propia (D4, D6).
-- [ ] 3.3 RED+GREEN: `importacion.controller.ts` — `GET /importaciones/:id/errores.csv` devuelve `StreamableFile`; 404 si ausente/expirado.
-- [ ] 3.4 `apps/backend/src/app.module.ts`: registrar `ImportacionModule`.
-- [ ] 3.5 E2E `apps/backend/test/importacion.e2e-spec.ts` — archivo mixto, reimportación sin duplicados, cabecera inválida, >2000 filas, `.xlsm` rechazado, descarga CSV, 403 por rol.
-- [ ] 3.6 REFACTOR final: limpiar imports, revisar cobertura de las 4 capas de testing del diseño.
+- [x] 3.1 RED+GREEN: `padron-csv.ts` — serialización CSV (BOM UTF-8, escape RFC 4180, prefijo anti-fórmula) (D5).
+- [x] 3.2 RED+GREEN: `importacion.service.ts` — `SETEX importacion:errores:{id}` TTL 24h en Redis y evento único `PADRON_IMPORTADO` con conteos, en `$transaction` propia (D4, D6).
+- [x] 3.3 RED+GREEN: `importacion.controller.ts` — `GET /importaciones/:id/errores.csv` devuelve `StreamableFile`; 404 si ausente/expirado.
+- [x] 3.4 `apps/backend/src/app.module.ts`: registrar `ImportacionModule`.
+- [x] 3.5 E2E `apps/backend/test/importacion.e2e-spec.ts` — archivo mixto, reimportación sin duplicados, cabecera inválida, >2000 filas, `.xlsm` rechazado, descarga CSV, 403 por rol. DESVIACIÓN declarada (mismo criterio que PR1/PR2 y el resto del monorepo): sin daemon Docker disponible en este entorno (`docker ps` falla), la suite quedó escrita y type-checkeada (`pnpm typecheck` en verde sobre `src/`; verificado además contra un `tsconfig` ad hoc que incluye `test/**` — mismos `TS18046`/`TS2571` preexistentes de `Response.json(): unknown` que ya tienen `matriculas.e2e-spec.ts`/`aulas.e2e-spec.ts`/`secciones.e2e-spec.ts`, no introducidos por este archivo), sin poder correr hasta GREEN en esta sesión. Cobertura equivalente de orquestación/lógica de negocio en verde en `importacion.service.spec.ts`/`importacion.controller.spec.ts`/`padron-csv.spec.ts`.
+- [x] 3.6 REFACTOR final: limpiar imports, revisar cobertura de las 4 capas de testing del diseño. `pnpm generate:contracts` regenerado (`packages/contracts/openapi.json`, `packages/contracts/src/generated/api.d.ts`) para reflejar `GET /importaciones/{id}/errores.csv`. Las 4 capas de `design.md` "Testing Strategy" están cubiertas: unit (`padron-csv.spec.ts`, `importacion.service.spec.ts` con Prisma/Redis/Auditoria mockeados), integración (bucle por fila + tx compartida/excepción puntual, mismo `importacion.service.spec.ts`), módulo (`importacion.module.spec.ts`, wiring real sin Postgres/Redis vivos) y E2E (`test/importacion.e2e-spec.ts`, ver 3.5).

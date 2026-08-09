@@ -1421,6 +1421,79 @@
           "matriculas"
         ]
       }
+    },
+    "/importaciones/padron": {
+      "post": {
+        "operationId": "ImportacionController_importarPadron",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Resultado de la importación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoImportacionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cabecera inválida, archivo excede 2000 filas, extensión no permitida o archivo ausente"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Importa el padrón de Usuario+Matricula desde un archivo .xlsx/.csv",
+        "tags": [
+          "importaciones"
+        ]
+      }
+    },
+    "/importaciones/{id}/errores.csv": {
+      "get": {
+        "operationId": "ImportacionController_descargarErroresCsv",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "importacion_id devuelto por POST /importaciones/padron",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo CSV de errores (BOM UTF-8, RFC 4180)"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          },
+          "404": {
+            "description": "Importación inexistente o reporte expirado (TTL 24h)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Descarga el CSV de errores de una importación (fila, campo, motivo, valor_recibido)",
+        "tags": [
+          "importaciones"
+        ]
+      }
     }
   },
   "info": {
@@ -1711,6 +1784,79 @@
           "usuario_id",
           "aula_id",
           "anio_escolar_id"
+        ]
+      },
+      "ErrorFilaDto": {
+        "type": "object",
+        "properties": {
+          "fila": {
+            "type": "number",
+            "description": "Número de fila de datos (1-based, sin contar la cabecera)"
+          },
+          "campo": {
+            "type": "string",
+            "description": "Campo afectado dentro de la fila"
+          },
+          "motivo": {
+            "type": "string",
+            "description": "Motivo del error",
+            "enum": [
+              "fila_vacia",
+              "formato",
+              "campo_duplicado",
+              "referencia_inexistente"
+            ]
+          },
+          "valor_recibido": {
+            "type": "string",
+            "description": "Valor recibido que causó el error"
+          }
+        },
+        "required": [
+          "fila",
+          "campo",
+          "motivo",
+          "valor_recibido"
+        ]
+      },
+      "ResultadoImportacionDto": {
+        "type": "object",
+        "properties": {
+          "importacion_id": {
+            "type": "string",
+            "description": "ID de la importación"
+          },
+          "filas_totales": {
+            "type": "number",
+            "description": "Total de filas de datos procesadas (sin contar la cabecera)"
+          },
+          "filas_creadas": {
+            "type": "number",
+            "description": "Filas cuyo Usuario y/o Matricula se crearon en esta importación"
+          },
+          "filas_existentes": {
+            "type": "number",
+            "description": "Filas cuyo Usuario y Matricula ya existían (idempotencia)"
+          },
+          "filas_invalidas": {
+            "type": "number",
+            "description": "Filas inválidas (ver detalle en errores)"
+          },
+          "errores": {
+            "description": "Detalle de errores por fila",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorFilaDto"
+            }
+          }
+        },
+        "required": [
+          "importacion_id",
+          "filas_totales",
+          "filas_creadas",
+          "filas_existentes",
+          "filas_invalidas",
+          "errores"
         ]
       }
     }

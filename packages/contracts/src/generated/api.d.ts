@@ -499,6 +499,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/importaciones/padron": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Importa el padrón de Usuario+Matricula desde un archivo .xlsx/.csv */
+        post: operations["ImportacionController_importarPadron"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/importaciones/{id}/errores.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descarga el CSV de errores de una importación (fila, campo, motivo, valor_recibido) */
+        get: operations["ImportacionController_descargarErroresCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -605,6 +639,33 @@ export interface components {
             aula_id: string;
             /** @description ID del AnioEscolar de la matrícula */
             anio_escolar_id: string;
+        };
+        ErrorFilaDto: {
+            /** @description Número de fila de datos (1-based, sin contar la cabecera) */
+            fila: number;
+            /** @description Campo afectado dentro de la fila */
+            campo: string;
+            /**
+             * @description Motivo del error
+             * @enum {string}
+             */
+            motivo: "fila_vacia" | "formato" | "campo_duplicado" | "referencia_inexistente";
+            /** @description Valor recibido que causó el error */
+            valor_recibido: string;
+        };
+        ResultadoImportacionDto: {
+            /** @description ID de la importación */
+            importacion_id: string;
+            /** @description Total de filas de datos procesadas (sin contar la cabecera) */
+            filas_totales: number;
+            /** @description Filas cuyo Usuario y/o Matricula se crearon en esta importación */
+            filas_creadas: number;
+            /** @description Filas cuyo Usuario y Matricula ya existían (idempotencia) */
+            filas_existentes: number;
+            /** @description Filas inválidas (ver detalle en errores) */
+            filas_invalidas: number;
+            /** @description Detalle de errores por fila */
+            errores: components["schemas"]["ErrorFilaDto"][];
         };
     };
     responses: never;
@@ -2188,6 +2249,89 @@ export interface operations {
                 content?: never;
             };
             /** @description Matricula no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ImportacionController_importarPadron: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resultado de la importación */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoImportacionDto"];
+                };
+            };
+            /** @description Cabecera inválida, archivo excede 2000 filas, extensión no permitida o archivo ausente */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ImportacionController_descargarErroresCsv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description importacion_id devuelto por POST /importaciones/padron */
+                id: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archivo CSV de errores (BOM UTF-8, RFC 4180) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Importación inexistente o reporte expirado (TTL 24h) */
             404: {
                 headers: {
                     [name: string]: unknown;

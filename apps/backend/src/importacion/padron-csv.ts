@@ -70,3 +70,56 @@ export function parsearFila(valores: readonly unknown[]): ResultadoParseoFila {
     datos: { nombres, dni, codigo, correo, grado_nombre, seccion_nombre, turno, anio_escolar_codigo },
   };
 }
+
+// importacion-excel, PR3 (design.md D5, "Interfaces/Contracts", tarea 3.1, spec "Reporte de
+// errores descargable en CSV"). Fila mínima serializable: exactamente las cuatro columnas del CSV
+// (`fila, campo, motivo, valor_recibido`), sin acoplar `padron-csv.ts` al DTO de Nest/Swagger.
+export interface FilaErrorCsv {
+  fila: number;
+  campo: string;
+  motivo: string;
+  valor_recibido: string;
+}
+
+const CABECERA_CSV_ERRORES = ['fila', 'campo', 'motivo', 'valor_recibido'] as const;
+
+// D5: BOM UTF-8 al inicio del archivo, requerido para que Excel detecte la codificación y no
+// corrompa tildes/ñ al abrir el CSV directamente (sin import manual de codificación).
+const BOM_UTF8 = '﻿';
+
+// D5: neutraliza inyección de fórmulas (CSV injection) — un valor que empieza con `=`, `+`, `-` o
+// `@` se interpretaría como fórmula al abrir el archivo en Excel/Sheets. Prefijo `'` fuerza texto
+// literal, mismo criterio que OWASP CSV Injection.
+const PREFIJO_FORMULA = /^[=+\-@]/;
+
+function neutralizarFormula(valor: string): string {
+  return PREFIJO_FORMULA.test(valor) ? `'${valor}` : valor;
+}
+
+// D5: escape RFC 4180 — una celda que contiene coma, comilla doble o salto de línea se envuelve
+// entre comillas dobles, duplicando cualquier comilla doble interna.
+function escaparCeldaCsv(valor: string): string {
+  const neutralizado = neutralizarFormula(valor);
+  if (/["\n\r,]/.test(neutralizado)) {
+    return `"${neutralizado.replace(/"/g, '""')}"`;
+  }
+  return neutralizado;
+}
+
+function filaCsv(celdas: readonly string[]): string {
+  return celdas.map(escaparCeldaCsv).join(',');
+}
+
+/**
+ * Serializa el reporte de errores fila a fila en CSV (D5, spec "Reporte de errores descargable en
+ * CSV"): cabecera fija + una fila por error, BOM UTF-8 al inicio, `\r\n` como separador de línea
+ * (RFC 4180), escape de comillas/comas/saltos de línea y neutralización anti-fórmula en
+ * `campo`/`motivo`/`valor_recibido` (el único origen de datos de usuario en estas columnas).
+ */
+export function serializarErroresCsv(errores: readonly FilaErrorCsv[]): string {
+  const filas = [
+    filaCsv(CABECERA_CSV_ERRORES),
+    ...errores.map((error) => filaCsv([String(error.fila), error.campo, error.motivo, error.valor_recibido])),
+  ];
+  return BOM_UTF8 + filas.join('\r\n') + '\r\n';
+}

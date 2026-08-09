@@ -19,6 +19,9 @@ export const IMPORTACION_ERROR_CODES = {
   LIMITE_FILAS_EXCEDIDO: 'LIMITE_FILAS_EXCEDIDO',
   EXTENSION_NO_PERMITIDA: 'EXTENSION_NO_PERMITIDA',
   ARCHIVO_REQUERIDO: 'ARCHIVO_REQUERIDO',
+  // PR3 (design.md D4, tarea 3.3, spec "Reporte de errores descargable en CSV"): importación
+  // inexistente o reporte de errores ya expirado (TTL 24h) en Redis.
+  REPORTE_NO_ENCONTRADO: 'REPORTE_NO_ENCONTRADO',
 } as const;
 
 export type ImportacionErrorCode = (typeof IMPORTACION_ERROR_CODES)[keyof typeof IMPORTACION_ERROR_CODES];

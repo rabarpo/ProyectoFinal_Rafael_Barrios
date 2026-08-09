@@ -1,6 +1,18 @@
-import { BadRequestException, Controller, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Req,
+  StreamableFile,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiConsumes, ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiCookieAuth, ApiOperation, ApiParam, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -84,5 +96,30 @@ export class ImportacionController {
       { buffer: archivo.buffer, originalname: archivo.originalname, mimetype: archivo.mimetype },
       req.usuario!.userId,
     );
+  }
+
+  /**
+   * PR3 (design.md D4, "Data Flow", tarea 3.3, spec "Reporte de errores descargable en CSV").
+   * `obtenerCsvErrores()` devuelve `null` cuando la clave no existe en Redis (importación
+   * inexistente o TTL de 24h vencido) — se traduce a `404` acá, no en el servicio.
+   */
+  @Get(':id/errores.csv')
+  @ApiParam({ name: 'id', description: 'importacion_id devuelto por POST /importaciones/padron' })
+  @ApiProduces('text/csv')
+  @ApiOperation({ summary: 'Descarga el CSV de errores de una importación (fila, campo, motivo, valor_recibido)' })
+  @ApiResponse({ status: 200, description: 'Archivo CSV de errores (BOM UTF-8, RFC 4180)' })
+  @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
+  @ApiResponse({ status: 403, description: 'Rol distinto de administrador/director' })
+  @ApiResponse({ status: 404, description: 'Importación inexistente o reporte expirado (TTL 24h)' })
+  async descargarErroresCsv(@Param('id') id: string): Promise<StreamableFile> {
+    const contenido = await this.importacionService.obtenerCsvErrores(id);
+    if (contenido === null) {
+      throw new NotFoundException({ codigo: IMPORTACION_ERROR_CODES.REPORTE_NO_ENCONTRADO });
+    }
+
+    return new StreamableFile(Buffer.from(contenido, 'utf-8'), {
+      type: 'text/csv; charset=utf-8',
+      disposition: `attachment; filename="importacion-${id}-errores.csv"`,
+    });
   }
 }

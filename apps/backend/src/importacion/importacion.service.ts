@@ -1,18 +1,22 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import ExcelJS from 'exceljs';
-import type { Turno } from '@prisma/client';
+import type { Prisma, Turno } from '@prisma/client';
+import type Redis from 'ioredis';
 import { ACADEMICO_ERROR_CODES } from '../academico/academico.errors';
 import { MatriculasService } from '../academico/matriculas.service';
+import { AUDIT_EVENT_TYPES } from '../auditoria/audit-event-types';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { REDIS_CLIENT } from '../redis/redis.provider';
 import { USERS_ERROR_CODES } from '../users/users.errors';
 import type { DatosUsuario } from '../users/users.service';
 import { UsersService } from '../users/users.service';
 import type { ErrorFilaDto } from './dto/error-fila.dto';
 import type { ResultadoImportacionDto } from './dto/resultado-importacion.dto';
 import { IMPORTACION_ERROR_CODES, MOTIVOS_FILA, type MotivoFila } from './importacion.errors';
-import { type FilaPadron, parsearFila, validarCabecera } from './padron-csv';
+import { type FilaPadron, parsearFila, serializarErroresCsv, validarCabecera } from './padron-csv';
 
 export interface ArchivoPadron {
   buffer: Buffer;
@@ -24,6 +28,14 @@ export interface ArchivoPadron {
 // rango 500-1000 estudiantes esperado por el PRD, para acotar el bloqueo del event loop del
 // enfoque síncrono (D7, R1).
 const LIMITE_FILAS = 2000;
+
+// design.md D4 (tarea 3.2, spec "Reporte de errores descargable en CSV"): TTL de 24 horas para el
+// reporte de errores en Redis — artefacto transitorio, no evidencia de auditoría.
+const TTL_ERRORES_SEGUNDOS = 24 * 60 * 60;
+
+function claveErroresRedis(importacionId: string): string {
+  return `importacion:errores:${importacionId}`;
+}
 
 /**
  * importacion-excel, PR2 (design.md D2/D3/D7, "Data Flow", tareas 2.4-2.5, spec
@@ -50,6 +62,8 @@ export class ImportacionService {
     private readonly usersService: UsersService,
     private readonly matriculasService: MatriculasService,
     private readonly prisma: PrismaService,
+    private readonly auditoriaService: AuditoriaService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   async importar(archivo: ArchivoPadron, actorId: string): Promise<ResultadoImportacionDto> {
@@ -145,14 +159,55 @@ export class ImportacionService {
       }
     }
 
+    const importacionId = randomUUID();
+
+    // D4 (spec "Reporte de errores descargable en CSV"): reporte transitorio en Redis, TTL 24h.
+    // Se guarda siempre (aun sin errores) para que la descarga del CSV sea consistente con
+    // cualquier `importacion_id` devuelto por este método.
+    await this.redis.setex(
+      claveErroresRedis(importacionId),
+      TTL_ERRORES_SEGUNDOS,
+      serializarErroresCsv(errores),
+    );
+
+    // D6 (spec "Auditoría agregada por operación de importación"): exactamente UN evento por
+    // importación, en su propia `$transaction` corta al cierre — separada de la(s) `$transaction`
+    // por fila del bucle anterior. `USUARIO_CREADO`/`MATRICULA_CREADA` por fila siguen
+    // emitiéndose igual (comportamiento vigente de los servicios reutilizados); esta clave nueva
+    // es adicional, no los reemplaza.
+    await this.prisma.$transaction(async (tx) => {
+      await this.auditoriaService.log(
+        tx,
+        AUDIT_EVENT_TYPES.PADRON_IMPORTADO,
+        actorId,
+        'Importacion',
+        importacionId,
+        {
+          filas_totales: filasDatos.length,
+          filas_creadas: filasCreadas,
+          filas_existentes: filasExistentes,
+          filas_invalidas: errores.length,
+        } as Prisma.InputJsonValue,
+      );
+    });
+
     return {
-      importacion_id: randomUUID(),
+      importacion_id: importacionId,
       filas_totales: filasDatos.length,
       filas_creadas: filasCreadas,
       filas_existentes: filasExistentes,
       filas_invalidas: errores.length,
       errores,
     };
+  }
+
+  /**
+   * PR3 (design.md D4, tarea 3.3, spec "Reporte de errores descargable en CSV"). `null` cuando la
+   * clave no existe en Redis (importación inexistente o TTL de 24h ya vencido) — el controller
+   * traduce ese `null` a `404`.
+   */
+  async obtenerCsvErrores(importacionId: string): Promise<string | null> {
+    return this.redis.get(claveErroresRedis(importacionId));
   }
 
   private mapearErrorFila(fila: number, error: unknown, datos: FilaPadron): ErrorFilaDto {

@@ -14,8 +14,7 @@ import { ImportacionService } from './importacion.service';
  * importacion-excel, PR2 (design.md D1/D4, "File Changes", tarea 2.7). `imports: [AuthModule,
  * AuditoriaModule, UsersModule, AcademicoModule]`: `AuthModule` resuelve
  * `AuthGuard`/`RolesGuard`/`SessionService`; `AuditoriaModule` resuelve `AuditoriaService`
- * (consumido recién en PR3 para el evento agregado `PADRON_IMPORTADO`, D6 — se importa ahora para
- * no reabrir este módulo en PR3, mismo criterio que `EmailModule` en `AuthModule`); `UsersModule` y
+ * (consumido desde PR3 para el evento agregado `PADRON_IMPORTADO`, D6); `UsersModule` y
  * `AcademicoModule` exportan `UsersService`/`MatriculasService` respectivamente (D1) — se importan
  * en vez de redeclarar esos providers.
  *
@@ -27,17 +26,14 @@ import { ImportacionService } from './importacion.service';
  * viaja explícito como parámetro a ambos servicios, que lo usan en vez de su propio `this.prisma`
  * cuando llega (mismo contrato ya vigente de `txExterno` en ambos `crearIdempotente()`).
  *
- * `redisProvider` se declara en `providers` desde PR2 aunque el reporte de errores en Redis (D4,
- * `SETEX importacion:errores:{id}`) recién se consume en PR3 — mismo criterio que `UsersModule`/
- * `AcademicoModule`: no reabrir este módulo para agregar un provider en el PR siguiente. Ningún
- * provider abre conexión al instanciarse (`redisProvider` con `lazyConnect: true`), así que
- * `src/openapi.ts` sigue extrayendo el contrato sin Postgres ni Redis vivos (gotcha D1 de
- * `system-scaffolding`).
+ * `redisProvider` se declara en `providers` desde PR2; PR3 lo consume para el reporte de errores
+ * en Redis (D4, `SETEX importacion:errores:{id}`). Ningún provider abre conexión al instanciarse
+ * (`redisProvider` con `lazyConnect: true`), así que `src/openapi.ts` sigue extrayendo el
+ * contrato sin Postgres ni Redis vivos (gotcha D1 de `system-scaffolding`).
  *
- * DESVIACIÓN declarada frente a design.md (tarea 2.7): este módulo NO se registra todavía en
- * `apps/backend/src/app.module.ts` — eso es tarea 3.4 (PR3). Mantenerlo fuera de `AppModule`
- * aísla el rollback de este PR: revertir `apps/backend/src/importacion/*` no toca ninguna ruta
- * activa (design.md "Rollback Plan").
+ * PR3 (tarea 3.4) registra este módulo en `apps/backend/src/app.module.ts` — cambio aditivo puro
+ * (design.md "Rollback Plan": revertir es quitar `ImportacionModule` de `AppModule`, sin tocar
+ * ninguna ruta previa).
  */
 @Module({
   imports: [AuthModule, AuditoriaModule, UsersModule, AcademicoModule],
