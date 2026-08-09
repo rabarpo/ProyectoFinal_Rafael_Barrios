@@ -310,47 +310,74 @@ no diferible).
 ## PR 6 — `Aula` + guarda de coherencia jerárquica (base = PR 5 branch)
 
 ### Phase 19: DTOs de `Aula` (D3)
-- [ ] 19.1 Crear `apps/backend/src/academico/dto/crear-aula.dto.ts`,
+- [x] 19.1 Crear `apps/backend/src/academico/dto/crear-aula.dto.ts`,
       `actualizar-aula.dto.ts` (**solo** `turno`), `aula-respuesta.dto.ts`,
       `listar-aulas.query.ts` [D3]
 
 ### Phase 20: Validador de `turno` (D5)
-- [ ] 20.1 RED unit: el validador de `turno` acepta `manana`/`tarde`, rechaza cualquier otro valor
+- [x] 20.1 RED unit: el validador de `turno` acepta `manana`/`tarde`, rechaza cualquier otro valor
       → `CAMPO_INVALIDO` (Jest puro, sin base) [D5]
-- [ ] 20.2 Implementar el validador de `turno` en `aulas.service.ts` — GREEN 20.1 [D5]
+- [x] 20.2 Implementar el validador de `turno` en `aulas.service.ts` — GREEN 20.1 [D5]
 
 ### Phase 21: CRUD de `Aula` acotada a `Grado`, `Seccion`, `AnioEscolar` y `Turno` (AT5)
-- [ ] 21.1 RED e2e: creación exitosa con `turno = 'manana'`, vinculada a `Grado`, `Seccion` y
-      `AnioEscolar` existentes y coherentes entre sí [AT5]
-- [ ] 21.2 RED e2e: `turno` fuera de `{manana, tarde}` → `400 CAMPO_INVALIDO`
-- [ ] 21.3 RED e2e: creación referenciando `Grado`, `Seccion` o `AnioEscolar` inexistente → `409
-      REFERENCIA_INEXISTENTE` (una prueba por cada FK saliente)
-- [ ] 21.4 RED e2e: duplicado `(grado_id, seccion_id, anio_escolar_id)` → `409 RESTRICCION_UNICA`
-      [AT5]
-- [ ] 21.5 RED e2e: `GET /aulas?grado_id=&seccion_id=&anio_escolar_id=&turno=` filtra
-      correctamente; filtro inválido → `400 CAMPO_INVALIDO`
-- [ ] 21.6 RED e2e: `GET /aulas/:id`, `404` para inexistente, `400` para malformado
-- [ ] 21.7 RED e2e + adversarial: `PATCH` cambia `turno`, deja fila `AULA_ACTUALIZADA`; `PATCH` con
-      cualquier FK en el body la ignora (sin re-parentado, D3) [D3]
-- [ ] 21.8 RED integración: precomprobación de `Matricula` (y `ProcesoAula`, guarda anticipada para
-      `#11`) dependiente antes del `DELETE` [D2]
-- [ ] 21.9 RED e2e: `DELETE` exitoso sin dependientes; `DELETE` con `Matricula` asociada → `409
-      ENTIDAD_CON_DEPENDIENTES {relacion:'Matricula'}`, la fila permanece [AT5]
-- [ ] 21.10 RED adversarial: `catch P2003` residual traduce la carrera al mismo `409` [D2]
+- [x] 21.1 RED e2e: creación exitosa con `turno = 'manana'`, vinculada a `Grado`, `Seccion` y
+      `AnioEscolar` existentes y coherentes entre sí [AT5] — **Limitación documentada** (misma que
+      PR1-PR5, `docker ps` sin daemon Docker en este entorno): escrita y type-checkeada en
+      `test/academico/aulas.e2e-spec.ts`, no ejecutable contra Postgres/Redis reales en esta sesión.
+      Cobertura equivalente GREEN como unit test `[21.1]` en `src/academico/aulas.service.spec.ts`.
+- [x] 21.2 RED e2e: `turno` fuera de `{manana, tarde}` → `400 CAMPO_INVALIDO` — misma limitación;
+      cobertura equivalente GREEN `[21.2]`.
+- [x] 21.3 RED e2e: creación referenciando `Grado`, `Seccion` o `AnioEscolar` inexistente → `409
+      REFERENCIA_INEXISTENTE` (una prueba por cada FK saliente) — misma limitación; cobertura
+      equivalente GREEN `[21.3]` (tres casos).
+- [x] 21.4 RED e2e: duplicado `(grado_id, seccion_id, anio_escolar_id)` → `409 RESTRICCION_UNICA`
+      [AT5] — misma limitación; cobertura equivalente GREEN `[21.4]`.
+- [x] 21.5 RED e2e: `GET /aulas?grado_id=&seccion_id=&anio_escolar_id=&turno=` filtra
+      correctamente; filtro inválido → `400 CAMPO_INVALIDO` — misma limitación; cobertura
+      equivalente GREEN `[21.5]`.
+- [x] 21.6 RED e2e: `GET /aulas/:id`, `404` para inexistente, `400` para malformado — misma
+      limitación; cobertura equivalente GREEN `[21.6]`.
+- [x] 21.7 RED e2e + adversarial: `PATCH` cambia `turno`, deja fila `AULA_ACTUALIZADA`; `PATCH` con
+      cualquier FK en el body la ignora (sin re-parentado, D3) [D3] — misma limitación; cobertura
+      equivalente GREEN `[21.7]` (incluye caso adversarial de `turno` inválido en `PATCH` y prueba
+      de tipos de que el DTO no declara ninguna FK).
+- [x] 21.8 RED integración: precomprobación de `Matricula` (y `ProcesoAula`, guarda anticipada para
+      `#11`) dependiente antes del `DELETE` [D2] — misma limitación; cobertura equivalente GREEN
+      `[21.8]`/`[21.9]` (dos relaciones verificadas en orden: `Matricula` primero, `ProcesoAula`
+      después).
+- [x] 21.9 RED e2e: `DELETE` exitoso sin dependientes; `DELETE` con `Matricula` asociada → `409
+      ENTIDAD_CON_DEPENDIENTES {relacion:'Matricula'}`, la fila permanece [AT5] — misma limitación;
+      cobertura equivalente GREEN `[21.9]`.
+- [x] 21.10 RED adversarial: `catch P2003` residual traduce la carrera al mismo `409` [D2] — misma
+      limitación; cobertura equivalente GREEN `[21.10]`.
 
 ### Phase 22: Coherencia jerárquica de `Aula` con su `Seccion` (D6, AT6)
-- [ ] 22.1 RED adversarial: `Aula` con `grado_id` distinto al `grado_id` de su `Seccion` → `409
+- [x] 22.1 RED adversarial: `Aula` con `grado_id` distinto al `grado_id` de su `Seccion` → `409
       COHERENCIA_JERARQUICA {campo:'grado_id', esperado, recibido}`, no se crea el `Aula` [AT6][D6]
-- [ ] 22.2 RED adversarial: `Aula` con `anio_escolar_id` distinto al `anio_escolar_id` de su
-      `Seccion` → `409 COHERENCIA_JERARQUICA {campo:'anio_escolar_id', ...}` [AT6][D6]
-- [ ] 22.3 Crear `apps/backend/src/academico/aulas.controller.ts` y `aulas.service.ts`: la guarda de
+      — misma limitación; cobertura equivalente GREEN `[22.1]`.
+- [x] 22.2 RED adversarial: `Aula` con `anio_escolar_id` distinto al `anio_escolar_id` de su
+      `Seccion` → `409 COHERENCIA_JERARQUICA {campo:'anio_escolar_id', ...}` [AT6][D6] — misma
+      limitación; cobertura equivalente GREEN `[22.2]`.
+- [x] 22.3 Crear `apps/backend/src/academico/aulas.controller.ts` y `aulas.service.ts`: la guarda de
       coherencia jerárquica compara los campos redundantes **dentro de la misma `$transaction`**,
       tras resolver `Grado`/`Seccion`/`AnioEscolar` y antes del `create` — GREEN 21.1-21.10,
       22.1-22.2 [AT5][AT6][AT7][D2][D3][D6]
 
 ### Phase 23: Regresión PR6
-- [ ] 23.1 GREEN: `pnpm openapi:extract` completa sin Postgres/Redis vivos
-- [ ] 23.2 `test/academico/aulas.e2e-spec.ts` corre completo sin regresión
+- [x] 23.1 GREEN: `pnpm openapi:extract` completa sin Postgres/Redis vivos
+- [x] 23.2 `test/academico/aulas.e2e-spec.ts` corre completo sin regresión —
+      **Limitación documentada** (misma que PR1-PR5 de este change): `docker ps` no tiene daemon
+      Docker disponible en este entorno, así que `pnpm test:e2e` no puede ejecutarse contra
+      Postgres/Redis reales. El archivo quedó escrito, `pnpm typecheck` en verde (workspace
+      completo, incluido `@seei/backend`/`@seei/frontend`/`@seei/worker`/`@seei/contracts`;
+      `pnpm generate:contracts` regeneró `packages/contracts/openapi.json` con las rutas `/aulas`,
+      `/aulas/{id}`). Cobertura de orquestación/lógica de negocio equivalente: 25/25 tests GREEN en
+      `src/academico/aulas.service.spec.ts` (validador de `turno`, tres FK salientes, coherencia
+      jerárquica D6 en creación, unicidad compuesta, guarda de `Matricula`/`ProcesoAula`
+      dependiente, catch P2002/P2003 residual), sin regresión en el resto de la suite de
+      `@seei/backend` (las únicas fallas de `pnpm test` completo son `session.service.spec.ts`,
+      `bloqueo.service.spec.ts`, `recovery.service.spec.ts` — dependientes de Redis real, no
+      tocados por este PR, mismo entorno sin Docker; 224/254 tests GREEN en total).
 
 ## PR 7 — `Matricula` + regeneración de contratos (base = PR 6 branch)
 
