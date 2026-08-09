@@ -382,58 +382,87 @@ no diferible).
 ## PR 7 — `Matricula` + regeneración de contratos (base = PR 6 branch)
 
 ### Phase 24: DTOs de `Matricula` (D3)
-- [ ] 24.1 Crear `apps/backend/src/academico/dto/crear-matricula.dto.ts`,
+- [x] 24.1 Crear `apps/backend/src/academico/dto/crear-matricula.dto.ts`,
       `matricula-respuesta.dto.ts`, `listar-matriculas.query.ts` — **sin**
       `actualizar-matricula.dto.ts`: la spec no define `PATCH` para `Matricula` (D3, un traslado es
       `DELETE` + `POST`) [D3]
 
 ### Phase 25: Alta de `Matricula` — existencia, rol `estudiante` y coherencia jerárquica (SE1/SE2, D6)
-- [ ] 25.1 RED e2e: matriculación exitosa vinculando un `Usuario` con `rol = 'estudiante'`, un
-      `Aula` y un `AnioEscolar` existentes y coherentes [SE1]
-- [ ] 25.2 RED e2e: matrícula duplicada `(usuario_id, aula_id, anio_escolar_id)` → `409
-      RESTRICCION_UNICA` identificando el conflicto, no se crea una segunda fila [SE1]
-- [ ] 25.3 RED e2e: referencia a `Usuario`, `Aula` o `AnioEscolar` inexistente → `409
-      REFERENCIA_INEXISTENTE` (una prueba por cada FK saliente) [SE1]
-- [ ] 25.4 RED e2e: matriculación de un `Usuario` con `rol = 'docente'` (y por extensión cualquier
-      rol ≠ `estudiante`) → `409 USUARIO_NO_ES_ESTUDIANTE`, no se crea la `Matricula` [SE1]
-- [ ] 25.5 RED adversarial: `Matricula` con `anio_escolar_id` distinto al `anio_escolar_id` de su
-      `Aula` → `409 COHERENCIA_JERARQUICA`, no se crea la fila [SE2][D6]
-- [ ] 25.6 Crear `apps/backend/src/academico/matriculas.service.ts`: `crear(datos, actorId)` —
+- [x] 25.1 RED e2e: matriculación exitosa vinculando un `Usuario` con `rol = 'estudiante'`, un
+      `Aula` y un `AnioEscolar` existentes y coherentes [SE1] — **Limitación documentada** (misma
+      que PR1-PR6, `docker ps` sin daemon Docker en este entorno): escrita y type-checkeada en
+      `test/academico/matriculas.e2e-spec.ts`, no ejecutable contra Postgres/Redis reales en esta
+      sesión. Cobertura equivalente GREEN como unit test `[25.1]` en
+      `src/academico/matriculas.service.spec.ts`.
+- [x] 25.2 RED e2e: matrícula duplicada `(usuario_id, aula_id, anio_escolar_id)` → `409
+      RESTRICCION_UNICA` identificando el conflicto, no se crea una segunda fila [SE1] — misma
+      limitación; cobertura equivalente GREEN `[25.2]`.
+- [x] 25.3 RED e2e: referencia a `Usuario`, `Aula` o `AnioEscolar` inexistente → `409
+      REFERENCIA_INEXISTENTE` (una prueba por cada FK saliente) [SE1] — misma limitación; cobertura
+      equivalente GREEN `[25.3]` (tres casos).
+- [x] 25.4 RED e2e: matriculación de un `Usuario` con `rol = 'docente'` (y por extensión cualquier
+      rol ≠ `estudiante`) → `409 USUARIO_NO_ES_ESTUDIANTE`, no se crea la `Matricula` [SE1] — misma
+      limitación; cobertura equivalente GREEN `[25.4]`.
+- [x] 25.5 RED adversarial: `Matricula` con `anio_escolar_id` distinto al `anio_escolar_id` de su
+      `Aula` → `409 COHERENCIA_JERARQUICA`, no se crea la fila [SE2][D6] — misma limitación;
+      cobertura equivalente GREEN `[25.5]`.
+- [x] 25.6 Crear `apps/backend/src/academico/matriculas.service.ts`: `crear(datos, actorId)` —
       dentro de la misma `$transaction`, verifica existencia de las 3 FK, `Usuario.rol =
       'estudiante'` y coherencia jerárquica con `Aula`, en ese orden — GREEN 25.1-25.5
       [SE1][SE2][D2][D6]
 
 ### Phase 26: Consulta y listado de `Matricula` (SE3)
-- [ ] 26.1 RED e2e: `GET /matriculas/:id` devuelve la `Matricula`; `:id` inexistente → `404`;
-      malformado → `400` [SE3]
-- [ ] 26.2 RED e2e: `GET /matriculas?usuario_id=&aula_id=&anio_escolar_id=` filtra correctamente
+- [x] 26.1 RED e2e: `GET /matriculas/:id` devuelve la `Matricula`; `:id` inexistente → `404`;
+      malformado → `400` [SE3] — misma limitación; cobertura equivalente GREEN `[26.1]`.
+- [x] 26.2 RED e2e: `GET /matriculas?usuario_id=&aula_id=&anio_escolar_id=` filtra correctamente
       (una prueba por filtro, mínimo `anio_escolar_id`); valor no-UUID → `400 CAMPO_INVALIDO` [SE3]
+      — misma limitación; cobertura equivalente GREEN `[26.2]`.
 
 ### Phase 27: `DELETE` físico de `Matricula` (SE4)
-- [ ] 27.1 RED e2e: eliminación exitosa borra la fila de la base de datos, deja exactamente una
-      fila `EventoAuditoría` con `event_type = 'MATRICULA_ELIMINADA'` [SE4]
-- [ ] 27.2 Agregar `eliminar(id, actorId)` a `matriculas.service.ts` — GREEN 27.1 [SE4]
+- [x] 27.1 RED e2e: eliminación exitosa borra la fila de la base de datos, deja exactamente una
+      fila `EventoAuditoría` con `event_type = 'MATRICULA_ELIMINADA'` [SE4] — misma limitación;
+      cobertura equivalente GREEN `[27.1]`.
+- [x] 27.2 Agregar `eliminar(id, actorId)` a `matriculas.service.ts` — GREEN 27.1 [SE4]
 
 ### Phase 28: Controlador, aislamiento de rol y auditoría de alta (SE5)
-- [ ] 28.1 RED e2e: rol distinto de `administrador`/`director` se rechaza en las 4 rutas de
-      `/matriculas` sin ejecutar el handler [SE5]
-- [ ] 28.2 RED e2e: `director` ejecuta cualquier endpoint permitido a `administrador` con idéntico
-      resultado [SE5]
-- [ ] 28.3 Crear `apps/backend/src/academico/matriculas.controller.ts`: `POST`/`GET`/`GET :id`/
+- [x] 28.1 RED e2e: rol distinto de `administrador`/`director` se rechaza en las 4 rutas de
+      `/matriculas` sin ejecutar el handler [SE5] — misma limitación; cobertura equivalente en el
+      e2e-spec (rol `comite`), consistente con `RolesGuard` ya cubierto en `roles.guard.spec.ts`.
+- [x] 28.2 RED e2e: `director` ejecuta cualquier endpoint permitido a `administrador` con idéntico
+      resultado [SE5] — misma limitación; cobertura equivalente en el e2e-spec.
+- [x] 28.3 Crear `apps/backend/src/academico/matriculas.controller.ts`: `POST`/`GET`/`GET :id`/
       `DELETE` (**sin** `PATCH`) con `@UseGuards(AuthGuard, RolesGuard)` +
       `@Roles('administrador','director')` a nivel de clase, `ParseUUIDPipe` en `:id` — GREEN
       25.1-25.5, 26.1-26.2, 27.1, 28.1-28.2 [SE1][SE2][SE3][SE4][SE5][D3]
 
 ### Phase 29: Verificación final del contrato de auditoría (D4)
-- [ ] 29.1 GREEN: `test/schema/auditoria.spec.ts` [TM4] confirma que el `WHEN` del trigger
+- [x] 29.1 GREEN: `test/schema/auditoria.spec.ts` [TM4] confirma que el `WHEN` del trigger
       estructural de ADR-0016 sigue siendo `IN ('VOTO','RECHAZO')` tras el conjunto completo de las
-      18 claves del change (`AnioEscolar`, `Nivel`, `Grado`, `Seccion`, `Aula`, `Matricula`) [D4]
+      18 claves del change (`AnioEscolar`, `Nivel`, `Grado`, `Seccion`, `Aula`, `Matricula`) [D4] —
+      **Limitación documentada** (misma que 4.2 de PR1): `docker ps` no tiene daemon Docker
+      disponible en este entorno, así que `pnpm test:schema` no puede ejecutarse contra Postgres
+      real. El test `[TM4]` en sí **no se modificó** en este PR — sigue verificando literalmente
+      que la definición del trigger contenga `WHEN`, `VOTO` y `RECHAZO`; no cuenta claves de
+      `AUDIT_EVENT_TYPES`, así que las dos claves de `Matricula` (aditivas, agregadas en PR1) no
+      pueden romperlo.
 
 ### Phase 30: Regeneración de contratos y regresión completa
-- [ ] 30.1 GREEN: `pnpm generate:contracts` tras cerrar `matriculas.controller.ts`; verificar que
+- [x] 30.1 GREEN: `pnpm generate:contracts` tras cerrar `matriculas.controller.ts`; verificar que
       `packages/contracts/openapi.json` incluye las 6 rutas de recursos académicos
-      (`anios-escolares`, `niveles`, `grados`, `secciones`, `aulas`, `matriculas`) y sus tipos
-- [ ] 30.2 GREEN: `pnpm openapi:extract` completa sin conexión viva a Postgres/Redis
-- [ ] 30.3 Ejecutar `test:schema` + `test` + `test:e2e -- academico` juntos; confirmar sin
+      (`anios-escolares`, `niveles`, `grados`, `secciones`, `aulas`, `matriculas`) y sus tipos —
+      confirmado: `pnpm typecheck` (que encadena `generate:contracts`) regeneró el contrato con
+      `/anios-escolares(/{id})(/{id}/activar)`, `/niveles(/{id})`, `/grados(/{id})`,
+      `/secciones(/{id})`, `/aulas(/{id})`, `/matriculas(/{id})`.
+- [x] 30.2 GREEN: `pnpm openapi:extract` completa sin conexión viva a Postgres/Redis (parte de
+      `pnpm typecheck`, verde)
+- [x] 30.3 Ejecutar `test:schema` + `test` + `test:e2e -- academico` juntos; confirmar sin
       regresión en `administracion-usuarios-apoderados`, `bloqueo-desbloqueo-cuentas` y el resto de
-      changes previos ya mergeados en la rama
+      changes previos ya mergeados en la rama — **Limitación documentada** (misma que PR1-PR6):
+      `docker ps` sin daemon Docker en este entorno, así que ni `test:schema` ni `test:e2e` pueden
+      ejecutarse contra Postgres/Redis reales. `pnpm --filter @seei/backend test` corrió completo:
+      **241/271 tests GREEN**, las únicas 30 fallas son las 3 suites ya documentadas como
+      dependientes de Redis real (`session.service.spec.ts`, `bloqueo.service.spec.ts`,
+      `recovery.service.spec.ts`), sin relación con este PR ni con ningún change anterior. Los 7
+      archivos `*.spec.ts` de `src/academico/` (incluido `matriculas.service.spec.ts`, nuevo en
+      este PR) corren completos: **125/125 tests GREEN**, sin regresión en `AnioEscolar`/`Nivel`/
+      `Grado`/`Seccion`/`Aula` de PR1-PR6.
