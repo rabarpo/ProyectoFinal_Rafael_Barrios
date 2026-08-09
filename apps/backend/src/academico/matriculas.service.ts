@@ -360,6 +360,53 @@ export class MatriculasService {
   }
 
   /**
+   * importacion-excel (#9), corrección PR2 (spec "Idempotencia por fila reutilizando los servicios
+   * existentes", escenario "Clave compuesta de Aula que no resuelve a ningún Aula existente se
+   * reporta"). Lectura pura, SIN abrir transacción propia ni recibir `tx` externo: le permite a
+   * `ImportacionService` decidir, ANTES de abrir su `prisma.$transaction` compartida por fila, si
+   * esta fila cae en la excepción puntual de atomicidad (Aula/AnioEscolar inexistente — el Usuario,
+   * si es válido, igual se crea) o si debe envolver Usuario+Matricula en la misma transacción (el
+   * MUST "misma transacción por fila" cubre TODOS los demás fallos: rol inválido, coherencia
+   * jerárquica, campo duplicado/formato de Usuario, etc.).
+   *
+   * Repite deliberadamente solo los dos `findFirst`/`findUnique` de EXISTENCIA de
+   * `crearIdempotente()` — la coherencia jerárquica (D6/SE2) y el rol de Usuario (SE1) NO se
+   * verifican aquí: esos fallos sí deben ser atómicos con el Usuario, así que quedan exclusivamente
+   * para el camino normal dentro de la transacción compartida de `ImportacionService`.
+   */
+  async resolverReferenciasAula(
+    datos: Pick<DatosMatriculaIdempotente, 'grado_nombre' | 'seccion_nombre' | 'turno' | 'anio_escolar_codigo'>,
+  ): Promise<{ ok: true } | { ok: false; entidad: 'AnioEscolar' | 'Aula'; campo: string; valor: string }> {
+    const anioEscolar = await this.prisma.anioEscolar.findUnique({ where: { nombre: datos.anio_escolar_codigo } });
+    if (!anioEscolar) {
+      return {
+        ok: false,
+        entidad: 'AnioEscolar',
+        campo: 'anio_escolar_codigo',
+        valor: datos.anio_escolar_codigo,
+      };
+    }
+
+    const aula = await this.prisma.aula.findFirst({
+      where: {
+        turno: datos.turno,
+        grado: { nombre: datos.grado_nombre },
+        seccion: { nombre: datos.seccion_nombre },
+      },
+    });
+    if (!aula) {
+      return {
+        ok: false,
+        entidad: 'Aula',
+        campo: 'aula',
+        valor: `${datos.grado_nombre}/${datos.seccion_nombre}/${datos.turno}`,
+      };
+    }
+
+    return { ok: true };
+  }
+
+  /**
    * design.md D2, tarea 27.2, spec "DELETE físico de Matrícula (retiro/traslado)". Borrado físico
    * real, sin precomprobación de dependientes: `Matricula` no tiene relaciones entrantes (D2, tabla
    * "Entidad | Relaciones dependientes verificadas" — "Matricula: ninguna").

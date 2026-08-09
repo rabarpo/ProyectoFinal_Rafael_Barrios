@@ -72,7 +72,16 @@ válidas e inválidas.
 ### Requirement: Idempotencia por fila reutilizando los servicios existentes
 El sistema MUST invocar, para cada fila válida, `UsersService.crearIdempotente()` para la parte
 `Usuario` y `MatriculasService.crearIdempotente()` para la parte `Matrícula`, dentro de una misma
-transacción por fila. El sistema MUST NOT crear filas duplicadas al reimportar el mismo archivo.
+transacción por fila, de modo que cualquier fallo de la parte `Matrícula` (rol de `Usuario`
+inválido, incoherencia jerárquica entre `Aula` y `AnioEscolar`, u otro motivo distinto de
+referencia de `Aula`/`AnioEscolar` inexistente) revierta también la parte `Usuario` recién creada
+en esa misma fila. La ÚNICA excepción a esta atomicidad es la contemplada explícitamente en el
+escenario "Clave compuesta de Aula que no resuelve a ningún Aula existente se reporta": cuando la
+clave compuesta `(grado_nombre, seccion_nombre, turno, anio_escolar_codigo)` no resuelve a ningún
+`Aula`/`AnioEscolar` existente, el sistema MUST resolver esa referencia antes de abrir la
+transacción compartida y, si no resuelve, MUST crear el `Usuario` de todas formas (fuera de esa
+transacción) y reportar la fila como inválida sin `Matrícula`. El sistema MUST NOT crear filas
+duplicadas al reimportar el mismo archivo.
 
 #### Scenario: Reimportar el mismo archivo no duplica datos
 - GIVEN un archivo ya importado exitosamente

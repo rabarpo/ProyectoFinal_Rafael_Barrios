@@ -40,13 +40,13 @@ Chain strategy: pending
 
 ## Phase 2: `ImportacionModule` — flujo principal (PR 2)
 
-- [ ] 2.1 RED: `padron-csv.spec.ts` — cabecera válida/inválida, fila vacía.
-- [ ] 2.2 GREEN: `apps/backend/src/importacion/padron-csv.ts` — `CABECERA_PADRON`, parseo de fila, validación de cabecera (D7).
-- [ ] 2.3 Crear `importacion.errors.ts` (`MOTIVOS_FILA`) y `dto/{resultado-importacion,error-fila}.dto.ts`.
-- [ ] 2.4 RED: `importacion.service.spec.ts` — filas válidas/inválidas mezcladas, fila vacía, correo inválido, Aula inexistente, tope 2000 filas, cabecera inválida (spec `importacion-excel`).
-- [ ] 2.5 GREEN: `apps/backend/src/importacion/importacion.service.ts` — parseo con `exceljs`, validación de cabecera/tope, bucle por fila con `prisma.$transaction` + `UsersService.crearIdempotente` + `MatriculasService.crearIdempotente` (D2, D3).
-- [ ] 2.6 RED+GREEN: `importacion.controller.spec.ts`/`.ts` — `POST /importaciones/padron`, `FileInterceptor`, `@Roles('administrador','director')`, allowlist `.xlsx`/`.csv` (nunca `.xlsm`), `limits.fileSize` (D7).
-- [ ] 2.7 `apps/backend/src/importacion/importacion.module.ts` — importa `AuthModule`, `AuditoriaModule`, `UsersModule`, `AcademicoModule`; registra `redisProvider` (sin registrar aún en `app.module.ts`).
+- [x] 2.1 RED: `padron-csv.spec.ts` — cabecera válida/inválida, fila vacía.
+- [x] 2.2 GREEN: `apps/backend/src/importacion/padron-csv.ts` — `CABECERA_PADRON`, parseo de fila, validación de cabecera (D7).
+- [x] 2.3 Crear `importacion.errors.ts` (`MOTIVOS_FILA`) y `dto/{resultado-importacion,error-fila}.dto.ts`.
+- [x] 2.4 RED: `importacion.service.spec.ts` — filas válidas/inválidas mezcladas, fila vacía, correo inválido, Aula inexistente, tope 2000 filas, cabecera inválida (spec `importacion-excel`).
+- [x] 2.5 GREEN: `apps/backend/src/importacion/importacion.service.ts` — parseo con `exceljs`, validación de cabecera/tope, bucle por fila con `UsersService.crearIdempotente` + `MatriculasService.crearIdempotente` (D3). DESVIACIÓN de D2 documentada en el archivo: cada llamada abre su propia transacción (sin `tx` externo compartido) en vez de una única `prisma.$transaction` por fila — requerido por el escenario spec "el Usuario, si es válido, sí se crea" aunque la Matrícula falle; ver comentario en `importacion.service.ts` e `importacion.service.spec.ts`.
+- [x] 2.6 RED+GREEN: `importacion.controller.spec.ts`/`.ts` — `POST /importaciones/padron`, `FileInterceptor`, `@Roles('administrador','director')`, allowlist `.xlsx`/`.csv` (nunca `.xlsm`), `limits.fileSize` (D7).
+- [x] 2.7 `apps/backend/src/importacion/importacion.module.ts` — importa `AuthModule`, `AuditoriaModule`, `UsersModule`, `AcademicoModule`; registra `redisProvider` (sin registrar aún en `app.module.ts`).
 
 ## Phase 3: CSV de errores + auditoría agregada + wiring (PR 3)
 

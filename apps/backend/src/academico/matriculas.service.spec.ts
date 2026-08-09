@@ -410,6 +410,81 @@ describe('MatriculasService.crearIdempotente() (importacion-excel, student-enrol
   });
 });
 
+describe('MatriculasService.resolverReferenciasAula() (importacion-excel, corrección PR2, spec "Idempotencia por fila")', () => {
+  function construirServicioResolucion(overrides: {
+    anioEscolarFindUnique?: jest.Mock;
+    aulaFindFirst?: jest.Mock;
+  }) {
+    const anioEscolarFindUnique = overrides.anioEscolarFindUnique ?? jest.fn().mockResolvedValue({ id: 'a1' });
+    const aulaFindFirst =
+      overrides.aulaFindFirst ?? jest.fn().mockResolvedValue({ id: 'au1', anio_escolar_id: 'a1' });
+
+    const prisma = {
+      anioEscolar: { findUnique: anioEscolarFindUnique },
+      aula: { findFirst: aulaFindFirst },
+      $transaction: jest.fn(),
+    };
+    const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
+
+    const servicio = new MatriculasService(prisma as unknown as PrismaService, auditoria as unknown as AuditoriaService);
+
+    return { servicio, prisma, anioEscolarFindUnique, aulaFindFirst };
+  }
+
+  const datosResolucion = {
+    grado_nombre: '1°',
+    seccion_nombre: 'A',
+    turno: 'manana' as const,
+    anio_escolar_codigo: '2026',
+  };
+
+  // Lectura pura: nunca abre transacción — ImportacionService la invoca ANTES de abrir su propia
+  // prisma.$transaction compartida por fila.
+  it('nunca abre una transacción (lectura pura fuera de tx)', async () => {
+    const { servicio, prisma } = construirServicioResolucion({});
+
+    await servicio.resolverReferenciasAula(datosResolucion);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('AnioEscolar inexistente devuelve ok:false con entidad AnioEscolar, sin consultar Aula', async () => {
+    const aulaFindFirst = jest.fn();
+    const { servicio } = construirServicioResolucion({
+      anioEscolarFindUnique: jest.fn().mockResolvedValue(null),
+      aulaFindFirst,
+    });
+
+    const resultado = await servicio.resolverReferenciasAula(datosResolucion);
+
+    expect(resultado).toEqual({
+      ok: false,
+      entidad: 'AnioEscolar',
+      campo: 'anio_escolar_codigo',
+      valor: '2026',
+    });
+    expect(aulaFindFirst).not.toHaveBeenCalled();
+  });
+
+  it('clave compuesta de Aula inexistente devuelve ok:false con entidad Aula', async () => {
+    const { servicio } = construirServicioResolucion({ aulaFindFirst: jest.fn().mockResolvedValue(null) });
+
+    const resultado = await servicio.resolverReferenciasAula(datosResolucion);
+
+    expect(resultado).toEqual({ ok: false, entidad: 'Aula', campo: 'aula', valor: '1°/A/manana' });
+  });
+
+  it('Aula y AnioEscolar existentes devuelve ok:true, aunque sean incoherentes entre sí (la coherencia se valida dentro de la tx compartida)', async () => {
+    const { servicio } = construirServicioResolucion({
+      aulaFindFirst: jest.fn().mockResolvedValue({ id: 'au1', anio_escolar_id: 'a-otro' }),
+    });
+
+    const resultado = await servicio.resolverReferenciasAula(datosResolucion);
+
+    expect(resultado).toEqual({ ok: true });
+  });
+});
+
 describe('MatriculasService.eliminar() (SE4, tarea 27.1-27.2)', () => {
   it('[27.1] elimina la fila y audita MATRICULA_ELIMINADA', async () => {
     const actual = { id: 'm1', usuario_id: 'u1', aula_id: 'au1', anio_escolar_id: 'a1' };
