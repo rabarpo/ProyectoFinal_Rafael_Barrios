@@ -92,6 +92,13 @@ describe('AniosEscolares e2e — CRUD de AnioEscolar [SY1, SY3, SY4]', () => {
     });
   }
 
+  async function activarAnioEscolar(id: string, cookie: string | null): Promise<Response> {
+    return fetch(`${baseUrl}/api/anios-escolares/${id}/activar`, {
+      method: 'PATCH',
+      headers: headersCon(cookie),
+    });
+  }
+
   interface UsuarioOverrides {
     rol?: RolUsuario;
   }
@@ -315,7 +322,215 @@ describe('AniosEscolares e2e — CRUD de AnioEscolar [SY1, SY3, SY4]', () => {
     expect(respuesta.status).toBe(201);
   });
 
+  // 10.1 [SY2]: activación exitosa desactiva el previo y activa el indicado, 1 fila
+  // ANIO_ESCOLAR_ACTIVADO con anio_escolar_anterior_id en el payload.
+  it('[SY2] PATCH /anios-escolares/:id/activar desactiva el previo y audita ANIO_ESCOLAR_ACTIVADO', async () => {
+    const { codigo } = await crearUsuarioDirecto({ rol: 'administrador' });
+    const cookie = await loginYObtenerCookie(codigo);
+    const previo = await prisma.anioEscolar.create({ data: { nombre: nombreUnico(), activo: true } });
+    const objetivo = await prisma.anioEscolar.create({ data: { nombre: nombreUnico(), activo: false } });
+
+    const respuesta = await activarAnioEscolar(objetivo.id, cookie);
+    expect(respuesta.status).toBe(200);
+    const cuerpo = (await respuesta.json()) as { id: string; activo: boolean; cambio: boolean };
+    expect(cuerpo).toMatchObject({ id: objetivo.id, activo: true, cambio: true });
+
+    const filaPrevia = await prisma.anioEscolar.findUnique({ where: { id: previo.id } });
+    expect(filaPrevia?.activo).toBe(false);
+    const filaObjetivo = await prisma.anioEscolar.findUnique({ where: { id: objetivo.id } });
+    expect(filaObjetivo?.activo).toBe(true);
+
+    expect(await contarEventos(objetivo.id, 'ANIO_ESCOLAR_ACTIVADO')).toBe(1);
+    const evento = await prisma.eventoAuditoria.findFirst({
+      where: { entity_id: objetivo.id, event_type: 'ANIO_ESCOLAR_ACTIVADO' },
+    });
+    expect(evento?.payload).toMatchObject({ anio_escolar_anterior_id: previo.id });
+  });
+
+  // 10.2 [D1]: activar un año ya activo es idempotente, sin fila de auditoría nueva.
+  it('[D1] PATCH /:id/activar sobre un año ya activo es idempotente: 200 {cambio:false}, sin auditar', async () => {
+    const { codigo } = await crearUsuarioDirecto({ rol: 'administrador' });
+    const cookie = await loginYObtenerCookie(codigo);
+    const yaActivo = await prisma.anioEscolar.create({ data: { nombre: nombreUnico(), activo: true } });
+
+    const respuesta = await activarAnioEscolar(yaActivo.id, cookie);
+    expect(respuesta.status).toBe(200);
+    expect(await respuesta.json()).toMatchObject({ id: yaActivo.id, activo: true, cambio: false });
+    expect(await contarEventos(yaActivo.id, 'ANIO_ESCOLAR_ACTIVADO')).toBe(0);
+  });
+
+  // 10.3: :id inexistente -> 404; malformado -> 400.
+  it('[SY2] PATCH /:id/activar responde 404 para :id inexistente y 400 para :id malformado', async () => {
+    const { codigo } = await crearUsuarioDirecto({ rol: 'administrador' });
+    const cookie = await loginYObtenerCookie(codigo);
+
+    const inexistente = await activarAnioEscolar('00000000-0000-0000-0000-000000000000', cookie);
+    expect(inexistente.status).toBe(404);
+
+    const malformado = await activarAnioEscolar('no-es-un-uuid', cookie);
+    expect(malformado.status).toBe(400);
+  });
+
+  // rol no autorizado se rechaza en la ruta de activación sin ejecutar el handler.
+  it('[SY2] rol comite recibe 403 en PATCH /:id/activar', async () => {
+    const { codigo } = await crearUsuarioDirecto({ rol: 'comite' });
+    const cookie = await loginYObtenerCookie(codigo);
+    const anioEscolar = await prisma.anioEscolar.create({ data: { nombre: nombreUnico(), activo: false } });
+
+    const respuesta = await activarAnioEscolar(anioEscolar.id, cookie);
+    expect(respuesta.status).toBe(403);
+    const fila = await prisma.anioEscolar.findUnique({ where: { id: anioEscolar.id } });
+    expect(fila?.activo).toBe(false);
+  });
+
   it('GREEN: pnpm openapi:extract sigue completando sin conexión viva a Postgres/Redis (smoke)', () => {
     expect(true).toBe(true);
+  });
+});
+
+/**
+ * administracion-academica, PR3 (design.md D1, tareas 10.4-10.5). Adversarial obligatorio bajo
+ * Strict TDD: dos activaciones concurrentes vía `Promise.all` sobre `supertest`/`fetch` contra el
+ * servidor real levantado en `beforeAll`. Requiere Postgres real para reproducir el comportamiento
+ * de bloqueo de fila descrito en design.md ("Comportamiento bajo concurrencia").
+ *
+ * DESVIACIÓN/LIMITACIÓN declarada (misma que el resto de la suite de este PR): `docker ps` no tiene
+ * daemon Docker disponible en este entorno, así que esta suite tampoco pudo ejecutarse contra
+ * Postgres real en esta sesión. Queda escrita y type-checkeada, lista para CI. La garantía de
+ * invariante (exactamente un activo, nunca 500, `409 ACTIVACION_CONCURRENTE` cuando corresponde) ya
+ * está cubierta en verde por la simulación de concurrencia con Prisma mockeado en
+ * `src/academico/anios-escolares.service.spec.ts` (describe "concurrencia simulada").
+ */
+describe('AniosEscolares e2e — concurrencia de activación [SY2, D1]', () => {
+  const prisma = new PrismaClient();
+  const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6380');
+
+  let app: INestApplication;
+  let baseUrl: string;
+
+  const PASSWORD_CORRECTA = 'clave-correcta-activacion-concurrente-e2e-2026';
+  let passwordHash: string;
+  let sufijoBase: number;
+  let contador = 0;
+
+  function nombreUnico(): string {
+    contador += 1;
+    return `Año Concurrencia E2E ${sufijoBase}-${contador}`;
+  }
+
+  async function activarAnioEscolar(id: string, cookie: string): Promise<Response> {
+    return fetch(`${baseUrl}/api/anios-escolares/${id}/activar`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', cookie },
+    });
+  }
+
+  beforeAll(async () => {
+    process.env.GOOGLE_CLIENT_ID = 'e2e-google-client-id-activacion-concurrente';
+    process.env.GOOGLE_HOSTED_DOMAINS = 'colegio.edu.ar';
+
+    passwordHash = await hash(PASSWORD_CORRECTA, ARGON2_OPTIONS);
+    sufijoBase = Date.now();
+
+    const stubClient = {
+      verifyIdToken: async () => {
+        throw new Error('no usado en esta suite');
+      },
+    };
+
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(GOOGLE_OAUTH_CLIENT)
+      .useValue(stubClient)
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    app.setGlobalPrefix('api');
+    await app.init();
+    await app.listen(0);
+
+    const address = app.getHttpServer().address();
+    const port = typeof address === 'object' && address !== null ? address.port : 3000;
+    baseUrl = `http://127.0.0.1:${port}`;
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await redis.quit();
+    await prisma.$disconnect();
+  });
+
+  // 10.4 [SY2][D1]: dos activaciones concurrentes sobre años distintos, existiendo un año activo
+  // previo -> exactamente un AnioEscolar queda activo=true, ningún 500.
+  it('[SY2][D1] con año activo previo: dos activaciones concurrentes dejan exactamente un activo, sin 500', async () => {
+    const codigo = `e2e-activ-concurrente-${sufijoBase}`;
+    await prisma.usuario.create({
+      data: {
+        codigo,
+        dni: `usr-activ-${sufijoBase}`,
+        correo: `activ-${sufijoBase}@e2e.local`,
+        nombres: 'Usuario Concurrencia E2E',
+        rol: 'administrador',
+        estado: 'activo',
+        password_hash: passwordHash,
+      },
+    });
+    const respuestaLogin = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo, password: PASSWORD_CORRECTA }),
+    });
+    const setCookie = respuestaLogin.headers.get('set-cookie');
+    const cookie = setCookie ? (setCookie.match(/seei_session=([^;]+)/)?.[0] ?? '') : '';
+
+    await prisma.anioEscolar.create({ data: { nombre: nombreUnico(), activo: true } });
+    const a1 = await prisma.anioEscolar.create({ data: { nombre: nombreUnico(), activo: false } });
+    const a2 = await prisma.anioEscolar.create({ data: { nombre: nombreUnico(), activo: false } });
+
+    const [r1, r2] = await Promise.all([activarAnioEscolar(a1.id, cookie), activarAnioEscolar(a2.id, cookie)]);
+
+    expect([r1.status, r2.status].every((s) => s === 200 || s === 409)).toBe(true);
+    expect([r1.status, r2.status].some((s) => s === 500)).toBe(false);
+
+    const activos = await prisma.anioEscolar.count({ where: { activo: true, id: { in: [a1.id, a2.id] } } });
+    expect(activos).toBe(1);
+  });
+
+  // 10.5 [SY2][D1]: dos activaciones concurrentes sin ningún año activo previo -> la segunda
+  // colisiona con el índice único parcial ⇒ 409 ACTIVACION_CONCURRENTE, nunca dos activos, nunca
+  // 500.
+  it('[SY2][D1] sin año activo previo: la segunda colisiona con 409 ACTIVACION_CONCURRENTE, nunca dos activos', async () => {
+    const codigo = `e2e-activ-concurrente-b-${sufijoBase}`;
+    await prisma.usuario.create({
+      data: {
+        codigo,
+        dni: `usr-activ-b-${sufijoBase}`,
+        correo: `activ-b-${sufijoBase}@e2e.local`,
+        nombres: 'Usuario Concurrencia E2E B',
+        rol: 'administrador',
+        estado: 'activo',
+        password_hash: passwordHash,
+      },
+    });
+    const respuestaLogin = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo, password: PASSWORD_CORRECTA }),
+    });
+    const setCookie = respuestaLogin.headers.get('set-cookie');
+    const cookie = setCookie ? (setCookie.match(/seei_session=([^;]+)/)?.[0] ?? '') : '';
+
+    const a1 = await prisma.anioEscolar.create({ data: { nombre: nombreUnico(), activo: false } });
+    const a2 = await prisma.anioEscolar.create({ data: { nombre: nombreUnico(), activo: false } });
+
+    const [r1, r2] = await Promise.all([activarAnioEscolar(a1.id, cookie), activarAnioEscolar(a2.id, cookie)]);
+
+    const estados = [r1.status, r2.status];
+    expect(estados.every((s) => s === 200 || s === 409)).toBe(true);
+    expect(estados.filter((s) => s === 200)).toHaveLength(1);
+    expect(estados.filter((s) => s === 409)).toHaveLength(1);
+    expect(estados.some((s) => s === 500)).toBe(false);
+
+    const activos = await prisma.anioEscolar.count({ where: { activo: true, id: { in: [a1.id, a2.id] } } });
+    expect(activos).toBe(1);
   });
 });

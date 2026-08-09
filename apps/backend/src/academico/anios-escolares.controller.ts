@@ -4,6 +4,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import type { SesionUsuario } from '../auth/sesion-usuario';
+import type { ResultadoActivacionAnioEscolar } from './anios-escolares.service';
 import { AniosEscolaresService } from './anios-escolares.service';
 import { ActualizarAnioEscolarDto } from './dto/actualizar-anio-escolar.dto';
 import { AnioEscolarRespuestaDto } from './dto/anio-escolar-respuesta.dto';
@@ -69,6 +70,18 @@ export class AniosEscolaresController {
     @Req() req: RequestConUsuario,
   ): Promise<AnioEscolarRespuestaDto> {
     return this.aniosEscolaresService.actualizar(id, dto, req.usuario!.userId);
+  }
+
+  @Patch(':id/activar')
+  @ApiOperation({ summary: 'Activa un AnioEscolar, desactivando el previamente activo (idempotente)' })
+  @ApiResponse({ status: 200, description: 'AnioEscolar activado (o ya estaba activo, cambio=false)' })
+  @ApiResponse({ status: 409, description: 'Activación concurrente sobre el índice único parcial' })
+  @ApiResponse({ status: 404, description: 'AnioEscolar no encontrado' })
+  async activar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: RequestConUsuario,
+  ): Promise<ResultadoActivacionAnioEscolar> {
+    return this.aniosEscolaresService.activar(id, req.usuario!.userId);
   }
 
   @Delete(':id')

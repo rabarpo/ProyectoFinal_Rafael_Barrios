@@ -22,6 +22,7 @@ function construirServicio(overrides: {
   findUnique?: jest.Mock;
   create?: jest.Mock;
   update?: jest.Mock;
+  updateMany?: jest.Mock;
   delete?: jest.Mock;
   seccionCount?: jest.Mock;
   aulaCount?: jest.Mock;
@@ -33,6 +34,7 @@ function construirServicio(overrides: {
     findUnique: overrides.findUnique ?? jest.fn().mockResolvedValue(null),
     create: overrides.create ?? jest.fn(),
     update: overrides.update ?? jest.fn(),
+    updateMany: overrides.updateMany ?? jest.fn().mockResolvedValue({ count: 0 }),
     delete: overrides.delete ?? jest.fn(),
   };
   const seccion = { count: overrides.seccionCount ?? jest.fn().mockResolvedValue(0) };
@@ -230,5 +232,263 @@ describe('AniosEscolaresService.eliminar() (SY3, D2)', () => {
     await expect(servicio.eliminar('a1', 'actor-1')).rejects.toMatchObject({
       response: { codigo: 'ENTIDAD_CON_DEPENDIENTES', relacion: 'Seccion' },
     });
+  });
+});
+
+describe('AniosEscolaresService.activar() (SY2, D1, tareas 10.1-10.7)', () => {
+  // 10.1: activación exitosa desactiva el año previamente activo y activa el indicado, audita
+  // ANIO_ESCOLAR_ACTIVADO con anio_escolar_anterior_id.
+  it('[10.1] desactiva el previo, activa el objetivo y audita con anio_escolar_anterior_id', async () => {
+    const objetivo = { id: 'a2', nombre: 'Año 2027', activo: false };
+    const previo = { id: 'a1', nombre: 'Año 2026', activo: true };
+    const activado = { id: 'a2', nombre: 'Año 2027', activo: true };
+    const updateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const update = jest.fn().mockResolvedValue(activado);
+    const { servicio, tx, auditoria } = construirServicio({
+      findUnique: jest.fn().mockResolvedValue(objetivo),
+      findFirst: jest.fn().mockResolvedValue(previo),
+      updateMany,
+      update,
+    });
+
+    const resultado = await servicio.activar('a2', 'actor-1');
+
+    expect(resultado).toEqual({ id: 'a2', activo: true, cambio: true });
+    // Orden obligatorio (D1): desactivar (updateMany) antes de activar (update) — índice único
+    // parcial no diferible.
+    expect(updateMany.mock.invocationCallOrder[0]).toBeLessThan(update.mock.invocationCallOrder[0]);
+    expect(tx.anioEscolar.updateMany).toHaveBeenCalledWith({
+      where: { activo: true },
+      data: { activo: false },
+    });
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      'ANIO_ESCOLAR_ACTIVADO',
+      'actor-1',
+      'AnioEscolar',
+      'a2',
+      expect.objectContaining({ anio_escolar_anterior_id: 'a1' }),
+    );
+  });
+
+  // 10.2: activar un año ya activo es idempotente, no audita.
+  it('[10.2] año ya activo es idempotente: cambio=false, sin auditar', async () => {
+    const objetivo = { id: 'a1', nombre: 'Año 2026', activo: true };
+    const update = jest.fn();
+    const updateMany = jest.fn();
+    const { servicio, auditoria } = construirServicio({
+      findUnique: jest.fn().mockResolvedValue(objetivo),
+      update,
+      updateMany,
+    });
+
+    const resultado = await servicio.activar('a1', 'actor-1');
+
+    expect(resultado).toEqual({ id: 'a1', activo: true, cambio: false });
+    expect(update).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(auditoria.log).not.toHaveBeenCalled();
+  });
+
+  // 10.3: :id inexistente responde 404.
+  it('[10.3] :id inexistente responde 404', async () => {
+    const { servicio } = construirServicio({ findUnique: jest.fn().mockResolvedValue(null) });
+    await expect(servicio.activar('inexistente', 'actor-1')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  // 10.6: la colisión del índice parcial (target contiene 'activo') se distingue de un nombre
+  // duplicado (target contiene 'nombre') — reutiliza objetivoContiene() de PR1. Un P2002 cuyo
+  // target NO contiene 'activo' no se traduce a ACTIVACION_CONCURRENTE, escapa tal cual.
+  it("[10.6] P2002 con target que NO contiene 'activo' no se traduce a ACTIVACION_CONCURRENTE", async () => {
+    const objetivo = { id: 'a2', nombre: 'Año 2027', activo: false };
+    const p2002Nombre = { code: 'P2002', meta: { target: ['nombre'] } };
+    const update = jest.fn().mockImplementation(() => {
+      throw p2002Nombre;
+    });
+    const { servicio } = construirServicio({
+      findUnique: jest.fn().mockResolvedValue(objetivo),
+      findFirst: jest.fn().mockResolvedValue(null),
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      update,
+    });
+
+    await expect(servicio.activar('a2', 'actor-1')).rejects.toBe(p2002Nombre);
+  });
+
+  it("[10.6] P2002 con target que SÍ contiene 'activo' se traduce a 409 ACTIVACION_CONCURRENTE", async () => {
+    const objetivo = { id: 'a2', nombre: 'Año 2027', activo: false };
+    const p2002Activo = { code: 'P2002', meta: { target: ['activo'] } };
+    const update = jest.fn().mockImplementation(() => {
+      throw p2002Activo;
+    });
+    const { servicio } = construirServicio({
+      findUnique: jest.fn().mockResolvedValue(objetivo),
+      findFirst: jest.fn().mockResolvedValue(null),
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      update,
+    });
+
+    await expect(servicio.activar('a2', 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'ACTIVACION_CONCURRENTE' },
+    });
+  });
+});
+
+/**
+ * Adversarial (RED obligatorio bajo Strict TDD, design.md "Estrategia de pruebas", tareas 10.4-10.5)
+ * — simula, con Prisma mockeado, el comportamiento descrito en design.md D1 bajo READ COMMITTED:
+ * `updateMany`/`update` compiten por un lock de fila serializado (mutex FIFO), mientras que las
+ * lecturas (`findUnique`/`findFirst`) no bloquean y ven el estado vivo al momento de ejecutarse —
+ * mismo criterio que el flujo de datos de D1. La prueba de concurrencia real contra Postgres queda
+ * pendiente de CI (`docker ps` sin daemon disponible en este entorno, ver limitación documentada en
+ * `anios-escolares.e2e-spec.ts`).
+ */
+describe('AniosEscolaresService.activar() — concurrencia simulada (SY2, D1, tareas 10.4-10.5)', () => {
+  interface FilaSimulada {
+    id: string;
+    nombre: string;
+    activo: boolean;
+  }
+
+  function crearPrismaConcurrenciaSimulada(filasIniciales: FilaSimulada[]) {
+    const filas = new Map(filasIniciales.map((f) => [f.id, { ...f }]));
+    // FIFO global: modela el lock de fila que Postgres retiene hasta el COMMIT de la transacción
+    // completa (no solo durante la sentencia individual) — la primera escritura de cada
+    // transacción reserva su turno; el lock se libera recién cuando el callback ENTERO de
+    // `$transaction` termina (éxito o error), en el `finally` de abajo.
+    let colaEscritura: Promise<void> = Promise.resolve();
+
+    const prisma = {
+      $transaction: jest.fn(async (callback: (tx: unknown) => unknown) => {
+        // Wrapper mutable en vez de `let` reasignado dentro de un closure anidado: evita que el
+        // analizador de flujo de TypeScript angoste el tipo a `never` en el `finally` de más abajo.
+        const estadoTurno: { miTurno: Promise<void> | null; liberar: (() => void) | null } = {
+          miTurno: null,
+          liberar: null,
+        };
+
+        function asegurarTurno(): Promise<void> {
+          if (!estadoTurno.miTurno) {
+            estadoTurno.miTurno = colaEscritura;
+            colaEscritura = new Promise<void>((resolve) => {
+              estadoTurno.liberar = () => resolve();
+            });
+          }
+          return estadoTurno.miTurno;
+        }
+
+        const anioEscolarTx = {
+          findUnique: jest.fn(({ where: { id } }: { where: { id: string } }) =>
+            Promise.resolve(filas.get(id) ? { ...filas.get(id)! } : null),
+          ),
+          findFirst: jest.fn(({ where }: { where: { activo?: boolean } }) => {
+            if (where?.activo === true) {
+              const activa = [...filas.values()].find((f) => f.activo);
+              return Promise.resolve(activa ? { ...activa } : null);
+            }
+            return Promise.resolve(null);
+          }),
+          updateMany: jest.fn(
+            async ({ where, data }: { where: { activo?: boolean }; data: { activo: boolean } }) => {
+              // Postgres real: un `UPDATE ... WHERE activo = true` que no coincide con ninguna fila
+              // no toma ningún lock y no bloquea — solo reserva turno (y por lo tanto puede
+              // bloquearse) cuando, al momento de la llamada, existe una fila activa que tocar. Esta
+              // comprobación es síncrona (sin `await` previo) para reservar el turno en el mismo
+              // tick que la otra transacción podría estar reservando el suyo.
+              const hayFilaActivaAhora = [...filas.values()].some((f) => f.activo);
+              if (where?.activo === true && hayFilaActivaAhora) {
+                await asegurarTurno();
+              }
+              let count = 0;
+              for (const fila of filas.values()) {
+                if (where?.activo === true && fila.activo === true) {
+                  fila.activo = data.activo;
+                  count += 1;
+                }
+              }
+              return { count };
+            },
+          ),
+          update: jest.fn(
+            async ({ where: { id }, data }: { where: { id: string }; data: { activo: boolean } }) => {
+              await asegurarTurno();
+              const fila = filas.get(id);
+              if (!fila) throw new Error('fila inexistente en el mock');
+              if (data.activo === true) {
+                const otroActivo = [...filas.values()].some((f) => f.id !== id && f.activo === true);
+                if (otroActivo) {
+                  // Simula la violación del índice único parcial anio_escolar_activo_unico_idx (D1).
+                  throw { code: 'P2002', meta: { target: ['activo'] } };
+                }
+              }
+              Object.assign(fila, data);
+              return { ...fila };
+            },
+          ),
+        };
+
+        try {
+          return await callback({ anioEscolar: anioEscolarTx });
+        } finally {
+          if (estadoTurno.liberar) estadoTurno.liberar();
+        }
+      }),
+    };
+    const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
+    const servicio = new AniosEscolaresService(
+      prisma as unknown as PrismaService,
+      auditoria as unknown as AuditoriaService,
+    );
+
+    return { servicio, filas };
+  }
+
+  // 10.4: dos activaciones concurrentes sobre años distintos, existiendo un año activo previo ->
+  // exactamente un AnioEscolar queda activo=true, ningún 500 (gana la última transacción
+  // confirmada).
+  it('[10.4] con año activo previo: dos activaciones concurrentes dejan exactamente un activo, sin error', async () => {
+    const { servicio, filas } = crearPrismaConcurrenciaSimulada([
+      { id: 'a0', nombre: 'Año 2025', activo: true },
+      { id: 'a1', nombre: 'Año 2026', activo: false },
+      { id: 'a2', nombre: 'Año 2027', activo: false },
+    ]);
+
+    const [r1, r2] = await Promise.all([
+      servicio.activar('a1', 'actor-1'),
+      servicio.activar('a2', 'actor-2'),
+    ]);
+
+    expect(r1.activo).toBe(true);
+    expect(r2.activo).toBe(true);
+    const activos = [...filas.values()].filter((f) => f.activo);
+    expect(activos).toHaveLength(1);
+  });
+
+  // 10.5: dos activaciones concurrentes sin ningún año activo previo -> la segunda colisiona
+  // contra el índice único parcial ⇒ 409 ACTIVACION_CONCURRENTE, nunca dos activos, nunca 500.
+  it('[10.5] sin año activo previo: la segunda activación colisiona con 409 ACTIVACION_CONCURRENTE, nunca dos activos', async () => {
+    const { servicio, filas } = crearPrismaConcurrenciaSimulada([
+      { id: 'a1', nombre: 'Año 2026', activo: false },
+      { id: 'a2', nombre: 'Año 2027', activo: false },
+    ]);
+
+    const resultados = await Promise.allSettled([
+      servicio.activar('a1', 'actor-1'),
+      servicio.activar('a2', 'actor-2'),
+    ]);
+
+    const cumplidas = resultados.filter((r) => r.status === 'fulfilled');
+    const rechazadas = resultados.filter((r) => r.status === 'rejected');
+    expect(cumplidas).toHaveLength(1);
+    expect(rechazadas).toHaveLength(1);
+    expect((rechazadas[0] as PromiseRejectedResult).reason).toMatchObject({
+      response: { codigo: 'ACTIVACION_CONCURRENTE' },
+    });
+    // Ninguna otra clase de error (nunca 500): la promesa rechazada es un ConflictException con
+    // el código de negocio esperado, no un error crudo de Prisma ni una excepción sin traducir.
+    expect((rechazadas[0] as PromiseRejectedResult).reason.status).toBe(409);
+
+    const activos = [...filas.values()].filter((f) => f.activo);
+    expect(activos).toHaveLength(1);
   });
 });

@@ -5,7 +5,7 @@ import { AUDIT_EVENT_TYPES } from '../auditoria/audit-event-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { ACADEMICO_ERROR_CODES } from './academico.errors';
 import type { AnioEscolarRespuestaDto } from './dto/anio-escolar-respuesta.dto';
-import { esP2002, esP2003, relacionDesdeFieldName, traducirRestriccion } from './prisma-errores';
+import { esP2002, esP2003, objetivoContiene, relacionDesdeFieldName, traducirRestriccion } from './prisma-errores';
 
 // administracion-academica, PR2 (design.md D3/D5, tarea 7.8). Forma mínima que `crear()` necesita
 // de un alta de `AnioEscolar`.
@@ -20,6 +20,14 @@ export type DatosActualizarAnioEscolar = Partial<DatosAnioEscolar>;
 
 export interface FiltroListadoAniosEscolares {
   activo?: string;
+}
+
+// PR3 (design.md D1, tarea 10.7). Resultado de `activar()`: `cambio: false` marca el caso
+// idempotente (el año ya estaba activo) sin fila de auditoría nueva.
+export interface ResultadoActivacionAnioEscolar {
+  id: string;
+  activo: true;
+  cambio: boolean;
 }
 
 function mapearAnioEscolarRespuesta(anioEscolar: AnioEscolar): AnioEscolarRespuestaDto {
@@ -258,6 +266,50 @@ export class AniosEscolaresService {
           entidad: 'AnioEscolar',
           relacion: relacionDesdeFieldName(error.meta?.field_name),
         });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * design.md D1, tarea 10.7, spec "Activación exclusiva de AñoEscolar". Orden **desactivar →
+   * activar**, obligatorio (no estilístico): `anio_escolar_activo_unico_idx` es un índice único
+   * parcial (`CREATE UNIQUE INDEX … WHERE "activo" = true`), no diferible en Postgres, así que se
+   * evalúa sentencia a sentencia dentro de la `$transaction`. Activar primero y desactivar después
+   * fallaría siempre, no solo bajo concurrencia. Idempotente: activar un año ya activo es un no-op
+   * que no audita. El `catch P2002` distingue la colisión del índice parcial (`target` contiene
+   * `activo`) de un `nombre` duplicado reutilizando `objetivoContiene()` de PR1 — solo la primera se
+   * traduce a `409 ACTIVACION_CONCURRENTE`.
+   */
+  async activar(id: string, actorId: string): Promise<ResultadoActivacionAnioEscolar> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const objetivo = await tx.anioEscolar.findUnique({ where: { id } });
+        if (!objetivo) {
+          throw new NotFoundException('Año escolar no encontrado');
+        }
+        if (objetivo.activo) {
+          return { id: objetivo.id, activo: true, cambio: false };
+        }
+
+        const previo = await tx.anioEscolar.findFirst({ where: { activo: true } });
+        await tx.anioEscolar.updateMany({ where: { activo: true }, data: { activo: false } });
+        const activado = await tx.anioEscolar.update({ where: { id }, data: { activo: true } });
+
+        await this.auditoria.log(
+          tx,
+          AUDIT_EVENT_TYPES.ANIO_ESCOLAR_ACTIVADO,
+          actorId,
+          'AnioEscolar',
+          activado.id,
+          { anio_escolar_anterior_id: previo?.id ?? null } as Prisma.InputJsonValue,
+        );
+
+        return { id: activado.id, activo: true, cambio: true };
+      });
+    } catch (error) {
+      if (esP2002(error) && objetivoContiene(error.meta?.target, 'activo')) {
+        throw new ConflictException({ codigo: ACADEMICO_ERROR_CODES.ACTIVACION_CONCURRENTE });
       }
       throw error;
     }
