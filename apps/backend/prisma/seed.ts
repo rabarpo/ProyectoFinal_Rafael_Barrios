@@ -102,15 +102,29 @@ async function main(): Promise<void> {
     // Singleton `Configuracion` (D7) — datos de marcador de posición, sin ninguna columna de
     // secreto SMTP. La contraseña SMTP vendrá de variable de entorno o gestor de secretos,
     // decisión de #10, nunca de una fila de esta tabla.
+    //
+    // configuracion-general, PR1 (design.md D8, tarea 1.5): `smtp_host: null` en el `create` (en
+    // vez del placeholder `smtp.seei.local` de #2) — desde que la migración de este change limpia
+    // ese mismo placeholder en filas ya sembradas, sembrar uno nuevo aquí reintroduciría el mismo
+    // problema en un entorno recién creado: `ConfiguracionEmailSender` (PR4) cae a
+    // `ConsoleEmailSender` cuando `smtp_host` es `null`, que es el comportamiento correcto hasta
+    // que un administrador configure un host real vía `PUT /configuracion`. `nombre`/
+    // `zona_horaria` llevan valores institucionales razonables; `director`/`color_primario`/
+    // `color_secundario`/`logo` quedan sin definir (nadie los necesita para que el sistema
+    // arranque). `update: {}` es intencional (spec, Scenario "Re-ejecutar el seed no duplica ni
+    // rompe la fila"): re-ejecutar el seed sobre una fila ya sembrada NUNCA sobrescribe columnas
+    // existentes, reales o no.
     await prisma.configuracion.upsert({
       where: { clave: 'institucional' },
       update: {},
       create: {
         clave: 'institucional',
         anio_escolar_id: anioEscolar.id,
-        smtp_host: 'smtp.seei.local',
-        smtp_puerto: 587,
-        smtp_remitente: 'no-responder@seei.local',
+        smtp_host: null,
+        smtp_puerto: null,
+        smtp_remitente: null,
+        nombre: 'SEEI',
+        zona_horaria: 'America/Lima',
       },
     });
 

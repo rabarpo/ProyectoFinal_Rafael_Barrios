@@ -355,14 +355,26 @@ model Notificacion {
   jobCorreo JobCorreo @relation(fields: [job_correo_id], references: [id], onDelete: Restrict)
 }
 
+// configuracion-general, PR1 (design.md D1, tarea 1.2). Columnas aditivas, todas nullable o con
+// default que no requiere valor en filas existentes — la fila semilla `clave='institucional'`
+// sobrevive la migración sin tocarse. `logo`/`logo_mime`/`logo_actualizado_en` quedan fuera de
+// este PR (se agregan en PR3, junto con la subida/servido del logo) para mantener esta migración
+// acotada al alcance de `ConfiguracionLecturaModule` (lectura de identidad textual, colores, zona
+// horaria y dominios Google — sin bytea todavía).
 model Configuracion {
-  id              String   @id @default(uuid()) @db.Uuid
-  clave           String   @unique
-  anio_escolar_id String   @db.Uuid
-  smtp_host       String?
-  smtp_puerto     Int?
-  smtp_remitente  String?
-  actualizado_en  DateTime @default(now()) @db.Timestamptz(3)
+  id                String   @id @default(uuid()) @db.Uuid
+  clave             String   @unique
+  anio_escolar_id   String   @db.Uuid
+  smtp_host         String?
+  smtp_puerto       Int?
+  smtp_remitente    String?
+  nombre            String?
+  director          String?
+  color_primario    String?
+  color_secundario  String?
+  zona_horaria      String?
+  dominios_google   String[] @default([])
+  actualizado_en    DateTime @default(now()) @db.Timestamptz(3)
 
   anioEscolar AnioEscolar @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
 }

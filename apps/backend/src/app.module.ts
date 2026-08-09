@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AcademicoModule } from './academico/academico.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
 import { AuthModule } from './auth/auth.module';
+import { ConfiguracionLecturaModule } from './configuracion/configuracion-lectura.module';
 import { HealthModule } from './health/health.module';
 import { ImportacionModule } from './importacion/importacion.module';
 import { SystemPingModule } from './system-ping/system-ping.module';
@@ -11,6 +12,12 @@ import { UsersModule } from './users/users.module';
 // registra al final de la lista, mismo criterio de orden que los módulos de dominio previos
 // (`UsersModule`, `AcademicoModule`) — cambio aditivo puro (design.md "Rollback Plan": revertir
 // esto es quitar una línea, sin tocar rutas existentes).
+//
+// configuracion-general, PR1 (design.md "Technical Approach", tarea 1.9). `ConfiguracionLecturaModule`
+// se registra ahora (sin controller, sin rutas nuevas) como guarda de regresión permanente: sin
+// controller ni conexión abierta al instanciarse, `pnpm openapi:extract` sigue corriendo sin
+// Postgres ni Redis vivos. `ConfiguracionModule` (PR2, controller + escritura auditada) se
+// registrará por separado cuando exista.
 @Module({
   imports: [
     HealthModule,
@@ -20,6 +27,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     AcademicoModule,
     ImportacionModule,
+    ConfiguracionLecturaModule,
   ],
 })
 export class AppModule {}
