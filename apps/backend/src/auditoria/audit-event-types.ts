@@ -14,6 +14,10 @@
 // administracion-usuarios-apoderados (PR1, tarea 2.1; design.md D4): claves aditivas para el CRUD
 // de `Usuario`/`Apoderado`. Ninguna de las siete toca un `Voto`, así que tampoco activan la
 // obligación versionada de ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4].
+// administracion-academica (PR1, tarea 4.1; design.md D4): dieciocho claves aditivas para el CRUD
+// de `AnioEscolar`/`Nivel`/`Grado`/`Seccion`/`Aula`/`Matricula` y la activación de año escolar.
+// Ninguna de las dieciocho toca un `Voto`, así que tampoco activan la obligación versionada de
+// ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4] (tarea 4.2/29.1).
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
@@ -33,6 +37,24 @@ export const AUDIT_EVENT_TYPES = {
   APODERADO_CREADO: 'APODERADO_CREADO',
   APODERADO_ACTUALIZADO: 'APODERADO_ACTUALIZADO',
   APODERADO_ELIMINADO: 'APODERADO_ELIMINADO',
+  ANIO_ESCOLAR_CREADO: 'ANIO_ESCOLAR_CREADO',
+  ANIO_ESCOLAR_ACTUALIZADO: 'ANIO_ESCOLAR_ACTUALIZADO',
+  ANIO_ESCOLAR_ACTIVADO: 'ANIO_ESCOLAR_ACTIVADO',
+  ANIO_ESCOLAR_ELIMINADO: 'ANIO_ESCOLAR_ELIMINADO',
+  NIVEL_CREADO: 'NIVEL_CREADO',
+  NIVEL_ACTUALIZADO: 'NIVEL_ACTUALIZADO',
+  NIVEL_ELIMINADO: 'NIVEL_ELIMINADO',
+  GRADO_CREADO: 'GRADO_CREADO',
+  GRADO_ACTUALIZADO: 'GRADO_ACTUALIZADO',
+  GRADO_ELIMINADO: 'GRADO_ELIMINADO',
+  SECCION_CREADA: 'SECCION_CREADA',
+  SECCION_ACTUALIZADA: 'SECCION_ACTUALIZADA',
+  SECCION_ELIMINADA: 'SECCION_ELIMINADA',
+  AULA_CREADA: 'AULA_CREADA',
+  AULA_ACTUALIZADA: 'AULA_ACTUALIZADA',
+  AULA_ELIMINADA: 'AULA_ELIMINADA',
+  MATRICULA_CREADA: 'MATRICULA_CREADA',
+  MATRICULA_ELIMINADA: 'MATRICULA_ELIMINADA',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];
