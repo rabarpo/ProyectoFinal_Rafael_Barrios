@@ -10,6 +10,8 @@ import { AulasController } from './aulas.controller';
 import { AulasService } from './aulas.service';
 import { GradosController } from './grados.controller';
 import { GradosService } from './grados.service';
+import { MatriculasController } from './matriculas.controller';
+import { MatriculasService } from './matriculas.service';
 import { NivelesController } from './niveles.controller';
 import { NivelesService } from './niveles.service';
 import { SeccionesController } from './secciones.controller';
@@ -22,9 +24,9 @@ import { SeccionesService } from './secciones.service';
  *
  * `AcademicoModule implements NestModule` desde PR2 (D0, snippet literal de la tarea 1.1).
  * `cookieParser()` se extiende a cada controlador nuevo (`NivelesController`, `GradosController`
- * desde PR4, `SeccionesController` desde PR5, `AulasController` desde PR6) conforme se registra en
- * los PR siguientes (D6 de `auth-server-sessions`, nunca en `main.ts`); omitir un controlador de
- * `forRoutes(...)` hace que todas sus rutas respondan `401`.
+ * desde PR4, `SeccionesController` desde PR5, `AulasController` desde PR6, `MatriculasController`
+ * desde PR7) conforme se registra en los PR siguientes (D6 de `auth-server-sessions`, nunca en
+ * `main.ts`); omitir un controlador de `forRoutes(...)` hace que todas sus rutas respondan `401`.
  *
  * Ningún provider abre conexión al instanciarse, así que `src/openapi.ts` sigue extrayendo el
  * contrato sin Postgres ni Redis vivos (gotcha D1 de `system-scaffolding`).
@@ -37,6 +39,7 @@ import { SeccionesService } from './secciones.service';
     GradosController,
     SeccionesController,
     AulasController,
+    MatriculasController,
   ],
   providers: [
     PrismaService,
@@ -45,6 +48,7 @@ import { SeccionesService } from './secciones.service';
     GradosService,
     SeccionesService,
     AulasService,
+    MatriculasService,
   ],
 })
 export class AcademicoModule implements NestModule {
@@ -57,6 +61,7 @@ export class AcademicoModule implements NestModule {
         GradosController,
         SeccionesController,
         AulasController,
+        MatriculasController,
       );
   }
 }
