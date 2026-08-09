@@ -261,6 +261,43 @@ export interface paths {
         patch: operations["ApoderadosController_actualizar"];
         trace?: never;
     };
+    "/anios-escolares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista años escolares, con filtro opcional por activo */
+        get: operations["AniosEscolaresController_listar"];
+        put?: never;
+        /** Crea un AnioEscolar con activo=false */
+        post: operations["AniosEscolaresController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/anios-escolares/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta un AnioEscolar por id */
+        get: operations["AniosEscolaresController_obtenerPorId"];
+        put?: never;
+        post?: never;
+        /** Elimina físicamente un AnioEscolar sin dependientes */
+        delete: operations["AniosEscolaresController_eliminar"];
+        options?: never;
+        head?: never;
+        /** Actualiza el nombre de un AnioEscolar (nunca activo) */
+        patch: operations["AniosEscolaresController_actualizar"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -310,6 +347,14 @@ export interface components {
             dni: string;
             /** @description Correo de contacto del apoderado */
             correo: string | null;
+        };
+        AnioEscolarRespuestaDto: {
+            /** @description ID del año escolar */
+            id: string;
+            /** @description Nombre único del año escolar */
+            nombre: string;
+            /** @description Indica si es el año escolar activo */
+            activo: boolean;
         };
     };
     responses: never;
@@ -894,6 +939,174 @@ export interface operations {
                 content?: never;
             };
             /** @description El Usuario referenciado no es estudiante */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AniosEscolaresController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de años escolares */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnioEscolarRespuestaDto"][];
+                };
+            };
+            /** @description Filtro activo desconocido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AniosEscolaresController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description AnioEscolar creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnioEscolarRespuestaDto"];
+                };
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Nombre duplicado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AniosEscolaresController_obtenerPorId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description AnioEscolar encontrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnioEscolarRespuestaDto"];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AnioEscolar no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AniosEscolaresController_eliminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description AnioEscolar eliminado */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AnioEscolar no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Existen Seccion/Aula/Matricula/Configuracion dependientes */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AniosEscolaresController_actualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description AnioEscolar actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnioEscolarRespuestaDto"];
+                };
+            };
+            /** @description AnioEscolar no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Nombre duplicado */
             409: {
                 headers: {
                     [name: string]: unknown;

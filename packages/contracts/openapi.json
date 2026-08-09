@@ -499,6 +499,161 @@
           "apoderados"
         ]
       }
+    },
+    "/anios-escolares": {
+      "post": {
+        "operationId": "AniosEscolaresController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "AnioEscolar creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnioEscolarRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          },
+          "409": {
+            "description": "Nombre duplicado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea un AnioEscolar con activo=false",
+        "tags": [
+          "anios-escolares"
+        ]
+      },
+      "get": {
+        "operationId": "AniosEscolaresController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de años escolares",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnioEscolarRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro activo desconocido"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista años escolares, con filtro opcional por activo",
+        "tags": [
+          "anios-escolares"
+        ]
+      }
+    },
+    "/anios-escolares/{id}": {
+      "get": {
+        "operationId": "AniosEscolaresController_obtenerPorId",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "AnioEscolar encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnioEscolarRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "AnioEscolar no encontrado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta un AnioEscolar por id",
+        "tags": [
+          "anios-escolares"
+        ]
+      },
+      "patch": {
+        "operationId": "AniosEscolaresController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "AnioEscolar actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnioEscolarRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "AnioEscolar no encontrado"
+          },
+          "409": {
+            "description": "Nombre duplicado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Actualiza el nombre de un AnioEscolar (nunca activo)",
+        "tags": [
+          "anios-escolares"
+        ]
+      },
+      "delete": {
+        "operationId": "AniosEscolaresController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "AnioEscolar eliminado"
+          },
+          "404": {
+            "description": "AnioEscolar no encontrado"
+          },
+          "409": {
+            "description": "Existen Seccion/Aula/Matricula/Configuracion dependientes"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente un AnioEscolar sin dependientes",
+        "tags": [
+          "anios-escolares"
+        ]
+      }
     }
   },
   "info": {
@@ -638,6 +793,28 @@
           "nombres",
           "dni",
           "correo"
+        ]
+      },
+      "AnioEscolarRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del año escolar"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre único del año escolar"
+          },
+          "activo": {
+            "type": "boolean",
+            "description": "Indica si es el año escolar activo"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "activo"
         ]
       }
     }
