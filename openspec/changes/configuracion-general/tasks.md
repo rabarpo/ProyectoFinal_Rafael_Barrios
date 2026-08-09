@@ -87,50 +87,83 @@ configuración institucional", "Validación de zona horaria IANA", "Validación 
 hexadecimal de colores", "Validación de dominios Google Workspace permitidos", "Listado de
 integrantes del comité" (configuracion-institucional). Depende de PR1.
 
-- [ ] **2.1 [P]** Test unitario RED: validador de color hex — `#1A2B3C` y `#abc` aceptados;
+- [x] **2.1 [P]** Test unitario RED: validador de color hex — `#1A2B3C` y `#abc` aceptados;
   `azul`, `#12345`, `#1A2B3G` rechazados (regex `^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`, sin expandir
   `#RGB` a 6 dígitos). Cubre: Scenarios "Color hex válido se acepta" / "...formato inválido se
   rechaza".
-- [ ] **2.2 [P]** Test unitario RED: validador de zona horaria IANA contra
+  RED confirmado (`Cannot find module './configuracion.errors'`) antes de 2.4. Escrito en
+  `apps/backend/src/configuracion/configuracion.errors.spec.ts`.
+- [x] **2.2 [P]** Test unitario RED: validador de zona horaria IANA contra
   `Intl.supportedValuesOf('timeZone')` — `America/Lima` aceptado, `No/Existe` rechazado. Cubre:
   Scenarios de "Validación de zona horaria IANA".
-- [ ] **2.3 [P]** Test unitario RED: validador de `dominios_google` — normalización
+  Mismo archivo/RED que 2.1.
+- [x] **2.3 [P]** Test unitario RED: validador de `dominios_google` — normalización
   (`trim().toLowerCase()`, deduplicado), regex de hostname; arreglo con un elemento inválido
   rechaza todo el arreglo; arreglo vacío es válido. Cubre: los 3 scenarios de "Validación de
   dominios Google Workspace permitidos".
-- [ ] **2.4 [S]** Implementar los 3 validadores manuales (sin `class-validator`, patrón vigente) en
+  Mismo archivo/RED que 2.1.
+- [x] **2.4 [S]** Implementar los 3 validadores manuales (sin `class-validator`, patrón vigente) en
   `apps/backend/src/configuracion/configuracion.errors.ts` o helper dedicado. Confirmar 2.1–2.3 en
   verde.
-- [ ] **2.5 [P]** Test de integración RED: `ConfiguracionService.actualizar()` persiste campos
+  GREEN confirmado: 10/10 tests en `configuracion.errors.spec.ts`.
+- [x] **2.5 [P]** Test de integración RED: `ConfiguracionService.actualizar()` persiste campos
   válidos y crea un `EventoAuditoria` en la misma `$transaction`; si el registro de auditoría falla
   dentro de la transacción, ningún campo de `Configuracion` queda modificado (rollback). Cubre:
   Scenarios "Actualización exitosa se audita" / "Fallo de auditoría revierte la actualización".
-- [ ] **2.6 [S]** Crear `apps/backend/src/configuracion/dto/actualizar-configuracion.dto.ts` y
+  RED confirmado (`Cannot find module './configuracion.service'`) antes de 2.7, en
+  `apps/backend/src/configuracion/configuracion.service.spec.ts` (unit, `PrismaService`/
+  `AuditoriaService` mockeados — la propagación del error de `auditoria.log()` fuera del callback
+  de `$transaction` es lo que Prisma real convierte en rollback). Cobertura de rollback contra
+  Postgres real añadida como e2e en `test/configuracion/configuracion.e2e-spec.ts`.
+  DESVIACIÓN (misma que PR1, tareas 1.1/1.4): `docker ps` sin daemon disponible en este entorno;
+  el e2e queda escrito y type-checkeado (`pnpm typecheck` en verde), no ejecutado contra Postgres
+  real en esta sesión.
+- [x] **2.6 [S]** Crear `apps/backend/src/configuracion/dto/actualizar-configuracion.dto.ts` y
   `configuracion-respuesta.dto.ts` (campos opcionales para merge parcial; respuesta sin bytes del
   logo: `logo_presente`, `logo_mime`).
-- [ ] **2.7 [S]** Crear `apps/backend/src/configuracion/configuracion.service.ts`: `obtener()`
+  DESVIACIÓN (consecuencia directa de la desviación de la tarea 1.2 de PR1): el schema todavía no
+  tiene `logo`/`logo_mime` (columnas diferidas a la migración propia de PR3, tarea 3.0). El DTO de
+  respuesta expone `logo_presente`/`logo_mime` con la forma final del contrato, pero
+  `ConfiguracionService` los fija en `false`/`null` hasta que PR3 agregue esas columnas.
+- [x] **2.7 [S]** Crear `apps/backend/src/configuracion/configuracion.service.ts`: `obtener()`
   delega en `ConfiguracionLecturaService`; `actualizar(dto, actorId)` corre en
   `prisma.$transaction()` — `findUnique` → validar (2.4) y calcular `camposModificados` → `update`
   → `auditoria.log(tx, CONFIGURACION_*, actorId, 'Configuracion', id, payload)`, con payload
   `antes`/`después` completo cuando cambia `dominios_google` (D9). Confirmar 2.5 en verde.
-- [ ] **2.8 [P]** Agregar las 3 claves aditivas de auditoría en
+  GREEN confirmado: 8/8 tests en `configuracion.service.spec.ts`.
+- [x] **2.8 [P]** Agregar las 3 claves aditivas de auditoría en
   `apps/backend/src/auditoria/audit-event-types.ts` (D9).
-- [ ] **2.9 [P]** Test e2e RED: `GET /configuracion` y `PUT /configuracion` — `401` sin cookie,
+  Agregadas: `CONFIGURACION_ACTUALIZADA` (campos simples), `CONFIGURACION_DOMINIOS_GOOGLE_ACTUALIZADO`
+  (payload `antes`/`después`, emitida desde PR2), `CONFIGURACION_LOGO_ACTUALIZADO` (declarada ahora
+  por D9, se emitirá recién en PR3 cuando exista `POST /configuracion/logo`).
+- [x] **2.9 [P]** Test e2e RED: `GET /configuracion` y `PUT /configuracion` — `401` sin cookie,
   `403` con rol `comite`/`docente`/`estudiante`, `200` con `administrador`/`director`. Cubre:
   Scenarios "Administrador consulta la configuración" / "Rol no autorizado no accede a la
   configuración".
-- [ ] **2.10 [P]** Test e2e RED: `GET /configuracion/comite` — devuelve únicamente usuarios con
+  Escrito en `test/configuracion/configuracion.e2e-spec.ts`. DESVIACIÓN: misma que 2.5 — no
+  ejecutado contra Postgres/Redis reales en esta sesión (`docker ps` sin daemon disponible).
+- [x] **2.10 [P]** Test e2e RED: `GET /configuracion/comite` — devuelve únicamente usuarios con
   `rol='comite'`; `403` con rol no autorizado. Cubre: los 2 scenarios de "Listado de integrantes
   del comité".
-- [ ] **2.11 [S]** Crear `apps/backend/src/configuracion/configuracion.controller.ts`: guards de
+  Mismo archivo/DESVIACIÓN que 2.9.
+- [x] **2.11 [S]** Crear `apps/backend/src/configuracion/configuracion.controller.ts`: guards de
   clase `@UseGuards(AuthGuard, RolesGuard)` + `@Roles('administrador','director')`; `GET
   /configuracion`, `PUT /configuracion`; `GET /configuracion/comite` delega en
   `UsersService.listar({ rol: 'comite' })` (reusa DTO existente). Confirmar 2.9–2.10 en verde.
-- [ ] **2.12 [S]** Crear `apps/backend/src/configuracion/configuracion.module.ts`: `imports:
+  Creado; 2.9-2.10 quedan en el mismo estado RED-no-ejecutado documentado arriba (bloqueado por
+  Docker, no por el código).
+- [x] **2.12 [S]** Crear `apps/backend/src/configuracion/configuracion.module.ts`: `imports:
   [AuthModule, AuditoriaModule, UsersModule, ConfiguracionLecturaModule]`. Registrar en
   `apps/backend/src/app.module.ts` al final.
-- [ ] **2.13 [S]** Regenerar `packages/contracts/openapi.json` (`pnpm openapi:extract`) tras
+  Creado con `implements NestModule` + `cookieParser()` sobre `ConfiguracionController` (mismo
+  criterio D6 que `UsersModule`/`AcademicoModule`, no explícito en la tarea pero requerido para que
+  `request.cookies` exista). Registrado en `app.module.ts` después de `ConfiguracionLecturaModule`.
+- [x] **2.13 [S]** Regenerar `packages/contracts/openapi.json` (`pnpm openapi:extract`) tras
   cerrar el controller y los DTOs; confirmar que sigue corriendo sin Postgres/Redis.
+  Comando real del repo es `pnpm generate:contracts` (turbo agrega `openapi:extract` +
+  `generate:contracts` de `@seei/contracts`); corrió en verde sin Postgres ni Redis levantados
+  (confirma la guarda de regresión D2/D3). `openapi.json`/`api.d.ts` regenerados con las 3 rutas
+  nuevas (`GET/PUT /configuracion`, `GET /configuracion/comite`).
 
 ## PR3 — Subida y servido del logo institucional
 

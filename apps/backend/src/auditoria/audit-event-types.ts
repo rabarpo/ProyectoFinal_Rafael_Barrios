@@ -24,6 +24,14 @@
 // emitiéndose igual (comportamiento vigente de los servicios reutilizados) — el "único evento"
 // aplica solo a esta clave nueva. No toca la cláusula `WHEN` del trigger de ADR-0016 (no involucra
 // `Voto`) — ver test/schema/auditoria.spec.ts, caso [TM4].
+// configuracion-general, PR2 (design.md D9, tarea 2.8): tres claves aditivas para el singleton
+// `Configuracion`. `CONFIGURACION_ACTUALIZADA` cubre nombre/director/colores/zona_horaria con
+// payload `{ campos: [...] }` (patrón `anios-escolares`); `CONFIGURACION_DOMINIOS_GOOGLE_ACTUALIZADO`
+// es una clave separada porque ese campo controla acceso (login Google Workspace) y necesita
+// payload `antes`/`después` completo, no solo el nombre del campo; `CONFIGURACION_LOGO_ACTUALIZADO`
+// se declara ahora (D9 pide las tres en el mismo PR) pero se emite recién en PR3 cuando exista
+// `POST /configuracion/logo`. Ninguna de las tres toca un `Voto`, así que tampoco activan la
+// obligación versionada de ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4].
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
@@ -62,6 +70,9 @@ export const AUDIT_EVENT_TYPES = {
   MATRICULA_CREADA: 'MATRICULA_CREADA',
   MATRICULA_ELIMINADA: 'MATRICULA_ELIMINADA',
   PADRON_IMPORTADO: 'PADRON_IMPORTADO',
+  CONFIGURACION_ACTUALIZADA: 'CONFIGURACION_ACTUALIZADA',
+  CONFIGURACION_DOMINIOS_GOOGLE_ACTUALIZADO: 'CONFIGURACION_DOMINIOS_GOOGLE_ACTUALIZADO',
+  CONFIGURACION_LOGO_ACTUALIZADO: 'CONFIGURACION_LOGO_ACTUALIZADO',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];

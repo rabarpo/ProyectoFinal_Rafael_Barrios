@@ -1494,6 +1494,109 @@
           "importaciones"
         ]
       }
+    },
+    "/configuracion": {
+      "get": {
+        "operationId": "ConfiguracionController_obtener",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Configuración institucional",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracionRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta la configuración institucional",
+        "tags": [
+          "configuracion"
+        ]
+      },
+      "put": {
+        "operationId": "ConfiguracionController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Configuración actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfiguracionRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido (color, zona horaria o dominio)"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Actualiza la configuración institucional (merge parcial, auditado)",
+        "tags": [
+          "configuracion"
+        ]
+      }
+    },
+    "/configuracion/comite": {
+      "get": {
+        "operationId": "ConfiguracionController_listarComite",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Integrantes del comité",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UsuarioRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista los usuarios con rol comite",
+        "tags": [
+          "configuracion"
+        ]
+      }
     }
   },
   "info": {
@@ -1857,6 +1960,61 @@
           "filas_existentes",
           "filas_invalidas",
           "errores"
+        ]
+      },
+      "ConfiguracionRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID de la fila de configuración"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre de la institución",
+            "nullable": true
+          },
+          "director": {
+            "type": "string",
+            "description": "Nombre del director o directora",
+            "nullable": true
+          },
+          "color_primario": {
+            "type": "string",
+            "description": "Color primario en formato hex",
+            "nullable": true
+          },
+          "color_secundario": {
+            "type": "string",
+            "description": "Color secundario en formato hex",
+            "nullable": true
+          },
+          "zona_horaria": {
+            "type": "string",
+            "description": "Zona horaria IANA",
+            "nullable": true
+          },
+          "dominios_google": {
+            "description": "Dominios Google Workspace permitidos",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "logo_presente": {
+            "type": "boolean",
+            "description": "Si hay un logo institucional persistido"
+          },
+          "logo_mime": {
+            "type": "string",
+            "description": "MIME type del logo persistido, si existe",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "dominios_google",
+          "logo_presente"
         ]
       }
     }
