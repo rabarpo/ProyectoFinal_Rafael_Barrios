@@ -199,49 +199,60 @@ no diferible).
 ## PR 4 — `Nivel` + `Grado` (base = PR 3 branch)
 
 ### Phase 12: DTOs de `Nivel` y `Grado` (D3)
-- [ ] 12.1 Crear `apps/backend/src/academico/dto/crear-nivel.dto.ts`,
+- [x] 12.1 Crear `apps/backend/src/academico/dto/crear-nivel.dto.ts`,
       `actualizar-nivel.dto.ts`, `nivel-respuesta.dto.ts` [D3]
-- [ ] 12.2 Crear `apps/backend/src/academico/dto/crear-grado.dto.ts`,
+- [x] 12.2 Crear `apps/backend/src/academico/dto/crear-grado.dto.ts`,
       `actualizar-grado.dto.ts` (**sin** `nivel_id`), `grado-respuesta.dto.ts`,
       `listar-grados.query.ts` [D3]
 
 ### Phase 13: CRUD de `Nivel` (AT1)
-- [ ] 13.1 RED e2e: creación exitosa con `nombre` no usado [AT1]
-- [ ] 13.2 RED e2e: `nombre` duplicado → `409 RESTRICCION_UNICA` [AT1]
-- [ ] 13.3 RED e2e: rol no autorizado se rechaza en las 5 rutas de `/niveles` sin ejecutar el
+- [x] 13.1 RED e2e: creación exitosa con `nombre` no usado [AT1]
+- [x] 13.2 RED e2e: `nombre` duplicado → `409 RESTRICCION_UNICA` [AT1]
+- [x] 13.3 RED e2e: rol no autorizado se rechaza en las 5 rutas de `/niveles` sin ejecutar el
       handler [AT7]
-- [ ] 13.4 RED e2e: `GET /niveles/:id`, `404` para inexistente, `400` para malformado
-- [ ] 13.5 RED e2e: `PATCH` cambia `nombre`, deja exactamente una fila `NIVEL_ACTUALIZADO`
-- [ ] 13.6 RED integración: precomprobación de `Grado` dependiente antes del `DELETE` [AT1][D2]
-- [ ] 13.7 RED e2e: `DELETE` exitoso sin dependientes borra la fila, deja exactamente una fila
+- [x] 13.4 RED e2e: `GET /niveles/:id`, `404` para inexistente, `400` para malformado
+- [x] 13.5 RED e2e: `PATCH` cambia `nombre`, deja exactamente una fila `NIVEL_ACTUALIZADO`
+- [x] 13.6 RED integración: precomprobación de `Grado` dependiente antes del `DELETE` [AT1][D2]
+- [x] 13.7 RED e2e: `DELETE` exitoso sin dependientes borra la fila, deja exactamente una fila
       `NIVEL_ELIMINADO`
-- [ ] 13.8 RED e2e: `DELETE` con `Grado` asociado → `409 ENTIDAD_CON_DEPENDIENTES
+- [x] 13.8 RED e2e: `DELETE` con `Grado` asociado → `409 ENTIDAD_CON_DEPENDIENTES
       {relacion:'Grado'}`, la fila permanece [AT1]
-- [ ] 13.9 RED adversarial: `catch P2003` residual traduce la carrera al mismo `409` [D2]
-- [ ] 13.10 Crear `apps/backend/src/academico/niveles.controller.ts` y `niveles.service.ts` —
+- [x] 13.9 RED adversarial: `catch P2003` residual traduce la carrera al mismo `409` [D2]
+- [x] 13.10 Crear `apps/backend/src/academico/niveles.controller.ts` y `niveles.service.ts` —
       GREEN 13.1-13.9 [AT1][AT7][D2][D3]
 
 ### Phase 14: CRUD de `Grado` acotado a `Nivel` (AT2)
-- [ ] 14.1 RED e2e: creación con `Nivel` inexistente referenciado → `409 REFERENCIA_INEXISTENTE`,
+- [x] 14.1 RED e2e: creación con `Nivel` inexistente referenciado → `409 REFERENCIA_INEXISTENTE`,
       no se crea el `Grado` [AT2]
-- [ ] 14.2 RED e2e: mismo `nombre` bajo `Nivel` distinto se acepta sin conflicto [AT2]
-- [ ] 14.3 RED e2e: duplicado `(nivel_id, nombre)` → `409 RESTRICCION_UNICA` [AT2]
-- [ ] 14.4 RED e2e: `GET /grados?nivel_id=` filtra correctamente; filtro con valor no-UUID → `400
+- [x] 14.2 RED e2e: mismo `nombre` bajo `Nivel` distinto se acepta sin conflicto [AT2]
+- [x] 14.3 RED e2e: duplicado `(nivel_id, nombre)` → `409 RESTRICCION_UNICA` [AT2]
+- [x] 14.4 RED e2e: `GET /grados?nivel_id=` filtra correctamente; filtro con valor no-UUID → `400
       CAMPO_INVALIDO`
-- [ ] 14.5 RED e2e: `GET /grados/:id`, `404` para inexistente, `400` para malformado
-- [ ] 14.6 RED e2e + adversarial: `PATCH` cambia `nombre`, deja fila `GRADO_ACTUALIZADO`; `PATCH`
+- [x] 14.5 RED e2e: `GET /grados/:id`, `404` para inexistente, `400` para malformado
+- [x] 14.6 RED e2e + adversarial: `PATCH` cambia `nombre`, deja fila `GRADO_ACTUALIZADO`; `PATCH`
       con `nivel_id` en el body lo ignora (el DTO no lo declara, D3 — sin re-parentado) [D3]
-- [ ] 14.7 RED integración: precomprobación de `Seccion` y `Aula` dependientes antes del `DELETE`
+- [x] 14.7 RED integración: precomprobación de `Seccion` y `Aula` dependientes antes del `DELETE`
       [AT2][D2]
-- [ ] 14.8 RED e2e: `DELETE` exitoso sin dependientes; `DELETE` con `Seccion` o `Aula` asociada →
+- [x] 14.8 RED e2e: `DELETE` exitoso sin dependientes; `DELETE` con `Seccion` o `Aula` asociada →
       `409 ENTIDAD_CON_DEPENDIENTES` nombrando la primera relación que bloquea [AT2]
-- [ ] 14.9 RED adversarial: `catch P2003` residual traduce la carrera al mismo `409` [D2]
-- [ ] 14.10 Crear `apps/backend/src/academico/grados.controller.ts` y `grados.service.ts` — GREEN
+- [x] 14.9 RED adversarial: `catch P2003` residual traduce la carrera al mismo `409` [D2]
+- [x] 14.10 Crear `apps/backend/src/academico/grados.controller.ts` y `grados.service.ts` — GREEN
       14.1-14.9 [AT2][AT7][D2][D3]
 
 ### Phase 15: Regresión PR4
-- [ ] 15.1 GREEN: `pnpm openapi:extract` completa sin Postgres/Redis vivos
-- [ ] 15.2 `test/academico/niveles.e2e-spec.ts` + `grados.e2e-spec.ts` corren sin regresión
+- [x] 15.1 GREEN: `pnpm openapi:extract` completa sin Postgres/Redis vivos
+- [x] 15.2 `test/academico/niveles.e2e-spec.ts` + `grados.e2e-spec.ts` corren sin regresión —
+      **Limitación documentada** (misma que PR1-PR3 de este change): `docker ps` no tiene daemon
+      Docker disponible en este entorno, así que `pnpm test:e2e` no puede ejecutarse contra
+      Postgres/Redis reales. Ambos archivos quedaron escritos, `pnpm typecheck` en verde (workspace
+      completo, incluido `@seei/backend`/`@seei/frontend`/`@seei/worker`/`@seei/contracts`;
+      `pnpm generate:contracts` regeneró `packages/contracts/openapi.json` con las rutas
+      `/niveles`, `/niveles/{id}`, `/grados`, `/grados/{id}`). Cobertura de orquestación/lógica de
+      negocio equivalente: 28/28 tests GREEN (`src/academico/niveles.service.spec.ts` +
+      `src/academico/grados.service.spec.ts`), sin regresión en el resto de la suite de
+      `@seei/backend` (las únicas fallas de `pnpm test` completo son `session.service.spec.ts`,
+      `bloqueo.service.spec.ts`, `recovery.service.spec.ts` — dependientes de Redis real, no
+      tocados por este PR, mismo entorno sin Docker).
 
 ## PR 5 — `Seccion` (base = PR 4 branch)
 
