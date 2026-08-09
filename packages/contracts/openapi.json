@@ -1300,6 +1300,127 @@
           "aulas"
         ]
       }
+    },
+    "/matriculas": {
+      "post": {
+        "operationId": "MatriculasController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Matricula creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatriculaRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          },
+          "409": {
+            "description": "Usuario/Aula/AnioEscolar inexistente, rol distinto de estudiante, combinación duplicada o incoherencia jerárquica"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Matricula un Usuario con rol estudiante en un Aula y AnioEscolar existentes y coherentes",
+        "tags": [
+          "matriculas"
+        ]
+      },
+      "get": {
+        "operationId": "MatriculasController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de matrículas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatriculaRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro malformado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista matrículas, con filtro opcional por usuario_id, aula_id y anio_escolar_id",
+        "tags": [
+          "matriculas"
+        ]
+      }
+    },
+    "/matriculas/{id}": {
+      "get": {
+        "operationId": "MatriculasController_obtenerPorId",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Matricula encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatriculaRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "Matricula no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta una Matricula por id",
+        "tags": [
+          "matriculas"
+        ]
+      },
+      "delete": {
+        "operationId": "MatriculasController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Matricula eliminada"
+          },
+          "404": {
+            "description": "Matricula no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente una Matricula (retiro/traslado)",
+        "tags": [
+          "matriculas"
+        ]
+      }
     }
   },
   "info": {
@@ -1562,6 +1683,33 @@
           "turno",
           "grado_id",
           "seccion_id",
+          "anio_escolar_id"
+        ]
+      },
+      "MatriculaRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID de la matrícula"
+          },
+          "usuario_id": {
+            "type": "string",
+            "description": "ID del Usuario (estudiante) matriculado"
+          },
+          "aula_id": {
+            "type": "string",
+            "description": "ID del Aula en la que está matriculado"
+          },
+          "anio_escolar_id": {
+            "type": "string",
+            "description": "ID del AnioEscolar de la matrícula"
+          }
+        },
+        "required": [
+          "id",
+          "usuario_id",
+          "aula_id",
           "anio_escolar_id"
         ]
       }

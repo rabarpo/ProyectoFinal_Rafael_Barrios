@@ -463,6 +463,42 @@ export interface paths {
         patch: operations["AulasController_actualizar"];
         trace?: never;
     };
+    "/matriculas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista matrículas, con filtro opcional por usuario_id, aula_id y anio_escolar_id */
+        get: operations["MatriculasController_listar"];
+        put?: never;
+        /** Matricula un Usuario con rol estudiante en un Aula y AnioEscolar existentes y coherentes */
+        post: operations["MatriculasController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/matriculas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta una Matricula por id */
+        get: operations["MatriculasController_obtenerPorId"];
+        put?: never;
+        post?: never;
+        /** Elimina físicamente una Matricula (retiro/traslado) */
+        delete: operations["MatriculasController_eliminar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -558,6 +594,16 @@ export interface components {
             /** @description ID de la Seccion a la que pertenece el aula */
             seccion_id: string;
             /** @description ID del AnioEscolar al que pertenece el aula */
+            anio_escolar_id: string;
+        };
+        MatriculaRespuestaDto: {
+            /** @description ID de la matrícula */
+            id: string;
+            /** @description ID del Usuario (estudiante) matriculado */
+            usuario_id: string;
+            /** @description ID del Aula en la que está matriculado */
+            aula_id: string;
+            /** @description ID del AnioEscolar de la matrícula */
             anio_escolar_id: string;
         };
     };
@@ -2015,6 +2061,133 @@ export interface operations {
                 content?: never;
             };
             /** @description Aula no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MatriculasController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de matrículas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatriculaRespuestaDto"][];
+                };
+            };
+            /** @description Filtro malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MatriculasController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matricula creada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatriculaRespuestaDto"];
+                };
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Usuario/Aula/AnioEscolar inexistente, rol distinto de estudiante, combinación duplicada o incoherencia jerárquica */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MatriculasController_obtenerPorId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matricula encontrada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatriculaRespuestaDto"];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Matricula no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MatriculasController_eliminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matricula eliminada */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Matricula no encontrada */
             404: {
                 headers: {
                     [name: string]: unknown;
