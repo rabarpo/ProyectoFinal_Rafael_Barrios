@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { Matricula, Prisma } from '@prisma/client';
+import type { Matricula, Prisma, Turno } from '@prisma/client';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { AUDIT_EVENT_TYPES } from '../auditoria/audit-event-types';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,6 +20,17 @@ export interface FiltroListadoMatriculas {
   usuario_id?: string;
   aula_id?: string;
   anio_escolar_id?: string;
+}
+
+// importacion-excel (#9), student-enrollment delta (tarea 1.1-1.2). Forma que `crearIdempotente()`
+// necesita: referencias legibles (`grado_nombre`/`seccion_nombre`/`turno`/`anio_escolar_codigo`),
+// nunca UUID — la fila de origen de un Excel/CSV no trae ids internos.
+export interface DatosMatriculaIdempotente {
+  usuario_id: string;
+  grado_nombre: string;
+  seccion_nombre: string;
+  turno: Turno;
+  anio_escolar_codigo: string;
 }
 
 // UUID v4 no es un requisito estricto de este proyecto (`@db.Uuid` de Postgres acepta cualquier
@@ -224,6 +235,128 @@ export class MatriculasService {
       }
       throw error;
     }
+  }
+
+  /**
+   * importacion-excel (#9), student-enrollment delta (tareas 1.1-1.2). Gancho invocable fila a
+   * fila sin depender de HTTP: reutiliza sin duplicar las mismas validaciones vigentes de
+   * `crear()` (existencia de `Usuario`/`Aula`/`AnioEscolar`, `Usuario.rol = 'estudiante'`,
+   * coherencia jerárquica D6), pero resuelve `Aula`/`AnioEscolar` desde referencias legibles
+   * (`grado_nombre`, `seccion_nombre`, `turno`, `anio_escolar_codigo`) en vez de UUID, y devuelve
+   * `creado: false` en la combinación ya existente en vez de `409 RESTRICCION_UNICA`. `tx` externo
+   * opcional — mismo criterio que `UsersService.crearIdempotente()`: si llega, participa de la
+   * transacción del llamador y no abre una propia.
+   */
+  async crearIdempotente(
+    datos: DatosMatriculaIdempotente,
+    actorId: string,
+    txExterno?: Prisma.TransactionClient,
+  ): Promise<{ matricula: MatriculaRespuestaDto; creado: boolean }> {
+    const ejecutar = async (tx: Prisma.TransactionClient) => {
+      const usuario = await tx.usuario.findUnique({ where: { id: datos.usuario_id } });
+      if (!usuario) {
+        throw new ConflictException({
+          codigo: ACADEMICO_ERROR_CODES.REFERENCIA_INEXISTENTE,
+          entidad: 'Usuario',
+          campo: 'usuario_id',
+          valor: datos.usuario_id,
+        });
+      }
+
+      const anioEscolar = await tx.anioEscolar.findUnique({ where: { nombre: datos.anio_escolar_codigo } });
+      if (!anioEscolar) {
+        throw new ConflictException({
+          codigo: ACADEMICO_ERROR_CODES.REFERENCIA_INEXISTENTE,
+          entidad: 'AnioEscolar',
+          campo: 'anio_escolar_codigo',
+          valor: datos.anio_escolar_codigo,
+        });
+      }
+
+      // Clave compuesta (grado.nombre, seccion.nombre, turno) — Aula no declara un campo `codigo`
+      // propio (delta student-enrollment).
+      const aula = await tx.aula.findFirst({
+        where: {
+          turno: datos.turno,
+          grado: { nombre: datos.grado_nombre },
+          seccion: { nombre: datos.seccion_nombre },
+        },
+      });
+      if (!aula) {
+        throw new ConflictException({
+          codigo: ACADEMICO_ERROR_CODES.REFERENCIA_INEXISTENTE,
+          entidad: 'Aula',
+          campo: 'aula',
+          valor: `${datos.grado_nombre}/${datos.seccion_nombre}/${datos.turno}`,
+        });
+      }
+
+      // SE1 reutilizada: solo un Usuario con rol = 'estudiante' puede matricularse.
+      if (usuario.rol !== 'estudiante') {
+        throw new ConflictException({
+          codigo: ACADEMICO_ERROR_CODES.USUARIO_NO_ES_ESTUDIANTE,
+          rol_actual: usuario.rol,
+        });
+      }
+
+      // D6/SE2 reutilizada: el Aula resuelta desde (grado_nombre, seccion_nombre, turno) DEBE
+      // coincidir en anio_escolar_id con el AnioEscolar resuelto desde anio_escolar_codigo.
+      if (aula.anio_escolar_id !== anioEscolar.id) {
+        throw new ConflictException({
+          codigo: ACADEMICO_ERROR_CODES.COHERENCIA_JERARQUICA,
+          campo: 'anio_escolar_id',
+          esperado: aula.anio_escolar_id,
+          recibido: anioEscolar.id,
+        });
+      }
+
+      const existente = await tx.matricula.findFirst({
+        where: { usuario_id: datos.usuario_id, aula_id: aula.id, anio_escolar_id: anioEscolar.id },
+      });
+      if (existente) {
+        return { matricula: mapearMatriculaRespuesta(existente), creado: false };
+      }
+
+      try {
+        const creada = await tx.matricula.create({
+          data: { usuario_id: datos.usuario_id, aula_id: aula.id, anio_escolar_id: anioEscolar.id },
+        });
+
+        await this.auditoria.log(
+          tx,
+          AUDIT_EVENT_TYPES.MATRICULA_CREADA,
+          actorId,
+          'Matricula',
+          creada.id,
+          {
+            usuario_id: creada.usuario_id,
+            aula_id: creada.aula_id,
+            anio_escolar_id: creada.anio_escolar_id,
+            origen: 'idempotente',
+          } as Prisma.InputJsonValue,
+        );
+
+        return { matricula: mapearMatriculaRespuesta(creada), creado: true };
+      } catch (error) {
+        if (esP2002(error)) {
+          // P2002 residual (carrera entre la precomprobación y el `create`): converge a
+          // `creado: false` en vez de `409` — mismo criterio D5 (garantía 4) que
+          // `UsersService.crearIdempotente()`.
+          const carrera = await tx.matricula.findFirst({
+            where: { usuario_id: datos.usuario_id, aula_id: aula.id, anio_escolar_id: anioEscolar.id },
+          });
+          if (carrera) {
+            return { matricula: mapearMatriculaRespuesta(carrera), creado: false };
+          }
+        }
+        throw error;
+      }
+    };
+
+    if (txExterno) {
+      return ejecutar(txExterno);
+    }
+    return this.prisma.$transaction(ejecutar);
   }
 
   /**

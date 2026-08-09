@@ -29,6 +29,10 @@ import { UsersService } from './users.service';
   imports: [AuthModule, AuditoriaModule],
   controllers: [UsersController, ApoderadosController],
   providers: [PrismaService, UsersService, ApoderadosService],
+  // importacion-excel (#9), design.md D1: exporta `UsersService` para que `ImportacionModule` lo
+  // importe en vez de redeclarar el provider (mismo criterio que el `exports` nuevo de
+  // `AcademicoModule`).
+  exports: [UsersService],
 })
 export class UsersModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

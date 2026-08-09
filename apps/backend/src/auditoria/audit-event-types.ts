@@ -18,6 +18,12 @@
 // de `AnioEscolar`/`Nivel`/`Grado`/`Seccion`/`Aula`/`Matricula` y la activación de año escolar.
 // Ninguna de las dieciocho toca un `Voto`, así que tampoco activan la obligación versionada de
 // ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4] (tarea 4.2/29.1).
+// importacion-excel (#9, PR1; design.md D6, spec "Auditoría agregada por operación de
+// importación"): clave aditiva `PADRON_IMPORTADO`, un evento por importación (no uno por fila) con
+// el conteo de filas válidas/inválidas. `USUARIO_CREADO`/`MATRICULA_CREADA` por fila siguen
+// emitiéndose igual (comportamiento vigente de los servicios reutilizados) — el "único evento"
+// aplica solo a esta clave nueva. No toca la cláusula `WHEN` del trigger de ADR-0016 (no involucra
+// `Voto`) — ver test/schema/auditoria.spec.ts, caso [TM4].
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
@@ -55,6 +61,7 @@ export const AUDIT_EVENT_TYPES = {
   AULA_ELIMINADA: 'AULA_ELIMINADA',
   MATRICULA_CREADA: 'MATRICULA_CREADA',
   MATRICULA_ELIMINADA: 'MATRICULA_ELIMINADA',
+  PADRON_IMPORTADO: 'PADRON_IMPORTADO',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];

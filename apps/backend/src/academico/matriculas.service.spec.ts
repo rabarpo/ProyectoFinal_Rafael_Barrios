@@ -243,6 +243,173 @@ describe('MatriculasService.obtenerPorId() (SE3, tarea 26.1)', () => {
   });
 });
 
+describe('MatriculasService.crearIdempotente() (importacion-excel, student-enrollment delta, tareas 1.1-1.2)', () => {
+  function construirServicioIdempotente(overrides: {
+    usuarioFindUnique?: jest.Mock;
+    anioEscolarFindUnique?: jest.Mock;
+    aulaFindFirst?: jest.Mock;
+    matriculaFindFirst?: jest.Mock;
+    matriculaCreate?: jest.Mock;
+  }) {
+    const usuario = {
+      findUnique: overrides.usuarioFindUnique ?? jest.fn().mockResolvedValue({ id: 'u1', rol: 'estudiante' }),
+    };
+    const anioEscolar = {
+      findUnique: overrides.anioEscolarFindUnique ?? jest.fn().mockResolvedValue({ id: 'a1' }),
+    };
+    const aula = {
+      findFirst: overrides.aulaFindFirst ?? jest.fn().mockResolvedValue({ id: 'au1', anio_escolar_id: 'a1' }),
+    };
+    const matricula = {
+      findFirst: overrides.matriculaFindFirst ?? jest.fn().mockResolvedValue(null),
+      create: overrides.matriculaCreate ?? jest.fn().mockResolvedValue({ id: 'm1', usuario_id: 'u1', aula_id: 'au1', anio_escolar_id: 'a1' }),
+    };
+
+    const tx = { usuario, anioEscolar, aula, matricula };
+    const prisma = {
+      $transaction: jest.fn((callback: (tx: unknown) => unknown) => callback(tx)),
+    };
+    const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
+
+    const servicio = new MatriculasService(prisma as unknown as PrismaService, auditoria as unknown as AuditoriaService);
+
+    return { servicio, tx, prisma, auditoria };
+  }
+
+  const datosBase = {
+    usuario_id: 'u1',
+    grado_nombre: '1°',
+    seccion_nombre: 'A',
+    turno: 'manana' as const,
+    anio_escolar_codigo: '2026',
+  };
+
+  // 1.1: Usuario inexistente -> 409 REFERENCIA_INEXISTENTE (misma validación que crear()).
+  it('Usuario inexistente responde 409 REFERENCIA_INEXISTENTE sin crear la Matricula', async () => {
+    const create = jest.fn();
+    const { servicio } = construirServicioIdempotente({
+      usuarioFindUnique: jest.fn().mockResolvedValue(null),
+      matriculaCreate: create,
+    });
+
+    await expect(servicio.crearIdempotente(datosBase, 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'REFERENCIA_INEXISTENTE', entidad: 'Usuario', campo: 'usuario_id', valor: 'u1' },
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  // 1.1: anio_escolar_codigo que no resuelve a ningún AnioEscolar -> 409 REFERENCIA_INEXISTENTE.
+  it('anio_escolar_codigo inexistente responde 409 REFERENCIA_INEXISTENTE sin crear la Matricula', async () => {
+    const create = jest.fn();
+    const { servicio } = construirServicioIdempotente({
+      anioEscolarFindUnique: jest.fn().mockResolvedValue(null),
+      matriculaCreate: create,
+    });
+
+    await expect(servicio.crearIdempotente(datosBase, 'actor-1')).rejects.toMatchObject({
+      response: {
+        codigo: 'REFERENCIA_INEXISTENTE',
+        entidad: 'AnioEscolar',
+        campo: 'anio_escolar_codigo',
+        valor: '2026',
+      },
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  // 1.1: clave compuesta (grado_nombre, seccion_nombre, turno) que no resuelve a ningún Aula -> 409 REFERENCIA_INEXISTENTE.
+  it('clave compuesta de Aula inexistente responde 409 REFERENCIA_INEXISTENTE sin crear la Matricula', async () => {
+    const create = jest.fn();
+    const { servicio } = construirServicioIdempotente({
+      aulaFindFirst: jest.fn().mockResolvedValue(null),
+      matriculaCreate: create,
+    });
+
+    await expect(servicio.crearIdempotente(datosBase, 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'REFERENCIA_INEXISTENTE', entidad: 'Aula', campo: 'aula' },
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  // 1.1 [reutiliza SE1]: Usuario con rol != estudiante -> 409 USUARIO_NO_ES_ESTUDIANTE.
+  it('Usuario con rol docente responde 409 USUARIO_NO_ES_ESTUDIANTE sin crear la Matricula (reutiliza SE1)', async () => {
+    const create = jest.fn();
+    const { servicio } = construirServicioIdempotente({
+      usuarioFindUnique: jest.fn().mockResolvedValue({ id: 'u1', rol: 'docente' }),
+      matriculaCreate: create,
+    });
+
+    await expect(servicio.crearIdempotente(datosBase, 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'USUARIO_NO_ES_ESTUDIANTE', rol_actual: 'docente' },
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  // 1.1 [reutiliza SE2/D6]: Aula resuelta con anio_escolar_id distinto al resuelto desde anio_escolar_codigo -> 409 COHERENCIA_JERARQUICA.
+  it('Aula con anio_escolar_id distinto al resuelto desde anio_escolar_codigo responde 409 COHERENCIA_JERARQUICA (reutiliza SE2/D6)', async () => {
+    const create = jest.fn();
+    const { servicio } = construirServicioIdempotente({
+      aulaFindFirst: jest.fn().mockResolvedValue({ id: 'au1', anio_escolar_id: 'a-otro' }),
+      matriculaCreate: create,
+    });
+
+    await expect(servicio.crearIdempotente(datosBase, 'actor-1')).rejects.toMatchObject({
+      response: {
+        codigo: 'COHERENCIA_JERARQUICA',
+        campo: 'anio_escolar_id',
+        esperado: 'a-otro',
+        recibido: 'a1',
+      },
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  // 1.1: duplicado (usuario_id, aula_id, anio_escolar_id) -> creado:false, sin crear una segunda fila.
+  it('combinación (usuario_id, aula_id, anio_escolar_id) ya existente devuelve creado:false sin duplicar', async () => {
+    const existente = { id: 'm0', usuario_id: 'u1', aula_id: 'au1', anio_escolar_id: 'a1' };
+    const create = jest.fn();
+    const { servicio, auditoria } = construirServicioIdempotente({
+      matriculaFindFirst: jest.fn().mockResolvedValue(existente),
+      matriculaCreate: create,
+    });
+
+    const resultado = await servicio.crearIdempotente(datosBase, 'actor-1');
+
+    expect(resultado).toEqual({ matricula: existente, creado: false });
+    expect(create).not.toHaveBeenCalled();
+    expect(auditoria.log).not.toHaveBeenCalled();
+  });
+
+  // 1.2: combinación nueva -> crea la Matricula, audita MATRICULA_CREADA y devuelve creado:true.
+  it('combinación nueva crea la Matricula, audita MATRICULA_CREADA y devuelve creado:true', async () => {
+    const { servicio, auditoria } = construirServicioIdempotente({});
+
+    const resultado = await servicio.crearIdempotente(datosBase, 'actor-1');
+
+    expect(resultado).toEqual({
+      matricula: { id: 'm1', usuario_id: 'u1', aula_id: 'au1', anio_escolar_id: 'a1' },
+      creado: true,
+    });
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      'MATRICULA_CREADA',
+      'actor-1',
+      'Matricula',
+      'm1',
+      expect.objectContaining({ usuario_id: 'u1', aula_id: 'au1', anio_escolar_id: 'a1' }),
+    );
+  });
+
+  // 1.2 [D1]: acepta un tx externo y no abre su propia transacción cuando se le pasa uno.
+  it('con tx externo no abre su propia $transaction', async () => {
+    const { servicio, tx, prisma } = construirServicioIdempotente({});
+
+    await servicio.crearIdempotente(datosBase, 'actor-1', tx as never);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
 describe('MatriculasService.eliminar() (SE4, tarea 27.1-27.2)', () => {
   it('[27.1] elimina la fila y audita MATRICULA_ELIMINADA', async () => {
     const actual = { id: 'm1', usuario_id: 'u1', aula_id: 'au1', anio_escolar_id: 'a1' };

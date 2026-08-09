@@ -50,6 +50,10 @@ import { SeccionesService } from './secciones.service';
     AulasService,
     MatriculasService,
   ],
+  // importacion-excel (#9), design.md D1: exporta `MatriculasService` para que `ImportacionModule`
+  // lo importe en vez de redeclarar el provider (redeclararlo duplicaría `PrismaService`/sesiones —
+  // mismo criterio ya documentado en `users.module.ts`, D3 de #7).
+  exports: [MatriculasService],
 })
 export class AcademicoModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
