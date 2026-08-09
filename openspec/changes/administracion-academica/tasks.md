@@ -99,48 +99,48 @@ no diferible).
 ## PR 2 — `AnioEscolar` CRUD (base = PR 1 branch)
 
 ### Phase 6: DTOs de `AnioEscolar` (D3)
-- [ ] 6.1 Crear `apps/backend/src/academico/dto/crear-anio-escolar.dto.ts`,
+- [x] 6.1 Crear `apps/backend/src/academico/dto/crear-anio-escolar.dto.ts`,
       `actualizar-anio-escolar.dto.ts` (**solo** `nombre`), `anio-escolar-respuesta.dto.ts`,
       `listar-anios-escolares.query.ts` — clases con `@ApiProperty` únicamente, sin
       `class-validator` [D3]
 
 ### Phase 7: `POST`/`GET`/`GET:id`/`PATCH` de `AnioEscolar` (SY1/SY4, D2/D3/D5)
-- [ ] 7.1 RED e2e: creación exitosa con `nombre` no usado → `201`, `activo = false`, exactamente
+- [x] 7.1 RED e2e: creación exitosa con `nombre` no usado → `201`, `activo = false`, exactamente
       una fila `ANIO_ESCOLAR_CREADO` [SY1]
-- [ ] 7.2 RED e2e: `nombre` duplicado → `409 RESTRICCION_UNICA` identificando `nombre` como campo
+- [x] 7.2 RED e2e: `nombre` duplicado → `409 RESTRICCION_UNICA` identificando `nombre` como campo
       en conflicto, sin crear fila [SY1]
-- [ ] 7.3 RED e2e: rol distinto de `administrador`/`director` se rechaza sin ejecutar el handler en
+- [x] 7.3 RED e2e: rol distinto de `administrador`/`director` se rechaza sin ejecutar el handler en
       las 6 rutas de `AnioEscolar` [SY1]
-- [ ] 7.4 RED e2e: `GET /anios-escolares/:id` devuelve el `AnioEscolar`; `:id` inexistente → `404`;
+- [x] 7.4 RED e2e: `GET /anios-escolares/:id` devuelve el `AnioEscolar`; `:id` inexistente → `404`;
       malformado → `400` vía `ParseUUIDPipe` [D5]
-- [ ] 7.5 RED e2e: `GET /anios-escolares?activo=` filtra correctamente; valor desconocido → `400
+- [x] 7.5 RED e2e: `GET /anios-escolares?activo=` filtra correctamente; valor desconocido → `400
       CAMPO_INVALIDO` [D5]
-- [ ] 7.6 RED e2e: `PATCH` cambia `nombre`, deja exactamente una fila `ANIO_ESCOLAR_ACTUALIZADO`
+- [x] 7.6 RED e2e: `PATCH` cambia `nombre`, deja exactamente una fila `ANIO_ESCOLAR_ACTUALIZADO`
       [SY4]
-- [ ] 7.7 RED adversarial: `PATCH /anios-escolares/:id` con `activo` en el body lo ignora (el DTO
+- [x] 7.7 RED adversarial: `PATCH /anios-escolares/:id` con `activo` en el body lo ignora (el DTO
       no lo declara) — mover el estado de activación exige el endpoint dedicado de PR3 [D3]
-- [ ] 7.8 Crear `apps/backend/src/academico/anios-escolares.controller.ts` y
+- [x] 7.8 Crear `apps/backend/src/academico/anios-escolares.controller.ts` y
       `anios-escolares.service.ts`: `POST`/`GET`/`GET :id`/`PATCH` con `@UseGuards(AuthGuard,
       RolesGuard)` + `@Roles('administrador','director')` a nivel de clase, `ParseUUIDPipe` en
       `:id` — GREEN 7.1-7.7 [SY1][SY4][D2][D3][D5]
 
 ### Phase 8: `DELETE` con guarda de 4 dependientes (SY3, D2)
-- [ ] 8.1 RED integración: precomprobación cuenta `Seccion`, `Aula`, `Matricula`, `Configuracion`
+- [x] 8.1 RED integración: precomprobación cuenta `Seccion`, `Aula`, `Matricula`, `Configuracion`
       dependientes dentro de la misma `$transaction`, antes del `delete` [SY3][D2]
-- [ ] 8.2 RED e2e: eliminación exitosa sin dependientes borra la fila de la base de datos, deja
+- [x] 8.2 RED e2e: eliminación exitosa sin dependientes borra la fila de la base de datos, deja
       exactamente una fila `ANIO_ESCOLAR_ELIMINADO` [SY3][SY4]
-- [ ] 8.3 RED e2e: eliminación con `Seccion` asociada → `409 ENTIDAD_CON_DEPENDIENTES {relacion:
+- [x] 8.3 RED e2e: eliminación con `Seccion` asociada → `409 ENTIDAD_CON_DEPENDIENTES {relacion:
       'Seccion'}`, la fila permanece [SY3]
-- [ ] 8.4 RED e2e: eliminación con `Configuracion` asociada → `409 ENTIDAD_CON_DEPENDIENTES
+- [x] 8.4 RED e2e: eliminación con `Configuracion` asociada → `409 ENTIDAD_CON_DEPENDIENTES
       {relacion: 'Configuracion'}` [SY3]
-- [ ] 8.5 RED adversarial: `catch P2003` residual traduce la carrera `SELECT COUNT`↔`DELETE` al
+- [x] 8.5 RED adversarial: `catch P2003` residual traduce la carrera `SELECT COUNT`↔`DELETE` al
       mismo `409 ENTIDAD_CON_DEPENDIENTES`, nunca escapa como `500` [D2]
-- [ ] 8.6 Agregar `eliminar(id, actorId)` a `anios-escolares.service.ts` + handler `DELETE
+- [x] 8.6 Agregar `eliminar(id, actorId)` a `anios-escolares.service.ts` + handler `DELETE
       anios-escolares/:id` — GREEN 8.1-8.5 [SY3][SY4][D2]
 
 ### Phase 9: Regresión PR2
-- [ ] 9.1 GREEN: `pnpm openapi:extract` completa sin Postgres/Redis vivos
-- [ ] 9.2 `test/academico/anios-escolares.e2e-spec.ts` corre completo sin regresión
+- [x] 9.1 GREEN: `pnpm openapi:extract` completa sin Postgres/Redis vivos
+- [x] 9.2 `test/academico/anios-escolares.e2e-spec.ts` corre completo sin regresión
 
 ## PR 3 — Activación de año escolar (base = PR 2 branch)
 
