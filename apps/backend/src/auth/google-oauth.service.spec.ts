@@ -1,11 +1,13 @@
 import { UnauthorizedException } from '@nestjs/common';
 import type { OAuth2Client } from 'google-auth-library';
 import { GoogleOauthService } from './google-oauth.service';
+import type { ConfiguracionLecturaService } from '../configuracion/configuracion-lectura.service';
 
 /**
- * google-oauth-y-recuperacion, PR2 (design.md D2, tarea 6.1-6.5/6.8). Unit test sobre un
- * `OAuth2Client` simulado (`overrideProvider(GOOGLE_OAUTH_CLIENT)` en los e2e) — nunca abre red
- * real. Foco: la política fail-closed completa (D2) — ausencia de env vars, `hd` ausente/no
+ * google-oauth-y-recuperacion, PR2 (design.md D2, tarea 6.1-6.5/6.8), corte de fuente en
+ * configuracion-general, PR4 (design.md D2, tarea 4.1). Unit test sobre un `OAuth2Client`
+ * simulado y un `ConfiguracionLecturaService` mockeado — nunca abre red ni Postgres real. Foco:
+ * la política fail-closed completa (D2) — DB caída, `dominios_google` vacío, `hd` ausente/no
  * permitido, `email_verified: false`, `aud` incorrecta, y rechazo del propio `verifyIdToken()`.
  */
 describe('GoogleOauthService.verificar — política fail-closed (D2)', () => {
@@ -17,11 +19,10 @@ describe('GoogleOauthService.verificar — política fail-closed (D2)', () => {
 
   function crearServicio(overrides: {
     clientId?: string;
-    hostedDomains?: string;
+    dominiosGooglePermitidos?: () => Promise<string[]>;
     verifyIdTokenImpl?: (options: unknown) => Promise<{ getPayload: () => unknown }>;
   }) {
     process.env.GOOGLE_CLIENT_ID = overrides.clientId ?? 'client-id-real';
-    process.env.GOOGLE_HOSTED_DOMAINS = overrides.hostedDomains ?? 'colegio.edu.ar';
 
     const verifyIdToken = jest.fn(
       overrides.verifyIdTokenImpl ??
@@ -37,26 +38,43 @@ describe('GoogleOauthService.verificar — política fail-closed (D2)', () => {
     );
 
     const client = { verifyIdToken } as unknown as OAuth2Client;
-    const service = new GoogleOauthService(client);
-    return { service, verifyIdToken };
+    const dominiosGooglePermitidos = jest.fn(
+      overrides.dominiosGooglePermitidos ?? (async () => ['colegio.edu.ar']),
+    );
+    const configuracionLectura = {
+      dominiosGooglePermitidos,
+    } as unknown as ConfiguracionLecturaService;
+    const service = new GoogleOauthService(client, configuracionLectura);
+    return { service, verifyIdToken, dominiosGooglePermitidos };
   }
 
-  // 6.1 RED [R2][D2]: sin GOOGLE_CLIENT_ID configurado, todo verificar() rechaza en tiempo de
-  // request — la construcción del servicio no lanza (no hay onModuleInit que valide env).
-  it('[R2][D2] GOOGLE_CLIENT_ID vacío rechaza en tiempo de request, sin lanzar en la construcción', async () => {
+  // [4.1][D2] GOOGLE_CLIENT_ID vacío rechaza en tiempo de request, sin lanzar en la construcción.
+  it('[4.1][D2] GOOGLE_CLIENT_ID vacío rechaza en tiempo de request, sin lanzar en la construcción', async () => {
     const { service } = crearServicio({ clientId: '' });
 
     await expect(service.verificar('token-cualquiera')).rejects.toThrow(UnauthorizedException);
   });
 
-  it('[R2][D2] GOOGLE_HOSTED_DOMAINS vacío rechaza en tiempo de request', async () => {
-    const { service } = crearServicio({ hostedDomains: '' });
+  // [4.1][D2] DB caída (dominiosGooglePermitidos() rechaza) ⇒ UnauthorizedException, nunca 500.
+  it('[4.1][D2] DB caída al consultar dominios permitidos rechaza con UnauthorizedException (nunca 500)', async () => {
+    const { service } = crearServicio({
+      dominiosGooglePermitidos: async () => {
+        throw new Error('Connection refused');
+      },
+    });
 
     await expect(service.verificar('token-cualquiera')).rejects.toThrow(UnauthorizedException);
   });
 
-  // 6.2 RED [R2][D2]: hd ausente (cuenta personal @gmail.com) es rechazada.
-  it('[R2][D2] hd ausente es rechazado', async () => {
+  // [4.1][D2] Configuracion.dominios_google = [] ⇒ fail-closed, ningún dominio permitido.
+  it('[4.1][D2] dominios_google vacío en Configuracion rechaza en tiempo de request (fail-closed)', async () => {
+    const { service } = crearServicio({ dominiosGooglePermitidos: async () => [] });
+
+    await expect(service.verificar('token-cualquiera')).rejects.toThrow(UnauthorizedException);
+  });
+
+  // [4.1][D2] hd ausente (cuenta personal @gmail.com) es rechazada.
+  it('[4.1][D2] hd ausente es rechazado', async () => {
     const { service } = crearServicio({
       verifyIdTokenImpl: async () => ({
         getPayload: () => ({
@@ -72,10 +90,11 @@ describe('GoogleOauthService.verificar — política fail-closed (D2)', () => {
     await expect(service.verificar('token-personal')).rejects.toThrow(UnauthorizedException);
   });
 
-  // 6.3 RED [R2][D2]: hd presente pero no permitido (normalizado trim().toLowerCase()).
-  it('[R2][D2] hd presente pero fuera de GOOGLE_HOSTED_DOMAINS es rechazado', async () => {
-    const { service } = crearServicio({
-      hostedDomains: 'colegio.edu.ar, otro-colegio.edu.ar',
+  // [4.1][D2] hd presente pero no permitido (normalizado trim().toLowerCase()), evento
+  // LOGIN_OAUTH_FALLIDO lo emite AuthService al capturar este rechazo (ver auth.service.ts).
+  it('[4.1][D2] hd presente pero fuera de Configuracion.dominios_google es rechazado', async () => {
+    const { service, dominiosGooglePermitidos } = crearServicio({
+      dominiosGooglePermitidos: async () => ['colegio.edu.ar', 'otro-colegio.edu.ar'],
       verifyIdTokenImpl: async () => ({
         getPayload: () => ({
           sub: 'sub-1',
@@ -88,11 +107,14 @@ describe('GoogleOauthService.verificar — política fail-closed (D2)', () => {
     });
 
     await expect(service.verificar('token-hd-no-permitido')).rejects.toThrow(UnauthorizedException);
+    expect(dominiosGooglePermitidos).toHaveBeenCalled();
   });
 
-  it('[R2][D2] hd permitido normalizado (mayúsculas/espacios) es aceptado', async () => {
+  it('[4.1][D2] hd permitido normalizado (mayúsculas/espacios) es aceptado, payload validado', async () => {
     const { service } = crearServicio({
-      hostedDomains: ' Colegio.edu.ar ,otro.edu.ar',
+      dominiosGooglePermitidos: async () => [' Colegio.edu.ar ', 'otro.edu.ar'].map((d) =>
+        d.trim().toLowerCase(),
+      ),
       verifyIdTokenImpl: async () => ({
         getPayload: () => ({
           sub: 'sub-1',
@@ -109,8 +131,8 @@ describe('GoogleOauthService.verificar — política fail-closed (D2)', () => {
     expect(payload.correo).toBe('padre@colegio.edu.ar');
   });
 
-  // 6.4 RED [R2][D2]: email_verified === false es rechazado.
-  it('[R2][D2] email_verified === false es rechazado', async () => {
+  // [4.1] email_verified === false es rechazado.
+  it('[4.1] email_verified === false es rechazado', async () => {
     const { service } = crearServicio({
       verifyIdTokenImpl: async () => ({
         getPayload: () => ({
@@ -126,10 +148,10 @@ describe('GoogleOauthService.verificar — política fail-closed (D2)', () => {
     await expect(service.verificar('token-no-verificado')).rejects.toThrow(UnauthorizedException);
   });
 
-  // 6.5 RED [R2][D2]: aud !== GOOGLE_CLIENT_ID es rechazado — se pasa audience explícitamente a
+  // [4.1] aud !== GOOGLE_CLIENT_ID es rechazado — se pasa audience explícitamente a
   // verifyIdToken(), así que el rechazo real ocurre dentro de la librería; este test cubre el caso
   // donde el mock simula ese comportamiento (aud incorrecta ⇒ verifyIdToken lanza).
-  it('[R2][D2] audiencia incorrecta (verifyIdToken rechaza) es rechazado', async () => {
+  it('[4.1] audiencia incorrecta (verifyIdToken rechaza) es rechazado', async () => {
     const { service } = crearServicio({
       verifyIdTokenImpl: async () => {
         throw new Error('Wrong recipient, payload audience != requested audience');
@@ -139,9 +161,9 @@ describe('GoogleOauthService.verificar — política fail-closed (D2)', () => {
     await expect(service.verificar('token-aud-incorrecta')).rejects.toThrow(UnauthorizedException);
   });
 
-  // 6.8 GREEN [R2]: token sintácticamente válido pero con firma inválida es rechazado sin llegar
-  // a los chequeos de dominio — el rechazo de la librería ya produce la misma falla uniforme.
-  it('[R2] firma inválida (verifyIdToken rechaza a nivel de librería) es rechazado uniformemente', async () => {
+  // [4.1] token sintácticamente válido pero con firma inválida es rechazado sin llegar a los
+  // chequeos de dominio — el rechazo de la librería ya produce la misma falla uniforme.
+  it('[4.1] firma inválida (verifyIdToken rechaza a nivel de librería) es rechazado uniformemente', async () => {
     const { service, verifyIdToken } = crearServicio({
       verifyIdTokenImpl: async () => {
         throw new Error('Invalid token signature');

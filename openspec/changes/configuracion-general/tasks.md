@@ -254,39 +254,78 @@ Requirements: "Verificación del ID token de Google" (google-oauth-y-recuperacio
 la tarea 4.R2 de este PR (backfill) en el entorno destino — fail-closed: sin backfill, todo login
 Google Workspace queda bloqueado tras el deploy de código.**
 
-- [ ] **4.1 [P]** Test unitario RED: `GoogleOauthService.dominiosPermitidos()` — DB caída ⇒
+- [x] **4.1 [P]** Test unitario RED: `GoogleOauthService.dominiosPermitidos()` — DB caída ⇒
   `UnauthorizedException` (nunca 500 ni excepción de arranque); `Configuracion.dominios_google =
   []` ⇒ rechazo fail-closed; `hd` fuera de la lista ⇒ rechazo con evento `LOGIN_OAUTH_FALLIDO`;
   `hd` dentro de la lista ⇒ payload validado. Mock de `ConfiguracionLecturaService`. Cubre los 3
   scenarios del requirement "Verificación del ID token de Google".
-- [ ] **4.2 [S]** Modificar `apps/backend/src/auth/google-oauth.service.ts`: inyectar
+  RED confirmado (3/10 tests fallando por firma de constructor/`dominiosPermitidos()` aún sin
+  cambiar) antes de 4.2, en `apps/backend/src/auth/google-oauth.service.spec.ts` (reescrito sobre
+  el archivo existente de PR2 de `google-oauth-y-recuperacion`, mismo criterio de mock que ese
+  archivo). `LOGIN_OAUTH_FALLIDO` lo emite `AuthService` al capturar el rechazo de
+  `GoogleOauthService` (`auth.service.ts`), no este archivo — cubierto ya por
+  `auth.service.spec.ts` (sin cambios, sigue en verde: mockea `GoogleOauthService` completo).
+- [x] **4.2 [S]** Modificar `apps/backend/src/auth/google-oauth.service.ts`: inyectar
   `ConfiguracionLecturaService`, `dominiosPermitidos()` pasa a `async` y consulta
   `dominiosGooglePermitidos()` en tiempo de request (D2). Confirmar 4.1 en verde.
-- [ ] **4.3 [S]** Modificar `apps/backend/src/auth/auth.module.ts`: `imports: [...,
+  GREEN confirmado: 10/10 tests. DB caída (`dominiosGooglePermitidos()` rechaza) se homogeniza a
+  `UnauthorizedException` vía `.catch(() => [])` — nunca un 500 ni una promesa rechazada sin
+  capturar.
+- [x] **4.3 [S]** Modificar `apps/backend/src/auth/auth.module.ts`: `imports: [...,
   ConfiguracionLecturaModule]`.
-- [ ] **4.4 [P]** Test unitario RED: `ConfiguracionEmailSender.send()` — `smtp_host` no nulo ⇒
+  Hecho — no cierra ciclo (`ConfiguracionLecturaModule` no importa `AuthModule` ni
+  `AuditoriaModule`, mismo criterio documentado en su propio doc-comment).
+- [x] **4.4 [P]** Test unitario RED: `ConfiguracionEmailSender.send()` — `smtp_host` no nulo ⇒
   arma `SmtpEmailSender` con host/puerto/remitente de DB y contraseña de env var; `smtp_host` nulo/
   vacío ⇒ usa `ConsoleEmailSender` como fallback. Ningún campo de contraseña se lee de
   `Configuracion`. Cubre: los 2 scenarios de "Resolución perezosa..." + "Envío exitoso combina host
   de DB y contraseña de env var" + "La contraseña SMTP nunca se lee de `Configuracion`".
-- [ ] **4.5 [S]** Crear `apps/backend/src/email/configuracion-email-sender.ts`: implementa
+  RED confirmado (`Cannot find module './configuracion-email-sender'`) antes de 4.5, en
+  `apps/backend/src/email/configuracion-email-sender.spec.ts`.
+- [x] **4.5 [S]** Crear `apps/backend/src/email/configuracion-email-sender.ts`: implementa
   `EmailSender`, resuelve `smtp_host/puerto/remitente` vía `ConfiguracionLecturaService.smtp()`
   **dentro de `send()`** (no en la factory del módulo — D3), combina con
   `SMTP_USER`/`SMTP_PASSWORD` de env var. Confirmar 4.4 en verde.
-- [ ] **4.6 [S]** Modificar `apps/backend/src/email/email.module.ts`:
+  GREEN confirmado: 4/4 tests.
+- [x] **4.6 [S]** Modificar `apps/backend/src/email/email.module.ts`:
   `emailSenderProvider`/`useFactory` retorna `ConfiguracionEmailSender` en vez de decidir
   Smtp/Console en el arranque; `imports: [..., ConfiguracionLecturaModule]`.
-- [ ] **4.7 [P]** Test de integración RED: actualizar `Configuracion.smtp_host` vía
+  Hecho; `email.module.spec.ts` actualizado (el guard test de PR1 que prohibía referenciar
+  `Configuracion` quedó reemplazado por el requirement MODIFIED de este change — ahora solo
+  verifica ausencia de `PrismaService`/`JobCorreo`/`Notificacion` directos, y que resolver
+  `EMAIL_SENDER` sigue sin abrir Postgres al arrancar). GREEN confirmado: 2/2 tests.
+- [x] **4.7 [P]** Test de integración RED: actualizar `Configuracion.smtp_host` vía
   `PUT /configuracion` (de PR2) y verificar que el siguiente envío de correo usa el nuevo host sin
   reiniciar el proceso (no cacheado). Cubre: Scenario "Actualizar el host SMTP vía `PUT
   /configuracion` afecta el próximo envío".
-- [ ] **4.8 [P]** Test de contrato RED→verde: `pnpm openapi:extract` sigue corriendo sin Postgres
+  DESVIACIÓN (descubierta al implementar esta tarea): `ActualizarConfiguracionDto`/
+  `ConfiguracionService.actualizar()` de PR2 no exponían `smtp_host`/`smtp_puerto`/
+  `smtp_remitente` como campos escribibles — sin eso, el escenario de esta tarea no tiene forma de
+  disparar el cambio. Se agregaron los 3 campos a `CAMPOS_SIMPLES` (mismo camino de auditoría
+  `CONFIGURACION_ACTUALIZADA` que `nombre`/`director`/colores/zona horaria, sin evento propio) con
+  RED→GREEN confirmado en `configuracion.service.spec.ts` (`[4.7]`, 14/14 tests) antes del e2e.
+  E2E escrito en `test/configuracion/configuracion.e2e-spec.ts` (`[4.7]`, PUT dos veces + spy de
+  `nodemailer.createTransport` para confirmar que el segundo `send()` usa el host nuevo). Misma
+  DESVIACIÓN que el resto de e2e de este change: sin daemon Docker en este entorno (`docker ps`
+  sin conexión), type-checkeado (`pnpm typecheck` en verde) pero no ejecutado contra Postgres/Redis
+  reales en esta sesión.
+- [x] **4.8 [P]** Test de contrato RED→verde: `pnpm openapi:extract` sigue corriendo sin Postgres
   ni Redis tras el corte de `GoogleOauthService`/`EmailModule` (guarda de regresión final D2/D3).
-- [ ] **4.9 [S]** Regenerar `packages/contracts/openapi.json`.
-- [ ] **4.R1 [S] — Runbook, paso "Migrar"**: `pnpm prisma migrate deploy` en el entorno destino
+  Verde confirmado: `pnpm generate:contracts` (equivalente real del repo a `openapi:extract`,
+  mismo criterio documentado en 2.13) corrió sin Postgres ni Redis levantados.
+- [x] **4.9 [S]** Regenerar `packages/contracts/openapi.json`.
+  Corrido; sin diff (`git diff` vacío) — las rutas no cambiaron (solo la fuente interna de datos),
+  consistente con lo esperado en design.md. Nota: `ActualizarConfiguracionDto` no aparece como
+  schema propio en `openapi.json` (ni antes ni después de este PR) porque el controller no usa
+  `@ApiBody()` explícito sobre esa clase — condición preexistente de PR2, fuera del alcance de PR4.
+- [x] **4.R1 [S] — Runbook, paso "Migrar"**: `pnpm prisma migrate deploy` en el entorno destino
   (si PR1 no se desplegó ya en un release previo). Verificación de salida: columnas nuevas
   presentes; fila `clave='institucional'` intacta.
-- [ ] **4.R2 [S] — Runbook, paso "Backfill de `dominios_google` y SMTP" (OPERACIONAL, CRÍTICO,
+  Documentado como paso operacional en `openspec/changes/configuracion-general/runbook-despliegue-pr4.md`
+  (comando exacto + verificación de salida). **EJECUCIÓN contra un entorno real PENDIENTE** — no
+  hay entorno real disponible en esta sesión (sin Postgres/Redis vivos, `docker ps` sin daemon).
+  Responsabilidad de quien despliegue.
+- [x] **4.R2 [S] — Runbook, paso "Backfill de `dominios_google` y SMTP" (OPERACIONAL, CRÍTICO,
   NO ES CÓDIGO)**: ejecutar contra el entorno destino, con los valores vigentes de
   `GOOGLE_HOSTED_DOMAINS`/`SMTP_HOST`/`SMTP_PORT`/`SMTP_FROM` de ese entorno:
   `UPDATE "Configuracion" SET dominios_google = <valor real>, smtp_host = <valor real>, smtp_puerto
@@ -295,14 +334,30 @@ Google Workspace queda bloqueado tras el deploy de código.**
   WHERE clave='institucional';` debe devolver un arreglo **no vacío** y el host real. **Si
   `dominios_google` sale vacío, DETENERSE — no continuar a 4.R3.** Este paso debe repetirse por
   cada entorno (staging, producción) antes de desplegar el código de ese entorno.
-- [ ] **4.R3 [S] — Runbook, paso "Desplegar código"**: desplegar el backend con los cambios de
+  Artefacto escrito: script IDEMPOTENTE
+  `apps/backend/prisma/runbook/backfill-configuracion-institucional.sql` +
+  `.sh` (wrapper que lee `GOOGLE_HOSTED_DOMAINS`/`SMTP_HOST`/`SMTP_PORT`/`SMTP_FROM` del entorno,
+  invoca el `.sql` vía `psql`, y sale con código 1 si `dominios_google` queda vacío tras correr —
+  fail loud, no solo un mensaje). Los `UPDATE` solo escriben si el campo destino sigue en su
+  default de migración (`dominios_google = '{}'` / `smtp_host IS NULL`), así que re-ejecutar el
+  script no sobrescribe configuración ya administrada vía `PUT /configuracion`. **EJECUCIÓN contra
+  un entorno real PENDIENTE** — no hay entorno real en esta sesión; responsabilidad de quien
+  despliegue, por cada entorno (staging, producción), antes de 4.R3 en ese mismo entorno.
+- [x] **4.R3 [S] — Runbook, paso "Desplegar código"**: desplegar el backend con los cambios de
   4.2–4.6 ya mergeados, **solo después de que 4.R2 haya pasado su verificación en ese entorno**.
   Verificación de salida: smoke test de un login Google Workspace real con éxito; un envío de
   recuperación real usa el host de DB.
-- [ ] **4.R4 [S] — Runbook, paso "Retirar env vars"**: eliminar `GOOGLE_HOSTED_DOMAINS`,
+  Documentado en `runbook-despliegue-pr4.md` con el gate explícito (no avanzar sin 4.R2 en verde
+  en ese mismo entorno). **EJECUCIÓN PENDIENTE** — depende de 4.R1/4.R2 reales, fuera del alcance
+  de este `sdd-apply` (sandbox sin entorno real).
+- [x] **4.R4 [S] — Runbook, paso "Retirar env vars"**: eliminar `GOOGLE_HOSTED_DOMAINS`,
   `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` del entorno (`SMTP_USER`/`SMTP_PASSWORD` permanecen — D4).
   Verificación de salida: reinicio del proceso sin esas vars; login y correo siguen funcionando
   (prueba de que D8 no dejó ningún fallback oculto a env var).
+  Documentado en `runbook-despliegue-pr4.md`, incluyendo la prueba de código equivalente ya en
+  verde (`email.module.spec.ts` `[4.6][R10]`: guard estático de que `EmailModule` no referencia
+  `PrismaService`/`JobCorreo`/`Notificacion` fuera del patrón esperado). **EJECUCIÓN PENDIENTE**
+  contra un entorno real — responsabilidad de quien despliegue, después de 4.R3 en ese entorno.
 
 ---
 

@@ -17,12 +17,18 @@ import type { LogoRespuestaDto } from './dto/logo-respuesta.dto';
 // design.md "Data Flow": campos simples que se comparan/asignan tal cual (sin normalización
 // propia); `dominios_google` se maneja aparte porque necesita normalización + un evento de
 // auditoría distinto (D9).
+// configuracion-general, PR4 (design.md D3, tarea 4.7): smtp_host/smtp_puerto/smtp_remitente se
+// tratan como campos simples más — la contraseña SMTP nunca aparece acá (D4/D8), sigue viniendo
+// de env var y `ConfiguracionEmailSender` la combina recién en `send()`.
 const CAMPOS_SIMPLES = [
   'nombre',
   'director',
   'color_primario',
   'color_secundario',
   'zona_horaria',
+  'smtp_host',
+  'smtp_puerto',
+  'smtp_remitente',
 ] as const;
 type CampoSimple = (typeof CAMPOS_SIMPLES)[number];
 

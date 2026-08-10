@@ -5,8 +5,11 @@ import { hash } from '@node-rs/argon2';
 import { PrismaClient } from '@prisma/client';
 import type { RolUsuario } from '@prisma/client';
 import Redis from 'ioredis';
+import nodemailer from 'nodemailer';
 import { AppModule } from '../../src/app.module';
 import { GOOGLE_OAUTH_CLIENT } from '../../src/auth/google-oauth.provider';
+import { EMAIL_SENDER } from '../../src/email/email-sender';
+import type { EmailSender } from '../../src/email/email-sender';
 
 const COOKIE_NAME = 'seei_session';
 const ARGON2_OPTIONS = { memoryCost: 19456, timeCost: 2, parallelism: 1 };
@@ -226,6 +229,52 @@ describe('Configuracion e2e — GET/PUT auditado + listado de comité [2.5][2.9]
     const cookie = await loginYObtenerCookie(codigo);
 
     expect((await getComite(cookie)).status).toBe(403);
+  });
+
+  // 4.7 [D3][R2 envio-correo]: actualizar Configuracion.smtp_host vía PUT /configuracion afecta el
+  // siguiente envío sin reiniciar el proceso — ConfiguracionEmailSender.send() consulta
+  // ConfiguracionLecturaService.smtp() en cada llamada, nunca cacheado desde el arranque.
+  it('[4.7] actualizar smtp_host vía PUT /configuracion afecta el próximo envío sin reiniciar el backend', async () => {
+    const { codigo } = await crearUsuarioDirecto({ rol: 'administrador' });
+    const cookie = await loginYObtenerCookie(codigo);
+
+    const createTransportSpy = jest.spyOn(nodemailer, 'createTransport').mockReturnValue({
+      sendMail: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ReturnType<typeof nodemailer.createTransport>);
+
+    const emailSender = app.get<EmailSender>(EMAIL_SENDER);
+
+    const primeraRespuesta = await putConfiguracion(
+      {
+        smtp_host: 'smtp.viejo.test',
+        smtp_puerto: 587,
+        smtp_remitente: 'no-responder@viejo.test',
+      },
+      cookie,
+    );
+    expect(primeraRespuesta.status).toBe(200);
+
+    await emailSender.send('destinatario@e2e.local', 'Asunto', 'Cuerpo');
+    expect(createTransportSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({ host: 'smtp.viejo.test' }),
+    );
+
+    const segundaRespuesta = await putConfiguracion(
+      {
+        smtp_host: 'smtp.nuevo.test',
+        smtp_puerto: 2525,
+        smtp_remitente: 'no-responder@nuevo.test',
+      },
+      cookie,
+    );
+    expect(segundaRespuesta.status).toBe(200);
+
+    await emailSender.send('destinatario@e2e.local', 'Asunto', 'Cuerpo');
+    expect(createTransportSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({ host: 'smtp.nuevo.test' }),
+    );
+
+    createTransportSpy.mockRestore();
   });
 });
 

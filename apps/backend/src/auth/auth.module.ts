@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { PrismaService } from '../prisma/prisma.service';
 import { redisProvider } from '../redis/redis.provider';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
+import { ConfiguracionLecturaModule } from '../configuracion/configuracion-lectura.module';
 import { EmailModule } from '../email/email.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -40,9 +41,14 @@ import { SessionService } from './session.service';
  * se resuelve en el contexto del módulo que declara el controlador — sin este export, `UsersModule`
  * no podría inyectar `SessionService`. Redeclarar `SessionService`/`redisProvider` ahí abriría un
  * segundo cliente Redis y una segunda instancia de sesiones; descartado (design.md D3).
+ *
+ * configuracion-general, PR4 (design.md D2, tarea 4.3): `ConfiguracionLecturaModule` se importa
+ * para que `GoogleOauthService` pueda inyectar `ConfiguracionLecturaService` — el módulo de
+ * lectura no importa `AuthModule` ni `AuditoriaModule`, así que este import no cierra ningún ciclo
+ * (mismo criterio documentado en `configuracion-lectura.module.ts`).
  */
 @Module({
-  imports: [AuditoriaModule, EmailModule],
+  imports: [AuditoriaModule, ConfiguracionLecturaModule, EmailModule],
   controllers: [AuthController],
   providers: [
     PrismaService,

@@ -159,6 +159,47 @@ describe('ConfiguracionService.actualizar() (D9, tarea 2.5)', () => {
     ).rejects.toThrow(BadRequestException);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
+
+  // [4.7][D3][R2 envio-correo]: PUT /configuracion también puede actualizar smtp_host/puerto/
+  // remitente — sin este campo escribible, el escenario "Actualizar el host SMTP vía PUT
+  // /configuracion afecta el próximo envío" no tiene forma de disparar el cambio.
+  it('[4.7] persiste smtp_host/smtp_puerto/smtp_remitente y audita CONFIGURACION_ACTUALIZADA', async () => {
+    const actualizado = {
+      ...FILA_BASE,
+      smtp_host: 'smtp.nuevo.test',
+      smtp_puerto: 2525,
+      smtp_remitente: 'no-responder@nuevo.test',
+    };
+    const { servicio, auditoria, configuracion } = construirServicio({
+      update: jest.fn().mockResolvedValue(actualizado),
+    });
+
+    await servicio.actualizar(
+      {
+        smtp_host: 'smtp.nuevo.test',
+        smtp_puerto: 2525,
+        smtp_remitente: 'no-responder@nuevo.test',
+      },
+      'actor-1',
+    );
+
+    expect(configuracion.update).toHaveBeenCalledWith({
+      where: { id: 'c1' },
+      data: {
+        smtp_host: 'smtp.nuevo.test',
+        smtp_puerto: 2525,
+        smtp_remitente: 'no-responder@nuevo.test',
+      },
+    });
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      'CONFIGURACION_ACTUALIZADA',
+      'actor-1',
+      'Configuracion',
+      'c1',
+      { campos: ['smtp_host', 'smtp_puerto', 'smtp_remitente'] },
+    );
+  });
 });
 
 describe('ConfiguracionService.obtener()', () => {

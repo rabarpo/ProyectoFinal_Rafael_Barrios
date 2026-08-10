@@ -31,4 +31,17 @@ export class ActualizarConfiguracionDto {
     type: [String],
   })
   dominios_google?: string[];
+
+  // configuracion-general, PR4 (design.md D3, tarea 4.7; spec envio-correo "Cambio de
+  // configuración SMTP no requiere redeploy"). Escribibles vía PUT /configuracion — la contraseña
+  // SMTP nunca es un campo de este DTO (D4/D8): sigue viniendo exclusivamente de
+  // SMTP_USER/SMTP_PASSWORD en variable de entorno.
+  @ApiPropertyOptional({ description: 'Host SMTP', type: String })
+  smtp_host?: string;
+
+  @ApiPropertyOptional({ description: 'Puerto SMTP', type: Number })
+  smtp_puerto?: number;
+
+  @ApiPropertyOptional({ description: 'Remitente SMTP (From)', type: String })
+  smtp_remitente?: string;
 }
