@@ -228,3 +228,204 @@ describe('Configuracion e2e — GET/PUT auditado + listado de comité [2.5][2.9]
     expect((await getComite(cookie)).status).toBe(403);
   });
 });
+
+/**
+ * configuracion-general, PR3 (design.md "Threat Matrix", tareas 3.4/3.6/3.7). Round-trip real del
+ * logo en `bytea` (3.4) y la matriz de rechazo de archivo activo (3.6): SVG con `<script>` se
+ * acepta como archivo (allowlist doble) pero `GET /configuracion/logo` responde con la CSP
+ * restrictiva verificada en la respuesta (nunca ejecuta el script en el origen); archivo de 0
+ * bytes, `>2 MB` y `.exe`/`.gif` se rechazan con `400` antes de persistir.
+ *
+ * DESVIACIÓN declarada (misma que el resto de este change): sin daemon Docker disponible
+ * (`docker ps` sin conexión) en este entorno, esta suite no pudo correrse hasta GREEN en esta
+ * sesión. Queda escrita y type-checkeada (`pnpm typecheck` en verde) contra el contrato real de
+ * `ConfiguracionController`/`ConfiguracionService`, lista para CI o un entorno con
+ * `docker-compose.test.yml` levantado. La cobertura equivalente de orquestación/validación ya está
+ * en verde como unit tests en `src/configuracion/configuracion.controller.spec.ts` y
+ * `src/configuracion/configuracion.service.spec.ts`.
+ */
+describe('Configuracion e2e — logo institucional [3.4][3.6][3.7]', () => {
+  const prisma = new PrismaClient();
+  let app: INestApplication;
+  let baseUrl: string;
+
+  const PASSWORD_CORRECTA = 'clave-correcta-configuracion-logo-e2e-2026';
+  let passwordHash: string;
+  let sufijoBase: number;
+  let contador = 0;
+
+  function extraerCookie(respuesta: Response): string | null {
+    const setCookie = respuesta.headers.get('set-cookie');
+    if (!setCookie) return null;
+    const match = setCookie.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
+    return match ? `${COOKIE_NAME}=${match[1]}` : null;
+  }
+
+  async function postLoginLocal(codigo: string, password: string): Promise<Response> {
+    return fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo, password }),
+    });
+  }
+
+  async function crearAdministrador(): Promise<{ codigo: string }> {
+    contador += 1;
+    const sufijo = `${sufijoBase}-${contador}`;
+    const codigo = `e2e-config-logo-${sufijo}`;
+    await prisma.usuario.create({
+      data: {
+        codigo,
+        dni: `usr-cfg-logo-${sufijo}`,
+        correo: `configuracion-logo-${sufijo}@e2e.local`,
+        nombres: `Usuario Logo E2E ${sufijo}`,
+        rol: 'administrador',
+        estado: 'activo',
+        password_hash: passwordHash,
+      },
+    });
+    return { codigo };
+  }
+
+  async function loginYObtenerCookie(codigo: string): Promise<string> {
+    const respuesta = await postLoginLocal(codigo, PASSWORD_CORRECTA);
+    expect(respuesta.status).toBe(200);
+    return extraerCookie(respuesta) as string;
+  }
+
+  async function postLogoLocal(
+    contenido: Buffer,
+    nombreArchivo: string,
+    mimeType: string,
+    cookie: string,
+  ): Promise<Response> {
+    const form = new FormData();
+    form.set('logo', new Blob([contenido], { type: mimeType }), nombreArchivo);
+    return fetch(`${baseUrl}/api/configuracion/logo`, {
+      method: 'POST',
+      headers: { cookie },
+      body: form,
+    });
+  }
+
+  async function getLogoLocal(cookie: string): Promise<Response> {
+    return fetch(`${baseUrl}/api/configuracion/logo`, { headers: { cookie } });
+  }
+
+  beforeAll(async () => {
+    process.env.GOOGLE_CLIENT_ID = GOOGLE_CLIENT_ID;
+    process.env.GOOGLE_HOSTED_DOMAINS = GOOGLE_HOSTED_DOMAINS;
+
+    passwordHash = await hash(PASSWORD_CORRECTA, ARGON2_OPTIONS);
+    sufijoBase = Date.now();
+
+    const stubClient = {
+      verifyIdToken: async () => {
+        throw new Error('no usado en esta suite');
+      },
+    };
+
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(GOOGLE_OAUTH_CLIENT)
+      .useValue(stubClient)
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    app.setGlobalPrefix('api');
+    await app.init();
+    await app.listen(0);
+
+    const address = app.getHttpServer().address();
+    const port = typeof address === 'object' && address !== null ? address.port : 3000;
+    baseUrl = `http://127.0.0.1:${port}`;
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await prisma.$disconnect();
+  });
+
+  // 3.4: round-trip bytea — sube un PNG válido y confirma que logo/logo_mime/logo_actualizado_en
+  // quedan persistidos correctamente (spec "Logo válido se acepta y persiste").
+  it('[3.4] PNG válido se persiste y GET /configuracion/logo lo devuelve con el Content-Type exacto', async () => {
+    const { codigo } = await crearAdministrador();
+    const cookie = await loginYObtenerCookie(codigo);
+    const contenido = Buffer.from('contenido-png-e2e');
+
+    const subida = await postLogoLocal(contenido, 'logo.png', 'image/png', cookie);
+    expect(subida.status).toBe(200);
+    const cuerpoSubida = (await subida.json()) as { logo_mime: string; logo_actualizado_en: string };
+    expect(cuerpoSubida.logo_mime).toBe('image/png');
+
+    const filaEnDb = await prisma.configuracion.findUniqueOrThrow({ where: { clave: 'institucional' } });
+    expect(filaEnDb.logo?.toString('utf-8')).toBe('contenido-png-e2e');
+    expect(filaEnDb.logo_mime).toBe('image/png');
+    expect(filaEnDb.logo_actualizado_en).not.toBeNull();
+
+    const descarga = await getLogoLocal(cookie);
+    expect(descarga.status).toBe(200);
+    expect(descarga.headers.get('content-type')).toContain('image/png');
+    expect(descarga.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(descarga.headers.get('content-security-policy')).toBe(
+      "default-src 'none'; style-src 'unsafe-inline'",
+    );
+  });
+
+  // Threat matrix: SVG con <script>/onload se acepta como archivo (cumple allowlist) pero la
+  // respuesta de descarga nunca lo ejecuta — la CSP restrictiva viaja siempre en GET
+  // /configuracion/logo, verificada acá en la respuesta HTTP.
+  it('[3.6] SVG con <script> se acepta y persiste, pero se sirve con CSP restrictiva (nunca se ejecuta en el origen)', async () => {
+    const { codigo } = await crearAdministrador();
+    const cookie = await loginYObtenerCookie(codigo);
+    const svgMalicioso = Buffer.from('<svg onload="alert(1)"><script>alert(2)</script></svg>');
+
+    const subida = await postLogoLocal(svgMalicioso, 'logo.svg', 'image/svg+xml', cookie);
+    expect(subida.status).toBe(200);
+
+    const descarga = await getLogoLocal(cookie);
+    expect(descarga.status).toBe(200);
+    expect(descarga.headers.get('content-type')).toContain('image/svg+xml');
+    expect(descarga.headers.get('content-security-policy')).toBe(
+      "default-src 'none'; style-src 'unsafe-inline'",
+    );
+  });
+
+  // 3.6/3.2: archivo de 0 bytes se rechaza con 400 antes de persistir.
+  it('[3.6] archivo de 0 bytes se rechaza con 400', async () => {
+    const { codigo } = await crearAdministrador();
+    const cookie = await loginYObtenerCookie(codigo);
+
+    const respuesta = await postLogoLocal(Buffer.alloc(0), 'logo.png', 'image/png', cookie);
+    expect(respuesta.status).toBe(400);
+  });
+
+  // Scenario "Logo que excede el tamaño máximo se rechaza": >2 MB responde 400 (no 413) antes de
+  // persistir cualquier campo.
+  it('[3.6] archivo >2 MB se rechaza con 400, no 413', async () => {
+    const { codigo } = await crearAdministrador();
+    const cookie = await loginYObtenerCookie(codigo);
+    const archivoGrande = Buffer.alloc(3 * 1024 * 1024, 'a');
+
+    const respuesta = await postLogoLocal(archivoGrande, 'logo.png', 'image/png', cookie);
+    expect(respuesta.status).toBe(400);
+  });
+
+  // Scenario "Formato de logo no permitido se rechaza": .exe/.gif se rechazan con 400.
+  it.each([
+    ['logo.exe', 'application/octet-stream'],
+    ['logo.gif', 'image/gif'],
+  ])('[3.6] extensión no permitida (%s) se rechaza con 400', async (nombreArchivo, mimeType) => {
+    const { codigo } = await crearAdministrador();
+    const cookie = await loginYObtenerCookie(codigo);
+
+    const respuesta = await postLogoLocal(Buffer.from('contenido'), nombreArchivo, mimeType, cookie);
+    expect(respuesta.status).toBe(400);
+  });
+
+  // 401/403 en las dos rutas de logo (mismo criterio que 2.9 para GET/PUT /configuracion).
+  it('[3.7] POST/GET /configuracion/logo sin cookie responden 401', async () => {
+    const respuestaPost = await fetch(`${baseUrl}/api/configuracion/logo`, { method: 'POST' });
+    expect(respuestaPost.status).toBe(401);
+    expect((await getLogoLocal('')).status).toBe(401);
+  });
+});

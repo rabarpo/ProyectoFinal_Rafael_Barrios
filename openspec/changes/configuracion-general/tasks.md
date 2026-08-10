@@ -170,35 +170,81 @@ integrantes del comité" (configuracion-institucional). Depende de PR1.
 Requirement: "Subida de logo institucional" (configuracion-institucional). Depende de PR2 (mismo
 controller/módulo).
 
-- [ ] **3.0 [S]** Migración Prisma aditiva propia de este PR: agregar `logo Bytes?`,
+- [x] **3.0 [S]** Migración Prisma aditiva propia de este PR: agregar `logo Bytes?`,
   `logo_mime String?`, `logo_actualizado_en DateTime? @db.Timestamptz(3)` al modelo `Configuracion`
   (columnas diferidas de PR1 — ver desviación documentada en la tarea 1.2). Confirmar que la fila
   semilla `clave='institucional'` sobrevive con estos campos en `null`, mismo patrón de test que
   1.1.
-- [ ] **3.1 [P]** Test unitario RED: `fileFilter`/allowlist del logo — PNG/JPG/SVG de extensión y
+  Migración `20260809020000_configuracion_institucional_logo` escrita a mano (mismo criterio que
+  1.3: sin shadow DB por falta de daemon Docker); `schema.prisma` extendido; `prisma generate` en
+  verde. Test `[3.0]` agregado a `configuracion-institucional.e2e-spec.ts`, misma DESVIACIÓN
+  no-ejecutado-contra-Postgres-real que 1.1/1.4 (confirmado type-checkeado vía
+  `test/jest-e2e.config.ts`, que sí compila/type-checka el archivo aunque falle en runtime por
+  `DATABASE_URL` ausente).
+- [x] **3.1 [P]** Test unitario RED: `fileFilter`/allowlist del logo — PNG/JPG/SVG de extensión y
   MIME correctos aceptados; `.pdf`, doble extensión (`logo.png.svg`), MIME/contenido discrepantes
   rechazados antes de tocar la DB. Cubre: Scenario "Formato de logo no permitido se rechaza" +
   threat matrix (clasificación de archivo activo).
-- [ ] **3.2 [P]** Test unitario RED: límite de tamaño — archivo de 1 MB aceptado, archivo de 3 MB
+  RED confirmado (`filtroArchivoLogo`/`LogoTamanioExcedidoFilter` no existían aún) antes de 3.3, en
+  `apps/backend/src/configuracion/configuracion.controller.spec.ts` (11/11 tests fallando).
+  DESVIACIÓN (alcance de "MIME/contenido discrepantes"): `fileFilter` de `multer` se ejecuta antes
+  de leer el stream completo, así que no tiene acceso al buffer/bytes reales — "discrepante" se
+  valida a nivel de metadata (extensión detectada vs. `mimetype` declarado en la cabecera
+  multipart), no de magic bytes contra el contenido real. Un archivo con extensión/MIME
+  consistentes pero contenido real distinto (p. ej. bytes SVG con extensión/MIME `image/png`)
+  pasa el filtro; la mitigación para ese caso es la que ya cubre el resto del threat matrix:
+  `X-Content-Type-Options: nosniff` fuerza al navegador a respetar el `Content-Type` persistido
+  (nunca el contenido real) en `GET /configuracion/logo`, así que nunca se re-interpreta como SVG
+  ejecutable aunque el filtro de metadata no lo detecte.
+- [x] **3.2 [P]** Test unitario RED: límite de tamaño — archivo de 1 MB aceptado, archivo de 3 MB
   rechazado con `BadRequestException` antes de persistir. Cubre: Scenarios "Logo válido se acepta y
   persiste" / "Logo que excede el tamaño máximo se rechaza".
-- [ ] **3.3 [S]** Implementar `fileFilter`/allowlist doble (extensión `/\.(png|jpe?g|svg)$/i` + MIME
+  DESVIACIÓN: el límite de tamaño lo aplica `multer` vía `limits.fileSize`, no `fileFilter` (el
+  tamaño real solo se conoce tras leer el stream completo); `@nestjs/platform-express` traduce
+  `LIMIT_FILE_SIZE` en `PayloadTooLargeException` (413) por defecto, no `BadRequestException` (400)
+  — se agregó `LogoTamanioExcedidoFilter` (`@Catch(PayloadTooLargeException)`) para cumplir el 4xx
+  legible de la spec y el 400 explícito de esta tarea/threat matrix (3.6). Mismo archivo/RED que
+  3.1; cubierto también por el e2e de tamaño en `configuracion.e2e-spec.ts`.
+- [x] **3.3 [S]** Implementar `fileFilter`/allowlist doble (extensión `/\.(png|jpe?g|svg)$/i` + MIME
   `image/png|image/jpeg|image/svg+xml`) y `limits: { fileSize: 2*1024*1024 }` en el
   `FileInterceptor('logo', ...)`, reusando el patrón de `importacion.controller.ts`; interfaz local
   `ArchivoMulter` (nunca `Express.Multer.File`). Confirmar 3.1–3.2 en verde.
-- [ ] **3.4 [P]** Test de integración RED: round-trip del logo en `bytea` — subir PNG válido,
+  GREEN confirmado: 42/42 tests en `src/configuracion/*.spec.ts` (incluye
+  `configuracion.controller.spec.ts` 11/11). Doble extensión (`logo.png.svg`) rechazada por
+  `EXTENSION_CON_PUNTO_INTERMEDIA_REGEX` (`/\.(png|jpe?g|svg)\./i`) incluso cuando la extensión
+  final también está en la allowlist; MIME/extensión discrepantes rechazados comparando la
+  extensión detectada contra `MIME_ESPERADO_POR_EXTENSION`.
+- [x] **3.4 [P]** Test de integración RED: round-trip del logo en `bytea` — subir PNG válido,
   verificar que `logo`/`logo_mime`/`logo_actualizado_en` quedan persistidos correctamente.
-- [ ] **3.5 [S]** Crear `apps/backend/src/configuracion/dto/logo-respuesta.dto.ts` y extender
+  Cobertura dual: e2e real (`test/configuracion/configuracion.e2e-spec.ts`, describe "logo
+  institucional", DESVIACIÓN no-ejecutado-contra-Postgres-real, misma que 2.5/2.9/2.10) + unit de
+  orquestación (`ConfiguracionService.actualizarLogo()` en `configuracion.service.spec.ts`, verde,
+  mockeando `PrismaService`/`AuditoriaService`).
+- [x] **3.5 [S]** Crear `apps/backend/src/configuracion/dto/logo-respuesta.dto.ts` y extender
   `configuracion.service.ts`/`configuracion.controller.ts` con `POST /configuracion/logo`
   (`multipart/form-data`) y `GET /configuracion/logo` (`StreamableFile`, `Content-Type` exacto
   persistido, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none';
   style-src 'unsafe-inline'`, `404` si no hay logo). Confirmar 3.4 en verde.
-- [ ] **3.6 [P]** Test e2e RED (threat matrix): SVG con `<script>`/`onload` — se acepta como
+  `ConfiguracionRespuestaDto`/`mapearConfiguracionRespuesta` ya no fijan `logo_presente`/
+  `logo_mime` en `false`/`null` (DESVIACIÓN de PR2 resuelta): ahora leen `fila.logo`/`fila.logo_mime`
+  de la fila real, con test unitario nuevo en `ConfiguracionService.obtener()` cubriendo
+  `logo_presente: true`.
+- [x] **3.6 [P]** Test e2e RED (threat matrix): SVG con `<script>`/`onload` — se acepta como
   archivo (cumple allowlist) pero `GET /configuracion/logo` responde con la CSP restrictiva
   verificada en la respuesta (no ejecuta script en el origen); archivo de 0 bytes rechazado;
   `>2 MB` ⇒ `400`; `.exe`/`.gif` ⇒ `400`.
-- [ ] **3.7 [S]** Confirmar 3.6 en verde con la implementación de 3.5; regenerar
+  Escrito en `test/configuracion/configuracion.e2e-spec.ts` (describe "logo institucional [3.4]
+  [3.6][3.7]"). Misma DESVIACIÓN que el resto de e2e de este change: sin Docker en este entorno,
+  type-checkeado vía `test/jest-e2e.config.ts` (compila y falla en runtime únicamente por
+  `DATABASE_URL` ausente, confirmado ejecutando la suite). Cobertura equivalente de 0 bytes y
+  formato en verde como unit test (`ConfiguracionService.actualizarLogo()`/
+  `configuracion.controller.spec.ts`).
+- [x] **3.7 [S]** Confirmar 3.6 en verde con la implementación de 3.5; regenerar
   `packages/contracts/openapi.json`.
+  3.6 queda en el mismo estado RED-no-ejecutado documentado arriba (bloqueado por Docker, no por el
+  código — mismo criterio que 2.9-2.11). `pnpm generate:contracts` corrió en verde sin Postgres ni
+  Redis levantados (confirma D2/D3); `openapi.json`/`api.d.ts` regenerados con
+  `POST`/`GET /configuracion/logo` (+80 líneas, estrictamente aditivo).
 
 ## PR4 — Corte de `GoogleOauthService` y `EmailModule` a `Configuracion` (con runbook)
 

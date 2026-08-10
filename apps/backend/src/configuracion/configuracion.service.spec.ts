@@ -28,6 +28,9 @@ const FILA_BASE = {
   color_secundario: null,
   zona_horaria: 'America/Lima',
   dominios_google: [] as string[],
+  logo: null as Buffer | null,
+  logo_mime: null as string | null,
+  logo_actualizado_en: null as Date | null,
   actualizado_en: new Date('2026-08-09T00:00:00.000Z'),
 };
 
@@ -171,5 +174,84 @@ describe('ConfiguracionService.obtener()', () => {
       logo_presente: false,
       logo_mime: null,
     });
+  });
+
+  it('con logo persistido, logo_presente es true y logo_mime refleja la fila real', async () => {
+    const { servicio } = construirServicio({
+      lecturaObtener: jest
+        .fn()
+        .mockResolvedValue({ ...FILA_BASE, logo: Buffer.from('png'), logo_mime: 'image/png' }),
+    });
+
+    const resultado = await servicio.obtener();
+
+    expect(resultado.logo_presente).toBe(true);
+    expect(resultado.logo_mime).toBe('image/png');
+  });
+});
+
+/**
+ * PR3 (design.md "Data Flow"/D9, tarea 3.5, spec "Subida de logo institucional"). Complementa el
+ * round-trip `bytea` real (`test/configuracion/configuracion.e2e-spec.ts`, tarea 3.4, DESVIACIÓN
+ * declarada por falta de Docker) con la orquestación: persiste `logo`/`logo_mime`/
+ * `logo_actualizado_en` dentro de la `$transaction` y audita `CONFIGURACION_LOGO_ACTUALIZADO`.
+ */
+describe('ConfiguracionService.actualizarLogo() (tarea 3.5)', () => {
+  it('[3.4] persiste logo/logo_mime/logo_actualizado_en y audita CONFIGURACION_LOGO_ACTUALIZADO', async () => {
+    const fechaLogo = new Date('2026-08-09T12:00:00.000Z');
+    const actualizado = { ...FILA_BASE, logo: Buffer.from('contenido-png'), logo_mime: 'image/png', logo_actualizado_en: fechaLogo };
+    const { servicio, auditoria, configuracion } = construirServicio({
+      update: jest.fn().mockResolvedValue(actualizado),
+    });
+
+    const resultado = await servicio.actualizarLogo(
+      { buffer: Buffer.from('contenido-png'), mimetype: 'image/png' },
+      'actor-1',
+    );
+
+    expect(configuracion.update).toHaveBeenCalledWith({
+      where: { id: 'c1' },
+      data: expect.objectContaining({ logo_mime: 'image/png' }),
+    });
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      'CONFIGURACION_LOGO_ACTUALIZADO',
+      'actor-1',
+      'Configuracion',
+      'c1',
+      { campos: ['logo'] },
+    );
+    expect(resultado).toEqual({ logo_mime: 'image/png', logo_actualizado_en: fechaLogo.toISOString() });
+  });
+
+  it('[3.6] un archivo de 0 bytes se rechaza con BadRequestException antes de abrir la transacción', async () => {
+    const { servicio, prisma } = construirServicio({});
+
+    await expect(
+      servicio.actualizarLogo({ buffer: Buffer.alloc(0), mimetype: 'image/png' }, 'actor-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('ConfiguracionService.obtenerLogo() (tarea 3.5)', () => {
+  it('devuelve buffer/mime cuando hay logo persistido', async () => {
+    const { servicio } = construirServicio({
+      lecturaObtener: jest
+        .fn()
+        .mockResolvedValue({ ...FILA_BASE, logo: Buffer.from('contenido-svg'), logo_mime: 'image/svg+xml' }),
+    });
+
+    const resultado = await servicio.obtenerLogo();
+
+    expect(resultado).toEqual({ buffer: Buffer.from('contenido-svg'), mime: 'image/svg+xml' });
+  });
+
+  it('devuelve null cuando no hay logo persistido (el controller lo traduce a 404)', async () => {
+    const { servicio } = construirServicio({});
+
+    const resultado = await servicio.obtenerLogo();
+
+    expect(resultado).toBeNull();
   });
 });

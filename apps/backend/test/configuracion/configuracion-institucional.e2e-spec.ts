@@ -14,7 +14,7 @@ import { PrismaClient } from '@prisma/client';
  * (`pnpm typecheck` en verde) contra el contrato real de la migración/seed, lista para CI o un
  * entorno con `docker-compose.test.yml` levantado.
  */
-describe('Migración + seed de Configuracion institucional — [PR1, tareas 1.1/1.4]', () => {
+describe('Migración + seed de Configuracion institucional — [PR1, tareas 1.1/1.4][PR3, tarea 3.0]', () => {
   const prisma = new PrismaClient();
 
   afterAll(async () => {
@@ -36,6 +36,17 @@ describe('Migración + seed de Configuracion institucional — [PR1, tareas 1.1/
     expect(fila.color_primario).toBeNull();
     expect(fila.color_secundario).toBeNull();
     expect(fila.dominios_google).toEqual([]);
+  });
+
+  // 3.0 (PR3, migración propia 20260809020000_configuracion_institucional_logo): las 3 columnas
+  // de logo diferidas de PR1 (design.md D5, DESVIACIÓN documentada en tasks.md tarea 1.2) también
+  // sobreviven la migración en su valor nulo — mismo patrón que 1.1.
+  it('[3.0] la fila clave=institucional sobrevive con logo/logo_mime/logo_actualizado_en en null', async () => {
+    const fila = await prisma.configuracion.findUniqueOrThrow({ where: { clave: 'institucional' } });
+
+    expect(fila.logo).toBeNull();
+    expect(fila.logo_mime).toBeNull();
+    expect(fila.logo_actualizado_en).toBeNull();
   });
 
   // 1.4: re-ejecutar `seed.ts` sobre una DB ya migrada y sembrada no duplica la fila ni sobrescribe

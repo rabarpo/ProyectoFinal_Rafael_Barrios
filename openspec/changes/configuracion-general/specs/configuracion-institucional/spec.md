@@ -127,17 +127,17 @@ cualquier archivo que no cumpla formato o tamaño.
 
 #### Scenario: Logo válido se acepta y persiste
 - GIVEN un archivo PNG de 1 MB
-- WHEN se envía como logo en `PUT /configuracion`
+- WHEN se envía como logo en `POST /configuracion/logo`
 - THEN el binario se persiste en la columna `logo` junto con su `logo_mime`
 
 #### Scenario: Logo que excede el tamaño máximo se rechaza
 - GIVEN un archivo de 3 MB
-- WHEN se envía como logo en `PUT /configuracion`
+- WHEN se envía como logo en `POST /configuracion/logo`
 - THEN la solicitud se rechaza con un error 4xx legible antes de persistir cualquier campo
 
 #### Scenario: Formato de logo no permitido se rechaza
 - GIVEN un archivo `.pdf`
-- WHEN se envía como logo en `PUT /configuracion`
+- WHEN se envía como logo en `POST /configuracion/logo`
 - THEN la solicitud se rechaza con un error 4xx legible
 
 ### Requirement: Listado de integrantes del comité

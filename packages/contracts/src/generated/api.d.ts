@@ -568,6 +568,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/configuracion/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descarga el logo institucional */
+        get: operations["ConfiguracionController_obtenerLogo"];
+        put?: never;
+        /** Sube el logo institucional (PNG/JPG/SVG, máximo 2 MB) */
+        post: operations["ConfiguracionController_subirLogo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -721,6 +739,12 @@ export interface components {
             logo_presente: boolean;
             /** @description MIME type del logo persistido, si existe */
             logo_mime?: string | null;
+        };
+        LogoRespuestaDto: {
+            /** @description MIME type persistido del logo (image/png, image/jpeg o image/svg+xml) */
+            logo_mime: string;
+            /** @description Fecha/hora en que se persistió el logo (ISO 8601) */
+            logo_actualizado_en: string;
         };
     };
     responses: never;
@@ -2487,6 +2511,86 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UsuarioRespuestaDto"][];
                 };
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConfiguracionController_obtenerLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Binario del logo con el Content-Type persistido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No hay logo institucional persistido */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConfiguracionController_subirLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logo persistido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogoRespuestaDto"];
+                };
+            };
+            /** @description Formato no permitido, archivo vacío, excede 2 MB o ausente */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Sin cookie de sesión válida */
             401: {

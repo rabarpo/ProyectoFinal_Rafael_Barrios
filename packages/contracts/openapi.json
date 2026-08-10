@@ -1597,6 +1597,69 @@
           "configuracion"
         ]
       }
+    },
+    "/configuracion/logo": {
+      "post": {
+        "operationId": "ConfiguracionController_subirLogo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Logo persistido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Formato no permitido, archivo vacío, excede 2 MB o ausente"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Sube el logo institucional (PNG/JPG/SVG, máximo 2 MB)",
+        "tags": [
+          "configuracion"
+        ]
+      },
+      "get": {
+        "operationId": "ConfiguracionController_obtenerLogo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Binario del logo con el Content-Type persistido"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director"
+          },
+          "404": {
+            "description": "No hay logo institucional persistido"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Descarga el logo institucional",
+        "tags": [
+          "configuracion"
+        ]
+      }
     }
   },
   "info": {
@@ -2015,6 +2078,23 @@
           "id",
           "dominios_google",
           "logo_presente"
+        ]
+      },
+      "LogoRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "logo_mime": {
+            "type": "string",
+            "description": "MIME type persistido del logo (image/png, image/jpeg o image/svg+xml)"
+          },
+          "logo_actualizado_en": {
+            "type": "string",
+            "description": "Fecha/hora en que se persistió el logo (ISO 8601)"
+          }
+        },
+        "required": [
+          "logo_mime",
+          "logo_actualizado_en"
         ]
       }
     }

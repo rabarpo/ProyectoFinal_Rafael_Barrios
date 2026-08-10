@@ -361,20 +361,26 @@ model Notificacion {
 // este PR (se agregan en PR3, junto con la subida/servido del logo) para mantener esta migración
 // acotada al alcance de `ConfiguracionLecturaModule` (lectura de identidad textual, colores, zona
 // horaria y dominios Google — sin bytea todavía).
+// configuracion-general, PR3 (design.md D5, tarea 3.0). `logo`/`logo_mime`/`logo_actualizado_en`
+// diferidas de PR1 (ver comentario arriba y la DESVIACIÓN documentada en tasks.md, tarea 1.2):
+// migración propia de este PR, columnas nullable — la fila semilla sigue sin tocarse.
 model Configuracion {
-  id                String   @id @default(uuid()) @db.Uuid
-  clave             String   @unique
-  anio_escolar_id   String   @db.Uuid
-  smtp_host         String?
-  smtp_puerto       Int?
-  smtp_remitente    String?
-  nombre            String?
-  director          String?
-  color_primario    String?
-  color_secundario  String?
-  zona_horaria      String?
-  dominios_google   String[] @default([])
-  actualizado_en    DateTime @default(now()) @db.Timestamptz(3)
+  id                  String    @id @default(uuid()) @db.Uuid
+  clave               String    @unique
+  anio_escolar_id     String    @db.Uuid
+  smtp_host           String?
+  smtp_puerto         Int?
+  smtp_remitente      String?
+  nombre              String?
+  director            String?
+  color_primario      String?
+  color_secundario    String?
+  zona_horaria        String?
+  dominios_google     String[]  @default([])
+  logo                Bytes?
+  logo_mime           String?
+  logo_actualizado_en DateTime? @db.Timestamptz(3)
+  actualizado_en      DateTime  @default(now()) @db.Timestamptz(3)
 
   anioEscolar AnioEscolar @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
 }

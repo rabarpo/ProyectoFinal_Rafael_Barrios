@@ -1,16 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import type { Configuracion, Prisma } from '@prisma/client';
 import { AUDIT_EVENT_TYPES } from '../auditoria/audit-event-types';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfiguracionLecturaService } from './configuracion-lectura.service';
 import {
+  CONFIGURACION_ERROR_CODES,
   normalizarYValidarDominiosGoogle,
   validarColorHex,
   validarZonaHoraria,
 } from './configuracion.errors';
 import type { ActualizarConfiguracionDto } from './dto/actualizar-configuracion.dto';
 import type { ConfiguracionRespuestaDto } from './dto/configuracion-respuesta.dto';
+import type { LogoRespuestaDto } from './dto/logo-respuesta.dto';
 
 // design.md "Data Flow": campos simples que se comparan/asignan tal cual (sin normalización
 // propia); `dominios_google` se maneja aparte porque necesita normalización + un evento de
@@ -29,9 +31,10 @@ function arraysIguales(a: readonly string[], b: readonly string[]): boolean {
 }
 
 /**
- * configuracion-general, PR2 (design.md "Interfaces / Contracts", tarea 2.6). `logo_presente`/
- * `logo_mime` fijos en `false`/`null` (ver DESVIACIÓN en `dto/configuracion-respuesta.dto.ts`): el
- * schema todavía no tiene `logo`/`logo_mime` — llegan con la migración propia de PR3 (tarea 3.0).
+ * configuracion-general, PR2 (design.md "Interfaces / Contracts", tarea 2.6); PR3 (tarea 3.5):
+ * `logo_presente`/`logo_mime` ahora leen la fila real — la migración propia de PR3 (tarea 3.0) ya
+ * agregó `logo`/`logo_mime`/`logo_actualizado_en` al schema. Nunca incluye los bytes del logo
+ * (esos solo viajan por `GET /configuracion/logo`).
  */
 function mapearConfiguracionRespuesta(fila: Configuracion): ConfiguracionRespuestaDto {
   return {
@@ -42,8 +45,8 @@ function mapearConfiguracionRespuesta(fila: Configuracion): ConfiguracionRespues
     color_secundario: fila.color_secundario,
     zona_horaria: fila.zona_horaria,
     dominios_google: fila.dominios_google,
-    logo_presente: false,
-    logo_mime: null,
+    logo_presente: fila.logo != null,
+    logo_mime: fila.logo_mime,
   };
 }
 
@@ -146,5 +149,59 @@ export class ConfiguracionService {
     });
 
     return mapearConfiguracionRespuesta(fila);
+  }
+
+  /**
+   * POST /configuracion/logo — spec "Subida de logo institucional". El `fileFilter`/`limits` del
+   * `FileInterceptor` (tarea 3.3) ya descartaron formato/tamaño antes de llegar acá; esta capa
+   * rechaza el único caso que ellos no pueden ver: un archivo de 0 bytes (threat matrix, tarea
+   * 3.6) — antes de tocar la DB. Auditado en la misma `$transaction` que el `update` (D9), mismo
+   * criterio que `actualizar()`.
+   */
+  async actualizarLogo(
+    archivo: { buffer: Buffer; mimetype: string },
+    actorId: string,
+  ): Promise<LogoRespuestaDto> {
+    if (archivo.buffer.length === 0) {
+      throw new BadRequestException({ codigo: CONFIGURACION_ERROR_CODES.LOGO_VACIO });
+    }
+
+    const actualizado = await this.prisma.$transaction(async (tx) => {
+      const actual = await tx.configuracion.findUniqueOrThrow({ where: { clave: 'institucional' } });
+
+      const fila = await tx.configuracion.update({
+        where: { id: actual.id },
+        data: { logo: archivo.buffer, logo_mime: archivo.mimetype, logo_actualizado_en: new Date() },
+      });
+
+      await this.auditoria.log(
+        tx,
+        AUDIT_EVENT_TYPES.CONFIGURACION_LOGO_ACTUALIZADO,
+        actorId,
+        'Configuracion',
+        fila.id,
+        { campos: ['logo'] } as Prisma.InputJsonValue,
+      );
+
+      return fila;
+    });
+
+    return {
+      logo_mime: actualizado.logo_mime as string,
+      logo_actualizado_en: (actualizado.logo_actualizado_en as Date).toISOString(),
+    };
+  }
+
+  /**
+   * GET /configuracion/logo — spec "Subida de logo institucional" (servido). `null` cuando no hay
+   * logo persistido; el controller traduce eso a `404` (mismo criterio que
+   * `ImportacionService.obtenerCsvErrores()`/`ImportacionController.descargarErroresCsv()`).
+   */
+  async obtenerLogo(): Promise<{ buffer: Buffer; mime: string } | null> {
+    const fila = await this.lectura.obtener();
+    if (!fila?.logo || !fila.logo_mime) {
+      return null;
+    }
+    return { buffer: fila.logo, mime: fila.logo_mime };
   }
 }

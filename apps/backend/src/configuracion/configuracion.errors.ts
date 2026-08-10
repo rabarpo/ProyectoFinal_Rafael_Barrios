@@ -4,8 +4,17 @@ import { BadRequestException } from '@nestjs/common';
 // `academico.errors.ts`/`users.errors.ts`: el cliente discrimina por `codigo`; un único código
 // aditivo basta porque las tres validaciones son variantes de "formato inválido" del mismo
 // dominio.
+// PR3 (design.md "Interfaces / Contracts"/Threat Matrix, tareas 3.1-3.6): códigos aditivos para la
+// subida/servido del logo — variantes de rechazo temprano de archivo (nunca "formato inválido"
+// genérico, para que el cliente distinga "logo con extensión/MIME no permitido" de "logo
+// demasiado grande" de "sin archivo"/"sin logo persistido").
 export const CONFIGURACION_ERROR_CODES = {
   CAMPO_INVALIDO: 'CAMPO_INVALIDO',
+  LOGO_FORMATO_NO_PERMITIDO: 'LOGO_FORMATO_NO_PERMITIDO',
+  LOGO_TAMANIO_EXCEDIDO: 'LOGO_TAMANIO_EXCEDIDO',
+  LOGO_VACIO: 'LOGO_VACIO',
+  LOGO_REQUERIDO: 'LOGO_REQUERIDO',
+  LOGO_NO_ENCONTRADO: 'LOGO_NO_ENCONTRADO',
 } as const;
 
 export type ConfiguracionErrorCode =

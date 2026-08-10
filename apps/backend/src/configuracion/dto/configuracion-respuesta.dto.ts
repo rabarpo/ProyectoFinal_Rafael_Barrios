@@ -1,11 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // configuracion-general, PR2 (design.md "Interfaces / Contracts", tarea 2.6). `logo_presente`/
-// `logo_mime` viajan desde ya (forma final del contrato de PR3), pero PR2 los fija en
-// `false`/`null`: la migración de PR1 quedó acotada a las 6 columnas sin `logo`/`logo_mime`/
-// `logo_actualizado_en` (`Bytes?`), diferidas a la migración propia de PR3 (tarea 3.0 — ver
-// DESVIACIÓN documentada en tasks.md, tarea 1.2). `ConfiguracionService` de PR3 deberá leer los
-// valores reales una vez que esas columnas existan en el schema.
+// `logo_mime` viajaron desde PR2 con la forma final del contrato, fijos en `false`/`null` hasta
+// que la migración propia de PR3 (tarea 3.0) agregara `logo`/`logo_mime`/`logo_actualizado_en`.
+// PR3 (tarea 3.5): `ConfiguracionService` ahora lee los valores reales de la fila.
 export class ConfiguracionRespuestaDto {
   @ApiProperty({ description: 'ID de la fila de configuración', type: String })
   id!: string;
