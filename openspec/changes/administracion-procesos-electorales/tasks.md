@@ -54,42 +54,42 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 ## PR 2 — Login por código (base = PR 1 branch)
 
 ### Phase 2: Contexto de sesión y API
-- [ ] 2.1 Crear `apps/frontend/src/auth/sesion-context.ts`: `createContext` + `useSesion()` (lanza
+- [x] 2.1 Crear `apps/frontend/src/auth/sesion-context.ts`: `createContext` + `useSesion()` (lanza
       sin provider)
-- [ ] 2.2 Crear `apps/frontend/src/auth/auth-api.ts`: wrappers sobre `createSeeiClient('/api')`;
+- [x] 2.2 Crear `apps/frontend/src/auth/auth-api.ts`: wrappers sobre `createSeeiClient('/api')`;
       mapea `401→'credenciales'`, `409 VINCULACION_REQUERIDA→'vinculacion'`, red→`'red'`
-- [ ] 2.3 RED unit: mapeo de errores de `auth-api` (401/409/red)
-- [ ] 2.4 RED unit: reducción de estado del provider (`cargando→autenticado/anonimo`)
+- [x] 2.3 RED unit: mapeo de errores de `auth-api` (401/409/red)
+- [x] 2.4 RED unit: reducción de estado del provider (`cargando→autenticado/anonimo`)
 
 ### Phase 3: Provider, guard y shell (D8)
-- [ ] 3.1 Crear `AuthProvider.tsx`: `whoami()` al montar, `login/logout`, expone `alRecibir401()`
-- [ ] 3.2 Crear `AuthGuard.tsx`: composición `cargando | <LoginPage/> | children`
-- [ ] 3.3 Crear `AppShell.tsx`: encabezado (rol + logout) + `<main>`
-- [ ] 3.4 Crear `App.tsx`: `<AuthProvider><AuthGuard><AppShell/></AuthGuard></AuthProvider>`
-- [ ] 3.5 Modificar `main.tsx`: montar `<App/>`
+- [x] 3.1 Crear `AuthProvider.tsx`: `whoami()` al montar, `login/logout`, expone `alRecibir401()`
+- [x] 3.2 Crear `AuthGuard.tsx`: composición `cargando | <LoginPage/> | children`
+- [x] 3.3 Crear `AppShell.tsx`: encabezado (rol + logout) + `<main>`
+- [x] 3.4 Crear `App.tsx`: `<AuthProvider><AuthGuard><AppShell/></AuthGuard></AuthProvider>`
+- [x] 3.5 Modificar `main.tsx`: montar `<App/>`
 
 ### Phase 4: Formulario de login (spec: código+contraseña)
-- [ ] 4.1 Crear `FormularioCredenciales.tsx`: presentacional, `codigo`+`password`, submit
+- [x] 4.1 Crear `FormularioCredenciales.tsx`: presentacional, `codigo`+`password`, submit
       deshabilitado con campos vacíos
-- [ ] 4.2 Crear `LoginPage.tsx`: orquesta submit, error, redirección al asistente en 200
-- [ ] 4.3 RED componente: `whoami` 200 monta el shell, nunca muestra el formulario
-- [ ] 4.4 RED componente: `whoami` 401 muestra el login
-- [ ] 4.5 RED componente: campos vacíos no invocan `POST /auth/login`
-- [ ] 4.6 RED componente: `401` deja el código tecleado, muestra "Credenciales inválidas"
-- [ ] 4.7 RED componente: "Cerrar sesión" vuelve al login
-- [ ] 4.8 GREEN: submit + redirección — pasa 4.3-4.7
+- [x] 4.2 Crear `LoginPage.tsx`: orquesta submit, error, redirección al asistente en 200
+- [x] 4.3 RED componente: `whoami` 200 monta el shell, nunca muestra el formulario
+- [x] 4.4 RED componente: `whoami` 401 muestra el login
+- [x] 4.5 RED componente: campos vacíos no invocan `POST /auth/login`
+- [x] 4.6 RED componente: `401` deja el código tecleado, muestra "Credenciales inválidas"
+- [x] 4.7 RED componente: "Cerrar sesión" vuelve al login
+- [x] 4.8 GREEN: submit + redirección — pasa 4.3-4.7
 
 ### Phase 5: Adversarial login (RED obligatorio, D8)
-- [ ] 5.1 RED adversarial: `401` de `/procesos` (no de auth) también desmonta el asistente
-- [ ] 5.2 RED adversarial: el asistente nunca renderiza mientras `estado='cargando'`
-- [ ] 5.3 RED adversarial: ningún módulo de `auth/` escribe en `localStorage`/`sessionStorage` ni
+- [x] 5.1 RED adversarial: `401` de `/procesos` (no de auth) también desmonta el asistente
+- [x] 5.2 RED adversarial: el asistente nunca renderiza mientras `estado='cargando'`
+- [x] 5.3 RED adversarial: ningún módulo de `auth/` escribe en `localStorage`/`sessionStorage` ni
       lee `document.cookie`
-- [ ] 5.4 RED adversarial: `logout` fallando (500/red) igual deja la UI `anonimo`
-- [ ] 5.5 RED adversarial: mismo texto exacto para cuenta bloqueada y contraseña incorrecta
-- [ ] 5.6 GREEN: correcciones necesarias — pasa 5.1-5.5
+- [x] 5.4 RED adversarial: `logout` fallando (500/red) igual deja la UI `anonimo`
+- [x] 5.5 RED adversarial: mismo texto exacto para cuenta bloqueada y contraseña incorrecta
+- [x] 5.6 GREEN: correcciones necesarias — pasa 5.1-5.5
 
 ### Phase 6: Regresión PR2
-- [ ] 6.1 `pnpm typecheck` verde; e2e de `#4`/`#5`/`#6` sin regresión
+- [x] 6.1 `pnpm typecheck` verde; e2e de `#4`/`#5`/`#6` sin regresión
 
 ## PR 3 — Google en el login (base = PR 2 branch)
 
