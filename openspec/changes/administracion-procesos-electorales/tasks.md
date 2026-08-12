@@ -176,26 +176,26 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 ## PR 6 — `POST /procesos`: creación y lote (base = PR 5 branch)
 
 ### Phase 16: DTOs y servicio de creación
-- [ ] 16.1 Crear `procesos/dto/crear-proceso.dto.ts`, `proceso-respuesta.dto.ts`
-- [ ] 16.2 Crear `procesos/procesos.service.ts`: `crear(dto, actorId)` — valida `tipo↔alcance`,
+- [x] 16.1 Crear `procesos/dto/crear-proceso.dto.ts`, `proceso-respuesta.dto.ts`
+- [x] 16.2 Crear `procesos/procesos.service.ts`: `crear(dto, actorId)` — valida `tipo↔alcance`,
       resuelve aulas, excluye sin matrícula, `elegibles=[]` → `409 SEGMENTACION_SIN_ELEGIBLES`
 
 ### Phase 17: Lote y auditoría
-- [ ] 17.1 RED e2e: `representante_aula` crea 1 `ProcesoElectoral` + N `ProcesoAula` en una
+- [x] 17.1 RED e2e: `representante_aula` crea 1 `ProcesoElectoral` + N `ProcesoAula` en una
       `$transaction` [spec: Creación en lote]
-- [ ] 17.2 RED e2e: aula sin matrícula activa queda excluida del lote, resto se crea [spec scenario]
-- [ ] 17.3 RED e2e: aula sin `Candidato` crea `ProcesoAula` igual, sin error de validación [spec
+- [x] 17.2 RED e2e: aula sin matrícula activa queda excluida del lote, resto se crea [spec scenario]
+- [x] 17.3 RED e2e: aula sin `Candidato` crea `ProcesoAula` igual, sin error de validación [spec
       scenario]
-- [ ] 17.4 RED e2e: `representante_aula` + `alcance=institucion` → `409 SEGMENTACION_INVALIDA`
-- [ ] 17.5 RED e2e: exactamente una fila `PROCESO_CREADO` por creación, incluido el lote [spec:
+- [x] 17.4 RED e2e: `representante_aula` + `alcance=institucion` → `409 SEGMENTACION_INVALIDA`
+- [x] 17.5 RED e2e: exactamente una fila `PROCESO_CREADO` por creación, incluido el lote [spec:
       Auditoría de creación]
-- [ ] 17.6 RED e2e: rol no autorizado se rechaza sin ejecutar el handler
-- [ ] 17.7 RED adversarial: rollback forzado a mitad del lote → sin proceso, sin `ProcesoAula`, sin
+- [x] 17.6 RED e2e: rol no autorizado se rechaza sin ejecutar el handler
+- [x] 17.7 RED adversarial: rollback forzado a mitad del lote → sin proceso, sin `ProcesoAula`, sin
       evento de auditoría
-- [ ] 17.8 GREEN: `crear()` + ruta `POST /procesos` — pasa 17.1-17.7
+- [x] 17.8 GREEN: `crear()` + ruta `POST /procesos` — pasa 17.1-17.7
 
 ### Phase 18: Regresión PR6
-- [ ] 18.1 `pnpm openapi:extract` verde; `pnpm typecheck` verde
+- [x] 18.1 `pnpm openapi:extract` verde; `pnpm typecheck` verde
 
 ## PR 7 — `GET`/`PATCH`/`DELETE` `/procesos` (base = PR 6 branch)
 

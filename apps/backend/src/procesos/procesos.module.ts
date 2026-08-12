@@ -7,6 +7,7 @@ import { ConfiguracionLecturaModule } from '../configuracion/configuracion-lectu
 import { PrismaService } from '../prisma/prisma.service';
 import { PadronService } from './padron.service';
 import { ProcesosController } from './procesos.controller';
+import { ProcesosService } from './procesos.service';
 
 /**
  * administracion-procesos-electorales, PR5 (design.md "Enfoque técnico"/"Cambios de archivos",
@@ -25,7 +26,7 @@ import { ProcesosController } from './procesos.controller';
 @Module({
   imports: [AuthModule, AuditoriaModule, ConfiguracionLecturaModule],
   controllers: [ProcesosController],
-  providers: [PrismaService, PadronService],
+  providers: [PrismaService, PadronService, ProcesosService],
 })
 export class ProcesosModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
