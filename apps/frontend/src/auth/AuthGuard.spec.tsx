@@ -21,7 +21,7 @@ function proveer(estadoParcial: ContextoSesion, children: React.ReactNode) {
   );
 }
 
-const acciones = { login: vi.fn(), logout: vi.fn(), alRecibir401: vi.fn() };
+const acciones = { login: vi.fn(), google: vi.fn(), logout: vi.fn(), alRecibir401: vi.fn() };
 
 describe('AuthGuard', () => {
   it("no renderiza el login NI los children mientras estado='cargando'", () => {

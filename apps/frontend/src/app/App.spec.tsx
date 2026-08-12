@@ -12,6 +12,7 @@ const { whoamiMock } = vi.hoisted(() => ({ whoamiMock: vi.fn() }));
 vi.mock('../auth/auth-api', () => ({
   whoami: whoamiMock,
   login: vi.fn(),
+  google: vi.fn(),
   logout: vi.fn(),
 }));
 

@@ -15,6 +15,12 @@ export type EstadoSesion =
 
 export type ContextoSesion = EstadoSesion & {
   login: (codigo: string, password: string) => Promise<ResultadoLogin>;
+  /**
+   * `password` solo se envía en el reintento de vinculación (409
+   * VINCULACION_REQUERIDA ⇒ `DialogoVinculacion` reenvía `{idToken,
+   * password}`, design.md D8/D10).
+   */
+  google: (idToken: string, password?: string) => Promise<ResultadoLogin>;
   logout: () => Promise<void>;
   /** Reacción a un 401 de CUALQUIER ruta (no solo /auth), ver design.md D8. */
   alRecibir401: () => void;

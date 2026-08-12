@@ -32,6 +32,7 @@ Turborepo, roles de Postgres, topología de Docker Compose) ver
    |---|---|
    | `GOOGLE_CLIENT_ID` | `audience` esperado al verificar el ID token de Google |
    | `GOOGLE_HOSTED_DOMAINS` | Dominios institucionales permitidos, separados por coma |
+   | `VITE_GOOGLE_CLIENT_ID` (frontend, `apps/frontend/.env`) | `client_id` que usa Google Identity Services para renderizar el botón "Continuar con Google" del login (`administracion-procesos-electorales`, design.md D10). **Debe ser el mismo valor** que `GOOGLE_CLIENT_ID` del backend — el backend lo verifica como `audience`. Sin esta variable el botón de Google no se renderiza (fail-closed); el login por código sigue funcionando |
    | `RECOVERY_TTL_SECONDS` | TTL del token de recuperación en Redis (por defecto `1800`) |
    | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | Credenciales SMTP de `SmtpEmailSender`; sin `SMTP_HOST` se usa `ConsoleEmailSender` |
    | `APP_BASE_URL` | Base para armar el enlace de recuperación (`${APP_BASE_URL}/recuperar?token=...`) |

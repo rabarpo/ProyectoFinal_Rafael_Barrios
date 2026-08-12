@@ -21,6 +21,7 @@ describe('AppShell', () => {
       estado: 'autenticado',
       sesion: { userId: 'u1', rol: 'director', creadoEn: 1 },
       login: vi.fn(),
+      google: vi.fn(),
       logout: vi.fn(),
       alRecibir401: vi.fn(),
     };
@@ -37,6 +38,7 @@ describe('AppShell', () => {
       estado: 'autenticado',
       sesion: { userId: 'u1', rol: 'comite', creadoEn: 1 },
       login: vi.fn(),
+      google: vi.fn(),
       logout,
       alRecibir401: vi.fn(),
     };

@@ -35,6 +35,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [consultarSesion],
   );
 
+  const google = useCallback(
+    async (idToken: string, password?: string) => {
+      const resultado = await authApi.google(idToken, password);
+      if (resultado.ok) {
+        // Mismo motivo que login() (D8, "Post-login"): el body de
+        // POST /auth/google tampoco trae rol/userId.
+        await consultarSesion();
+      }
+      return resultado;
+    },
+    [consultarSesion],
+  );
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -53,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <SesionContext.Provider value={{ ...estado, login, logout, alRecibir401 }}>
+    <SesionContext.Provider value={{ ...estado, login, google, logout, alRecibir401 }}>
       {children}
     </SesionContext.Provider>
   );

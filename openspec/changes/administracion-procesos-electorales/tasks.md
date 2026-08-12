@@ -94,19 +94,20 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 ## PR 3 — Google en el login (base = PR 2 branch)
 
 ### Phase 7: Google Identity Services (D8/D10)
-- [ ] 7.1 Crear `useGoogleIdentity.ts`: carga única de `gsi/client`, `initialize`+`renderButton`
-- [ ] 7.2 Crear `BotonGoogle.tsx`; RED: sin `VITE_GOOGLE_CLIENT_ID` el botón no renderiza
+- [x] 7.1 Crear `useGoogleIdentity.ts`: carga única de `gsi/client`, `initialize`+`renderButton`
+- [x] 7.2 Crear `BotonGoogle.tsx`; RED: sin `VITE_GOOGLE_CLIENT_ID` el botón no renderiza
       (fail-closed, D10)
-- [ ] 7.3 Crear `DialogoVinculacion.tsx`: segundo paso de `VINCULACION_REQUERIDA`
-- [ ] 7.4 RED componente: Google exitoso → `POST /auth/google`, 200 redirige al asistente
-- [ ] 7.5 RED componente: `409 VINCULACION_REQUERIDA` abre el diálogo, reenvío lleva
+- [x] 7.3 Crear `DialogoVinculacion.tsx`: segundo paso de `VINCULACION_REQUERIDA`
+- [x] 7.4 RED componente: Google exitoso → `POST /auth/google`, 200 redirige al asistente
+- [x] 7.5 RED componente: `409 VINCULACION_REQUERIDA` abre el diálogo, reenvío lleva
       `{idToken, password}`
-- [ ] 7.6 RED componente: `401` de Google muestra el mismo mensaje genérico que el login por código
-- [ ] 7.7 GREEN: callback de `useGoogleIdentity` → `auth-api.google()` + flujo de vinculación —
+- [x] 7.6 RED componente: `401` de Google muestra el mismo mensaje genérico que el login por código
+- [x] 7.7 GREEN: callback de `useGoogleIdentity` → `auth-api.google()` + flujo de vinculación —
       pasa 7.4-7.6
-- [ ] 7.8 Modificar `.env.example`/`docs/onboarding.md`: `VITE_GOOGLE_CLIENT_ID` debe igualar
-      `GOOGLE_CLIENT_ID` del backend
-- [ ] 7.9 Regresión: `pnpm typecheck` verde; tests de PR2 sin regresión
+- [x] 7.8 Modificar `.env.example`/`docs/onboarding.md`: `VITE_GOOGLE_CLIENT_ID` debe igualar
+      `GOOGLE_CLIENT_ID` del backend (`.env.example` bloqueado por permisos de sandbox — ver
+      Deviations en apply-progress; `docs/onboarding.md` sí actualizado)
+- [x] 7.9 Regresión: `pnpm typecheck` verde; tests de PR2 sin regresión
 
 ## PR 4 — Cimientos backend (base = PR 3 branch)
 
