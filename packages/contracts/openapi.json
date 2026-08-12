@@ -1701,6 +1701,313 @@
           "configuracion"
         ]
       }
+    },
+    "/procesos/padron": {
+      "post": {
+        "operationId": "ProcesosController_padron",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SegmentacionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Padrón calculado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PadronRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "409": {
+            "description": "Referencia inexistente, segmentación inválida o sin año escolar activo"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Calcula el padrón en vivo para una segmentación, sin persistir nada",
+        "tags": [
+          "procesos"
+        ]
+      }
+    },
+    "/procesos": {
+      "post": {
+        "operationId": "ProcesosController_crear",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearProcesoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Proceso creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcesoRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "409": {
+            "description": "Referencia inexistente, segmentación inválida, sin elegibles o sin año escolar activo"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea un ProcesoElectoral en borrador, con lote de ProcesoAula (D3/D6)",
+        "tags": [
+          "procesos"
+        ]
+      },
+      "get": {
+        "operationId": "ProcesosController_listar",
+        "parameters": [
+          {
+            "name": "tipo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "municipio",
+                "representante_aula",
+                "padres",
+                "consulta"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "estado",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "borrador",
+                "abierto",
+                "cerrado",
+                "acta_emitida"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcesoRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido (filtro fuera del enum)"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista procesos electorales, filtrable por estado y tipo",
+        "tags": [
+          "procesos"
+        ]
+      }
+    },
+    "/procesos/{id}": {
+      "get": {
+        "operationId": "ProcesosController_detalle",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcesoDetalleRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Proceso inexistente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Detalle de un proceso electoral, incluido su ProcesoAula[]",
+        "tags": [
+          "procesos"
+        ]
+      },
+      "patch": {
+        "operationId": "ProcesosController_editar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarProcesoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proceso actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcesoRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Proceso inexistente"
+          },
+          "409": {
+            "description": "Referencia inexistente, segmentación inválida, sin elegibles, proceso no editable o sin año escolar activo"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Edita un proceso en borrador, sin límite de reintentos (D3)",
+        "tags": [
+          "procesos"
+        ]
+      },
+      "delete": {
+        "operationId": "ProcesosController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Proceso eliminado"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Proceso inexistente"
+          },
+          "409": {
+            "description": "Proceso no editable (estado != borrador)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente un proceso en borrador (cascada a ProcesoAula)",
+        "tags": [
+          "procesos"
+        ]
+      }
     }
   },
   "info": {
@@ -2212,6 +2519,489 @@
         "required": [
           "logo_mime",
           "logo_actualizado_en"
+        ]
+      },
+      "SegmentacionDto": {
+        "type": "object",
+        "properties": {
+          "publico_objetivo": {
+            "type": "string",
+            "description": "Público objetivo del proceso",
+            "enum": [
+              "estudiantes",
+              "padres",
+              "comunidad"
+            ]
+          },
+          "alcance": {
+            "type": "string",
+            "description": "Alcance de la segmentación",
+            "enum": [
+              "institucion",
+              "nivel",
+              "grados",
+              "aulas"
+            ]
+          },
+          "nivel_id": {
+            "type": "string",
+            "description": "ID de Nivel, requerido cuando alcance = nivel"
+          },
+          "grado_ids": {
+            "description": "IDs de Grado, requeridos cuando alcance = grados",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aula_ids": {
+            "description": "IDs de Aula, requeridos cuando alcance = aulas",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "publico_objetivo",
+          "alcance"
+        ]
+      },
+      "PadronAulaDto": {
+        "type": "object",
+        "properties": {
+          "aula_id": {
+            "type": "string",
+            "description": "ID del Aula"
+          },
+          "estudiantes": {
+            "type": "number",
+            "description": "Cuenta de estudiantes con matrícula activa en el aula"
+          },
+          "padres": {
+            "type": "number",
+            "description": "Cuenta de estudiantes con Apoderado registrado en el aula (ADR-0011)"
+          },
+          "derechos": {
+            "type": "number",
+            "description": "Derechos de voto derivados del aula según publico_objetivo"
+          }
+        },
+        "required": [
+          "aula_id",
+          "estudiantes",
+          "padres",
+          "derechos"
+        ]
+      },
+      "PadronRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "derechos_totales": {
+            "type": "number",
+            "description": "Total de derechos de voto (con doble derecho de comunidad ya sumado)"
+          },
+          "estudiantes": {
+            "type": "number",
+            "description": "Total de estudiantes elegibles"
+          },
+          "padres": {
+            "type": "number",
+            "description": "Total de cuentas de estudiante con Apoderado registrado"
+          },
+          "cuentas_distintas": {
+            "type": "number",
+            "description": "Cuentas de Usuario distintas involucradas en el conteo"
+          },
+          "aulas": {
+            "description": "Desglose por aula elegible",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PadronAulaDto"
+            }
+          },
+          "aulas_excluidas": {
+            "description": "Aulas del alcance resuelto excluidas por no tener matrícula activa",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aviso": {
+            "type": "string",
+            "description": "Presente cuando cuentas_distintas < estudiantes (matrícula duplicada del mismo año escolar)",
+            "enum": [
+              "MATRICULA_DUPLICADA"
+            ]
+          }
+        },
+        "required": [
+          "derechos_totales",
+          "estudiantes",
+          "padres",
+          "cuentas_distintas",
+          "aulas",
+          "aulas_excluidas"
+        ]
+      },
+      "CrearProcesoDto": {
+        "type": "object",
+        "properties": {
+          "publico_objetivo": {
+            "type": "string",
+            "description": "Público objetivo del proceso",
+            "enum": [
+              "estudiantes",
+              "padres",
+              "comunidad"
+            ]
+          },
+          "alcance": {
+            "type": "string",
+            "description": "Alcance de la segmentación",
+            "enum": [
+              "institucion",
+              "nivel",
+              "grados",
+              "aulas"
+            ]
+          },
+          "nivel_id": {
+            "type": "string",
+            "description": "ID de Nivel, requerido cuando alcance = nivel"
+          },
+          "grado_ids": {
+            "description": "IDs de Grado, requeridos cuando alcance = grados",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aula_ids": {
+            "description": "IDs de Aula, requeridos cuando alcance = aulas",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre del proceso electoral"
+          },
+          "descripcion": {
+            "type": "string",
+            "description": "Descripción del proceso"
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de proceso electoral",
+            "enum": [
+              "municipio",
+              "representante_aula",
+              "padres",
+              "consulta"
+            ]
+          },
+          "fecha_apertura_prevista": {
+            "type": "string",
+            "description": "Fecha/hora prevista de apertura (ISO-8601)"
+          },
+          "fecha_cierre_prevista": {
+            "type": "string",
+            "description": "Fecha/hora prevista de cierre (ISO-8601), MUST ser posterior a la apertura"
+          },
+          "ocultar_resultados": {
+            "type": "boolean",
+            "description": "Pre-marcado por el asistente (D7); si se omite, persiste el default del schema (false)"
+          }
+        },
+        "required": [
+          "publico_objetivo",
+          "alcance",
+          "nombre",
+          "tipo",
+          "fecha_apertura_prevista",
+          "fecha_cierre_prevista"
+        ]
+      },
+      "ProcesoRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del proceso electoral"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre del proceso"
+          },
+          "descripcion": {
+            "type": "string",
+            "description": "Descripción del proceso"
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de proceso electoral",
+            "enum": [
+              "municipio",
+              "representante_aula",
+              "padres",
+              "consulta"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado del proceso",
+            "enum": [
+              "borrador",
+              "abierto",
+              "cerrado",
+              "acta_emitida"
+            ]
+          },
+          "fecha_apertura_prevista": {
+            "type": "string",
+            "description": "Fecha/hora prevista de apertura (ISO-8601)"
+          },
+          "fecha_cierre_prevista": {
+            "type": "string",
+            "description": "Fecha/hora prevista de cierre (ISO-8601)"
+          },
+          "ocultar_resultados": {
+            "type": "boolean",
+            "description": "Pre-marcado por el asistente (D7); default del schema false"
+          },
+          "publico_objetivo": {
+            "type": "string",
+            "description": "Público objetivo del proceso",
+            "enum": [
+              "estudiantes",
+              "padres",
+              "comunidad"
+            ]
+          },
+          "alcance": {
+            "type": "string",
+            "description": "Alcance de la segmentación",
+            "enum": [
+              "institucion",
+              "nivel",
+              "grados",
+              "aulas"
+            ]
+          },
+          "nivel_id_snapshot": {
+            "type": "string",
+            "description": "Snapshot del Nivel elegido cuando alcance = nivel"
+          },
+          "grado_ids_snapshot": {
+            "description": "Snapshot de los Grado elegidos cuando alcance = grados",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aulas": {
+            "description": "IDs de Aula con ProcesoAula creado",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aulas_excluidas": {
+            "description": "IDs de Aula del alcance resuelto excluidas por no tener matrícula activa",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "tipo",
+          "estado",
+          "fecha_apertura_prevista",
+          "fecha_cierre_prevista",
+          "ocultar_resultados",
+          "publico_objetivo",
+          "alcance",
+          "grado_ids_snapshot",
+          "aulas",
+          "aulas_excluidas"
+        ]
+      },
+      "ProcesoDetalleRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del proceso electoral"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre del proceso"
+          },
+          "descripcion": {
+            "type": "string",
+            "description": "Descripción del proceso"
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de proceso electoral",
+            "enum": [
+              "municipio",
+              "representante_aula",
+              "padres",
+              "consulta"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado del proceso",
+            "enum": [
+              "borrador",
+              "abierto",
+              "cerrado",
+              "acta_emitida"
+            ]
+          },
+          "fecha_apertura_prevista": {
+            "type": "string",
+            "description": "Fecha/hora prevista de apertura (ISO-8601)"
+          },
+          "fecha_cierre_prevista": {
+            "type": "string",
+            "description": "Fecha/hora prevista de cierre (ISO-8601)"
+          },
+          "ocultar_resultados": {
+            "type": "boolean",
+            "description": "Pre-marcado por el asistente (D7); default del schema false"
+          },
+          "publico_objetivo": {
+            "type": "string",
+            "description": "Público objetivo del proceso",
+            "enum": [
+              "estudiantes",
+              "padres",
+              "comunidad"
+            ]
+          },
+          "alcance": {
+            "type": "string",
+            "description": "Alcance de la segmentación",
+            "enum": [
+              "institucion",
+              "nivel",
+              "grados",
+              "aulas"
+            ]
+          },
+          "nivel_id_snapshot": {
+            "type": "string",
+            "description": "Snapshot del Nivel elegido cuando alcance = nivel"
+          },
+          "grado_ids_snapshot": {
+            "description": "Snapshot de los Grado elegidos cuando alcance = grados",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aulas": {
+            "description": "IDs de Aula con ProcesoAula creado",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aulas_excluidas": {
+            "description": "IDs de Aula del alcance resuelto excluidas por no tener matrícula activa",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "tipo",
+          "estado",
+          "fecha_apertura_prevista",
+          "fecha_cierre_prevista",
+          "ocultar_resultados",
+          "publico_objetivo",
+          "alcance",
+          "grado_ids_snapshot",
+          "aulas",
+          "aulas_excluidas"
+        ]
+      },
+      "ActualizarProcesoDto": {
+        "type": "object",
+        "properties": {
+          "publico_objetivo": {
+            "type": "string",
+            "description": "Público objetivo del proceso",
+            "enum": [
+              "estudiantes",
+              "padres",
+              "comunidad"
+            ]
+          },
+          "alcance": {
+            "type": "string",
+            "description": "Alcance de la segmentación",
+            "enum": [
+              "institucion",
+              "nivel",
+              "grados",
+              "aulas"
+            ]
+          },
+          "nivel_id": {
+            "type": "string",
+            "description": "ID de Nivel, requerido cuando alcance = nivel"
+          },
+          "grado_ids": {
+            "description": "IDs de Grado, requeridos cuando alcance = grados",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aula_ids": {
+            "description": "IDs de Aula, requeridos cuando alcance = aulas",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre del proceso electoral"
+          },
+          "descripcion": {
+            "type": "string",
+            "description": "Descripción del proceso"
+          },
+          "fecha_apertura_prevista": {
+            "type": "string",
+            "description": "Fecha/hora prevista de apertura (ISO-8601)"
+          },
+          "fecha_cierre_prevista": {
+            "type": "string",
+            "description": "Fecha/hora prevista de cierre (ISO-8601)"
+          },
+          "ocultar_resultados": {
+            "type": "boolean",
+            "description": "Pre-marcado del asistente (D7)"
+          }
+        },
+        "required": [
+          "publico_objetivo",
+          "alcance"
         ]
       }
     }

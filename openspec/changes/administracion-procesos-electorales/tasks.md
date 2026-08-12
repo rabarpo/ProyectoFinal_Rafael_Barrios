@@ -200,35 +200,35 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 ## PR 7 — `GET`/`PATCH`/`DELETE` `/procesos` (base = PR 6 branch)
 
 ### Phase 19: Listado y detalle
-- [ ] 19.1 Crear `listar-procesos.query.ts`, `proceso-detalle-respuesta.dto.ts`
-- [ ] 19.2 RED e2e: `GET /procesos?estado=borrador` filtra correctamente [spec scenario]
-- [ ] 19.3 RED e2e: valor de filtro desconocido → `400 CAMPO_INVALIDO`
-- [ ] 19.4 RED e2e: `GET /procesos/:id` incluye `publico_objetivo`, snapshot y `ProcesoAula[]`
+- [x] 19.1 Crear `listar-procesos.query.ts`, `proceso-detalle-respuesta.dto.ts`
+- [x] 19.2 RED e2e: `GET /procesos?estado=borrador` filtra correctamente [spec scenario]
+- [x] 19.3 RED e2e: valor de filtro desconocido → `400 CAMPO_INVALIDO`
+- [x] 19.4 RED e2e: `GET /procesos/:id` incluye `publico_objetivo`, snapshot y `ProcesoAula[]`
       [spec scenario]
-- [ ] 19.5 GREEN: `listar()`/`detalle()` + rutas `GET` — pasa 19.2-19.4
+- [x] 19.5 GREEN: `listar()`/`detalle()` + rutas `GET` — pasa 19.2-19.4
 
 ### Phase 20: `PATCH` sin límite de reintentos
-- [ ] 20.1 Crear `actualizar-proceso.dto.ts` — sin `tipo` ni `estado` (D3)
-- [ ] 20.2 RED e2e: `PATCH` regenera `ProcesoAula[]` según nueva segmentación [spec scenario]
-- [ ] 20.3 RED e2e: `PATCH` con `tipo`/`estado` en el body no los cambia
-- [ ] 20.4 RED e2e: `PATCH` sobre `estado != borrador` → `409 PROCESO_NO_EDITABLE`, sin cambios
+- [x] 20.1 Crear `actualizar-proceso.dto.ts` — sin `tipo` ni `estado` (D3)
+- [x] 20.2 RED e2e: `PATCH` regenera `ProcesoAula[]` según nueva segmentación [spec scenario]
+- [x] 20.3 RED e2e: `PATCH` con `tipo`/`estado` en el body no los cambia
+- [x] 20.4 RED e2e: `PATCH` sobre `estado != borrador` → `409 PROCESO_NO_EDITABLE`, sin cambios
       [spec scenario]
-- [ ] 20.5 RED e2e: reedición repetida sin límite de reintentos [spec scenario]
-- [ ] 20.6 RED e2e: exactamente una fila `PROCESO_EDITADO` por `PATCH` [spec scenario]
-- [ ] 20.7 GREEN: `editar()` — `deleteMany`+`createMany` de `ProcesoAula` en `$transaction` — pasa
+- [x] 20.5 RED e2e: reedición repetida sin límite de reintentos [spec scenario]
+- [x] 20.6 RED e2e: exactamente una fila `PROCESO_EDITADO` por `PATCH` [spec scenario]
+- [x] 20.7 GREEN: `editar()` — `deleteMany`+`createMany` de `ProcesoAula` en `$transaction` — pasa
       20.2-20.6
 
 ### Phase 21: `DELETE`
-- [ ] 21.1 RED e2e: `DELETE` elimina el proceso y sus `ProcesoAula` en cascada [spec scenario]
-- [ ] 21.2 RED e2e: `DELETE` sobre `estado != borrador` → `409 PROCESO_NO_EDITABLE`, la fila
+- [x] 21.1 RED e2e: `DELETE` elimina el proceso y sus `ProcesoAula` en cascada [spec scenario]
+- [x] 21.2 RED e2e: `DELETE` sobre `estado != borrador` → `409 PROCESO_NO_EDITABLE`, la fila
       permanece [spec scenario]
-- [ ] 21.3 RED e2e: exactamente una fila `PROCESO_ELIMINADO` por `DELETE` [spec scenario]
-- [ ] 21.4 RED e2e: rol no autorizado rechazado en `PATCH`/`DELETE` sin ejecutar el handler
-- [ ] 21.5 GREEN: `eliminar()` + ruta `DELETE` — pasa 21.1-21.4
+- [x] 21.3 RED e2e: exactamente una fila `PROCESO_ELIMINADO` por `DELETE` [spec scenario]
+- [x] 21.4 RED e2e: rol no autorizado rechazado en `PATCH`/`DELETE` sin ejecutar el handler
+- [x] 21.5 GREEN: `eliminar()` + ruta `DELETE` — pasa 21.1-21.4
 
 ### Phase 22: Regresión PR7
-- [ ] 22.1 `pnpm generate:contracts` regenera las 6 rutas de `/procesos`
-- [ ] 22.2 `pnpm openapi:extract` verde; `pnpm typecheck` verde
+- [x] 22.1 `pnpm generate:contracts` regenera las 6 rutas de `/procesos`
+- [x] 22.2 `pnpm openapi:extract` verde; `pnpm typecheck` verde
 
 ## PR 8 — Wizard frontend: reducer + pasos 1-2 (base = PR 7 branch)
 

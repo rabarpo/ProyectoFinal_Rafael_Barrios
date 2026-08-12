@@ -586,6 +586,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/procesos/padron": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Calcula el padrón en vivo para una segmentación, sin persistir nada */
+        post: operations["ProcesosController_padron"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/procesos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista procesos electorales, filtrable por estado y tipo */
+        get: operations["ProcesosController_listar"];
+        put?: never;
+        /** Crea un ProcesoElectoral en borrador, con lote de ProcesoAula (D3/D6) */
+        post: operations["ProcesosController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/procesos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalle de un proceso electoral, incluido su ProcesoAula[] */
+        get: operations["ProcesosController_detalle"];
+        put?: never;
+        post?: never;
+        /** Elimina físicamente un proceso en borrador (cascada a ProcesoAula) */
+        delete: operations["ProcesosController_eliminar"];
+        options?: never;
+        head?: never;
+        /** Edita un proceso en borrador, sin límite de reintentos (D3) */
+        patch: operations["ProcesosController_editar"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -778,6 +832,198 @@ export interface components {
             logo_mime: string;
             /** @description Fecha/hora en que se persistió el logo (ISO 8601) */
             logo_actualizado_en: string;
+        };
+        SegmentacionDto: {
+            /**
+             * @description Público objetivo del proceso
+             * @enum {string}
+             */
+            publico_objetivo: "estudiantes" | "padres" | "comunidad";
+            /**
+             * @description Alcance de la segmentación
+             * @enum {string}
+             */
+            alcance: "institucion" | "nivel" | "grados" | "aulas";
+            /** @description ID de Nivel, requerido cuando alcance = nivel */
+            nivel_id?: string;
+            /** @description IDs de Grado, requeridos cuando alcance = grados */
+            grado_ids?: string[];
+            /** @description IDs de Aula, requeridos cuando alcance = aulas */
+            aula_ids?: string[];
+        };
+        PadronAulaDto: {
+            /** @description ID del Aula */
+            aula_id: string;
+            /** @description Cuenta de estudiantes con matrícula activa en el aula */
+            estudiantes: number;
+            /** @description Cuenta de estudiantes con Apoderado registrado en el aula (ADR-0011) */
+            padres: number;
+            /** @description Derechos de voto derivados del aula según publico_objetivo */
+            derechos: number;
+        };
+        PadronRespuestaDto: {
+            /** @description Total de derechos de voto (con doble derecho de comunidad ya sumado) */
+            derechos_totales: number;
+            /** @description Total de estudiantes elegibles */
+            estudiantes: number;
+            /** @description Total de cuentas de estudiante con Apoderado registrado */
+            padres: number;
+            /** @description Cuentas de Usuario distintas involucradas en el conteo */
+            cuentas_distintas: number;
+            /** @description Desglose por aula elegible */
+            aulas: components["schemas"]["PadronAulaDto"][];
+            /** @description Aulas del alcance resuelto excluidas por no tener matrícula activa */
+            aulas_excluidas: string[];
+            /**
+             * @description Presente cuando cuentas_distintas < estudiantes (matrícula duplicada del mismo año escolar)
+             * @enum {string}
+             */
+            aviso?: "MATRICULA_DUPLICADA";
+        };
+        CrearProcesoDto: {
+            /**
+             * @description Público objetivo del proceso
+             * @enum {string}
+             */
+            publico_objetivo: "estudiantes" | "padres" | "comunidad";
+            /**
+             * @description Alcance de la segmentación
+             * @enum {string}
+             */
+            alcance: "institucion" | "nivel" | "grados" | "aulas";
+            /** @description ID de Nivel, requerido cuando alcance = nivel */
+            nivel_id?: string;
+            /** @description IDs de Grado, requeridos cuando alcance = grados */
+            grado_ids?: string[];
+            /** @description IDs de Aula, requeridos cuando alcance = aulas */
+            aula_ids?: string[];
+            /** @description Nombre del proceso electoral */
+            nombre: string;
+            /** @description Descripción del proceso */
+            descripcion?: string;
+            /**
+             * @description Tipo de proceso electoral
+             * @enum {string}
+             */
+            tipo: "municipio" | "representante_aula" | "padres" | "consulta";
+            /** @description Fecha/hora prevista de apertura (ISO-8601) */
+            fecha_apertura_prevista: string;
+            /** @description Fecha/hora prevista de cierre (ISO-8601), MUST ser posterior a la apertura */
+            fecha_cierre_prevista: string;
+            /** @description Pre-marcado por el asistente (D7); si se omite, persiste el default del schema (false) */
+            ocultar_resultados?: boolean;
+        };
+        ProcesoRespuestaDto: {
+            /** @description ID del proceso electoral */
+            id: string;
+            /** @description Nombre del proceso */
+            nombre: string;
+            /** @description Descripción del proceso */
+            descripcion?: string;
+            /**
+             * @description Tipo de proceso electoral
+             * @enum {string}
+             */
+            tipo: "municipio" | "representante_aula" | "padres" | "consulta";
+            /**
+             * @description Estado del proceso
+             * @enum {string}
+             */
+            estado: "borrador" | "abierto" | "cerrado" | "acta_emitida";
+            /** @description Fecha/hora prevista de apertura (ISO-8601) */
+            fecha_apertura_prevista: string;
+            /** @description Fecha/hora prevista de cierre (ISO-8601) */
+            fecha_cierre_prevista: string;
+            /** @description Pre-marcado por el asistente (D7); default del schema false */
+            ocultar_resultados: boolean;
+            /**
+             * @description Público objetivo del proceso
+             * @enum {string}
+             */
+            publico_objetivo: "estudiantes" | "padres" | "comunidad";
+            /**
+             * @description Alcance de la segmentación
+             * @enum {string}
+             */
+            alcance: "institucion" | "nivel" | "grados" | "aulas";
+            /** @description Snapshot del Nivel elegido cuando alcance = nivel */
+            nivel_id_snapshot?: string;
+            /** @description Snapshot de los Grado elegidos cuando alcance = grados */
+            grado_ids_snapshot: string[];
+            /** @description IDs de Aula con ProcesoAula creado */
+            aulas: string[];
+            /** @description IDs de Aula del alcance resuelto excluidas por no tener matrícula activa */
+            aulas_excluidas: string[];
+        };
+        ProcesoDetalleRespuestaDto: {
+            /** @description ID del proceso electoral */
+            id: string;
+            /** @description Nombre del proceso */
+            nombre: string;
+            /** @description Descripción del proceso */
+            descripcion?: string;
+            /**
+             * @description Tipo de proceso electoral
+             * @enum {string}
+             */
+            tipo: "municipio" | "representante_aula" | "padres" | "consulta";
+            /**
+             * @description Estado del proceso
+             * @enum {string}
+             */
+            estado: "borrador" | "abierto" | "cerrado" | "acta_emitida";
+            /** @description Fecha/hora prevista de apertura (ISO-8601) */
+            fecha_apertura_prevista: string;
+            /** @description Fecha/hora prevista de cierre (ISO-8601) */
+            fecha_cierre_prevista: string;
+            /** @description Pre-marcado por el asistente (D7); default del schema false */
+            ocultar_resultados: boolean;
+            /**
+             * @description Público objetivo del proceso
+             * @enum {string}
+             */
+            publico_objetivo: "estudiantes" | "padres" | "comunidad";
+            /**
+             * @description Alcance de la segmentación
+             * @enum {string}
+             */
+            alcance: "institucion" | "nivel" | "grados" | "aulas";
+            /** @description Snapshot del Nivel elegido cuando alcance = nivel */
+            nivel_id_snapshot?: string;
+            /** @description Snapshot de los Grado elegidos cuando alcance = grados */
+            grado_ids_snapshot: string[];
+            /** @description IDs de Aula con ProcesoAula creado */
+            aulas: string[];
+            /** @description IDs de Aula del alcance resuelto excluidas por no tener matrícula activa */
+            aulas_excluidas: string[];
+        };
+        ActualizarProcesoDto: {
+            /**
+             * @description Público objetivo del proceso
+             * @enum {string}
+             */
+            publico_objetivo: "estudiantes" | "padres" | "comunidad";
+            /**
+             * @description Alcance de la segmentación
+             * @enum {string}
+             */
+            alcance: "institucion" | "nivel" | "grados" | "aulas";
+            /** @description ID de Nivel, requerido cuando alcance = nivel */
+            nivel_id?: string;
+            /** @description IDs de Grado, requeridos cuando alcance = grados */
+            grado_ids?: string[];
+            /** @description IDs de Aula, requeridos cuando alcance = aulas */
+            aula_ids?: string[];
+            /** @description Nombre del proceso electoral */
+            nombre?: string;
+            /** @description Descripción del proceso */
+            descripcion?: string;
+            /** @description Fecha/hora prevista de apertura (ISO-8601) */
+            fecha_apertura_prevista?: string;
+            /** @description Fecha/hora prevista de cierre (ISO-8601) */
+            fecha_cierre_prevista?: string;
+            /** @description Pre-marcado del asistente (D7) */
+            ocultar_resultados?: boolean;
         };
     };
     responses: never;
@@ -2648,6 +2894,306 @@ export interface operations {
             };
             /** @description Rol distinto de administrador/director */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_padron: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SegmentacionDto"];
+            };
+        };
+        responses: {
+            /** @description Padrón calculado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PadronRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Referencia inexistente, segmentación inválida o sin año escolar activo */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_listar: {
+        parameters: {
+            query?: {
+                tipo?: "municipio" | "representante_aula" | "padres" | "consulta";
+                estado?: "borrador" | "abierto" | "cerrado" | "acta_emitida";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcesoRespuestaDto"][];
+                };
+            };
+            /** @description Campo inválido (filtro fuera del enum) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearProcesoDto"];
+            };
+        };
+        responses: {
+            /** @description Proceso creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcesoRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Referencia inexistente, segmentación inválida, sin elegibles o sin año escolar activo */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_detalle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detalle */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcesoDetalleRespuestaDto"];
+                };
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_eliminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proceso eliminado */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso no editable (estado != borrador) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_editar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActualizarProcesoDto"];
+            };
+        };
+        responses: {
+            /** @description Proceso actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcesoRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Referencia inexistente, segmentación inválida, sin elegibles, proceso no editable o sin año escolar activo */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
