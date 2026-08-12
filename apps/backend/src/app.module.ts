@@ -6,6 +6,7 @@ import { ConfiguracionLecturaModule } from './configuracion/configuracion-lectur
 import { ConfiguracionModule } from './configuracion/configuracion.module';
 import { HealthModule } from './health/health.module';
 import { ImportacionModule } from './importacion/importacion.module';
+import { ProcesosModule } from './procesos/procesos.module';
 import { SystemPingModule } from './system-ping/system-ping.module';
 import { UsersModule } from './users/users.module';
 
@@ -22,6 +23,10 @@ import { UsersModule } from './users/users.module';
 // configuracion-general, PR2 (design.md "File Changes", tarea 2.12). `ConfiguracionModule`
 // (controller + escritura auditada) se registra al final, mismo criterio de orden que
 // `ImportacionModule`.
+//
+// administracion-procesos-electorales, PR5 (design.md "Cambios de archivos", tarea 12.4).
+// `ProcesosModule` se registra al final de la lista, mismo criterio de orden que los módulos de
+// dominio previos — cambio aditivo puro, sin tocar rutas existentes.
 @Module({
   imports: [
     HealthModule,
@@ -33,6 +38,7 @@ import { UsersModule } from './users/users.module';
     ImportacionModule,
     ConfiguracionLecturaModule,
     ConfiguracionModule,
+    ProcesosModule,
   ],
 })
 export class AppModule {}

@@ -139,39 +139,39 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 ## PR 5 — `PadronService` (base = PR 4 branch)
 
 ### Phase 12: Módulo, DTOs y catálogo de errores
-- [ ] 12.1 Crear `procesos/dto/segmentacion.dto.ts`, `padron-respuesta.dto.ts`
-- [ ] 12.2 Crear `procesos/procesos.errors.ts` (D5): `CAMPO_INVALIDO`, `REFERENCIA_INEXISTENTE`,
+- [x] 12.1 Crear `procesos/dto/segmentacion.dto.ts`, `padron-respuesta.dto.ts`
+- [x] 12.2 Crear `procesos/procesos.errors.ts` (D5): `CAMPO_INVALIDO`, `REFERENCIA_INEXISTENTE`,
       `SEGMENTACION_INVALIDA`, `SEGMENTACION_SIN_ELEGIBLES`, `PROCESO_NO_EDITABLE`,
       `SIN_ANIO_ESCOLAR_ACTIVO`
-- [ ] 12.3 Crear `procesos/procesos.module.ts`: `imports: [AuthModule, AuditoriaModule,
+- [x] 12.3 Crear `procesos/procesos.module.ts`: `imports: [AuthModule, AuditoriaModule,
       ConfiguracionLecturaModule]`
-- [ ] 12.4 Modificar `app.module.ts`: agregar `ProcesosModule`
+- [x] 12.4 Modificar `app.module.ts`: agregar `ProcesosModule`
 
 ### Phase 13: Resolución de aulas y agregación del padrón (D2/D3)
-- [ ] 13.1 RED unit: resolución de aulas por `alcance` (4 ramas); `institucion` prohibido para
+- [x] 13.1 RED unit: resolución de aulas por `alcance` (4 ramas); `institucion` prohibido para
       `representante_aula` → `409 SEGMENTACION_INVALIDA`
-- [ ] 13.2 RED unit: derivación de derechos por `publico_objetivo`, incluida la suma doble de
+- [x] 13.2 RED unit: derivación de derechos por `publico_objetivo`, incluida la suma doble de
       `comunidad` [spec: doble derecho]
-- [ ] 13.3 RED integración: sin `AnioEscolar` activo → `409 SIN_ANIO_ESCOLAR_ACTIVO`
-- [ ] 13.4 RED integración: exclusión de aulas sin matrícula activa del cálculo
-- [ ] 13.5 RED adversarial: estudiante con dos matrículas activas → `aviso: MATRICULA_DUPLICADA`,
+- [x] 13.3 RED integración: sin `AnioEscolar` activo → `409 SIN_ANIO_ESCOLAR_ACTIVO`
+- [x] 13.4 RED integración: exclusión de aulas sin matrícula activa del cálculo
+- [x] 13.5 RED adversarial: estudiante con dos matrículas activas → `aviso: MATRICULA_DUPLICADA`,
       `cuentas_distintas < estudiantes`
-- [ ] 13.6 RED adversarial: `aula_ids` de otro año escolar → `409 REFERENCIA_INEXISTENTE`, nunca
+- [x] 13.6 RED adversarial: `aula_ids` de otro año escolar → `409 REFERENCIA_INEXISTENTE`, nunca
       contadas
-- [ ] 13.7 RED adversarial: `POST /procesos/padron` no crea ninguna fila de `DerechoVoto` [spec:
+- [x] 13.7 RED adversarial: `POST /procesos/padron` no crea ninguna fila de `DerechoVoto` [spec:
       El conteo no crea filas de DerechoVoto]
-- [ ] 13.8 Crear `procesos/padron.service.ts`: `calcular()` con `$transaction([groupBy, groupBy,
+- [x] 13.8 Crear `procesos/padron.service.ts`: `calcular()` con `$transaction([groupBy, groupBy,
       count])` — GREEN 13.1-13.7
 
 ### Phase 14: `POST /procesos/padron`
-- [ ] 14.1 Crear `procesos/procesos.controller.ts`: ruta `padron` estática antes de `:id` (D4),
+- [x] 14.1 Crear `procesos/procesos.controller.ts`: ruta `padron` estática antes de `:id` (D4),
       `@UseGuards`+`@Roles` a nivel de clase
-- [ ] 14.2 RED e2e: `401` sin cookie, `403` para `docente`/`estudiante`, `200` para
+- [x] 14.2 RED e2e: `401` sin cookie, `403` para `docente`/`estudiante`, `200` para
       `administrador`/`director`/`comité`
-- [ ] 14.3 GREEN: wiring — pasa 14.2
+- [x] 14.3 GREEN: wiring — pasa 14.2
 
 ### Phase 15: Regresión PR5
-- [ ] 15.1 `pnpm openapi:extract` verde; `pnpm typecheck` verde
+- [x] 15.1 `pnpm openapi:extract` verde; `pnpm typecheck` verde
 
 ## PR 6 — `POST /procesos`: creación y lote (base = PR 5 branch)
 
@@ -272,11 +272,26 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 - [ ] 27.6 GREEN: submit → `procesos-api.crear()` + confirmación — pasa 27.3-27.5
 
 ### Phase 28: Montaje en `AppShell`
-- [ ] 28.1 Modificar `apps/frontend/src/app/AppShell.tsx`: montar `ProcesoWizardPage` como único
-      hijo
+- [ ] 28.1 Modificar `apps/frontend/src/app/App.tsx`: montar `ProcesoWizardPage` como único hijo
+      de `AppShell` (deviation de nombre de archivo — ver apply-progress: `AppShell.tsx` ya era
+      genérico desde PR2/PR3, `App.tsx` es el punto real de composición)
 - [ ] 28.2 Verificación manual (rollout R6): sin cookie → login; login → shell+asistente; crear
-      borrador; logout → login
+      borrador; logout → login — **PENDIENTE**: no ejecutada en este entorno (sin Docker/Postgres
+      vivo, ver Phase 29); requiere verificación manual humana en navegador antes de dar por
+      cerrado el rollout de #11
 
 ### Phase 29: Regresión final PR9
-- [ ] 29.1 `pnpm typecheck` verde; sin rutas nuevas de backend, contrato sin cambios
-- [ ] 29.2 `pnpm turbo run test`: e2e de `#4`/`#5`/`#6` sin regresión (verificación final de D9)
+- [ ] 29.1 `pnpm typecheck` verde (root `turbo run typecheck`: 7/7 tasks); sin rutas nuevas de
+      backend — 0 archivos de `apps/backend/src/` tocados en esta sesión; contrato sin cambios de
+      superficie (`packages/contracts` se regeneró por el propio `turbo run typecheck`/`test`, sin
+      diff de forma más allá de lo ya presente al iniciar la sesión)
+- [ ] 29.2 `pnpm --filter @seei/frontend test`: 17/17 archivos, 60/60 tests verdes (incluye
+      `usePadronEnVivo`, `ProcesoWizardPage` con las 7 pruebas de PR9, `App.spec.tsx` con
+      `ProcesoWizardPage` ya montado). `pnpm turbo run test` a nivel de e2e de `#4`/`#5`/`#6`
+      (backend) **no pudo verificarse contra infraestructura real**: Docker sigue sin estar
+      disponible en este entorno (`docker ps` falla, mismo estado confirmado en PR1-8) — 4 de 34
+      suites de `@seei/backend` fallan exclusivamente por falta de Redis/Postgres vivos
+      (`recovery.service.spec.ts` y suites e2e, con `MaxRetriesPerRequestError`/timeout de hook),
+      395/426 tests unitarios sin infraestructura pasan verdes, y ninguna falla es atribuible a
+      código tocado en esta sesión (0 archivos de backend modificados). Verificación e2e real
+      queda pendiente de un entorno con Docker.
