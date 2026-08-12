@@ -233,26 +233,26 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 ## PR 8 — Wizard frontend: reducer + pasos 1-2 (base = PR 7 branch)
 
 ### Phase 23: Reducer y API tipada
-- [ ] 23.1 Crear `procesos/wizard-reducer.ts`: `EstadoAsistente`, discriminador `paso`
-- [ ] 23.2 RED unit: cambiar `tipo` invalida `alcance`
-- [ ] 23.3 RED unit: cambiar `alcance` limpia la selección previa
-- [ ] 23.4 RED unit: `ocultar_resultados` arranca en `true` para proceso nuevo, respeta valor
+- [x] 23.1 Crear `procesos/wizard-reducer.ts`: `EstadoAsistente`, discriminador `paso`
+- [x] 23.2 RED unit: cambiar `tipo` invalida `alcance`
+- [x] 23.3 RED unit: cambiar `alcance` limpia la selección previa
+- [x] 23.4 RED unit: `ocultar_resultados` arranca en `true` para proceso nuevo, respeta valor
       persistido al reabrir [spec: pre-marcado]
-- [ ] 23.5 GREEN: implementación del reducer — pasa 23.2-23.4
-- [ ] 23.6 Crear `procesos/procesos-api.ts`: wrappers tipados contra `packages/contracts`
+- [x] 23.5 GREEN: implementación del reducer — pasa 23.2-23.4
+- [x] 23.6 Crear `procesos/procesos-api.ts`: wrappers tipados contra `packages/contracts`
       regenerado en PR7
 
 ### Phase 24: Pasos 1-2
-- [ ] 24.1 Crear `ProcesoWizardPage.tsx`: contenedor, reducer + navegación (sin submit todavía)
-- [ ] 24.2 Crear `pasos/PasoDatos.tsx`: nombre, descripción, tipo, fechas
-- [ ] 24.3 Crear `pasos/PasoPublico.tsx`: `publico_objetivo`+`alcance`+nivel/grados/aulas;
+- [x] 24.1 Crear `ProcesoWizardPage.tsx`: contenedor, reducer + navegación (sin submit todavía)
+- [x] 24.2 Crear `pasos/PasoDatos.tsx`: nombre, descripción, tipo, fechas
+- [x] 24.3 Crear `pasos/PasoPublico.tsx`: `publico_objetivo`+`alcance`+nivel/grados/aulas;
       `representante_aula` fuerza `alcance=aulas` [spec scenario]
-- [ ] 24.4 RED componente: navegación 1→2 preserva estado; `representante_aula` no ofrece
+- [x] 24.4 RED componente: navegación 1→2 preserva estado; `representante_aula` no ofrece
       `institucion`
-- [ ] 24.5 GREEN: wiring de `PasoDatos`/`PasoPublico` — pasa 24.4
+- [x] 24.5 GREEN: wiring de `PasoDatos`/`PasoPublico` — pasa 24.4
 
 ### Phase 25: Regresión PR8
-- [ ] 25.1 `pnpm typecheck` verde (frontend)
+- [x] 25.1 `pnpm typecheck` verde (frontend)
 
 ## PR 9 — Wizard frontend: padrón + revisión + montaje (base = PR 8 branch)
 
