@@ -540,6 +540,7 @@ export interface PadronRespuestaDto {
 | `apps/backend/src/auth/auth.controller.ts` | Modificar | D9: `@ApiBody` + `@ApiResponse({ type })` en `login`, `loginGoogle`, `logout`, `whoami`. **Solo decoradores**, sin cambio de runtime |
 | `apps/backend/src/auth/dto/mensaje.dto.ts` | Crear | D9: `{ mensaje: string }` tipado para el contrato |
 | `apps/backend/src/auth/dto/sesion-usuario.dto.ts` | Crear | D9: espejo de `SesionUsuario` (`userId`, `rol`, `creadoEn`), sin campos nuevos |
+| `apps/backend/src/auth/dto/login.dto.ts`, `google-login.dto.ts` | Modificar | D9 (descubierto en PR1): `type: String` explícito en `@ApiProperty()` — `tsx`/esbuild no emite `design:type` sin esto, causaba "circular dependency" falso en `openapi:extract`. Solo metadata, sin cambio de runtime; mismo patrón que `UsuarioBloqueadoDto` |
 | `apps/frontend/src/auth/**` (9 archivos de D8) | Crear | Login, contexto de sesión, guard y flujo Google |
 | `apps/frontend/src/app/{App,AppShell}.tsx` | Crear | Shell mínimo de un nivel que aloja al asistente (D8) |
 | `apps/frontend/vite.config.ts` | Modificar | D10: `server.proxy` de `/api` a `http://localhost:3000` |
