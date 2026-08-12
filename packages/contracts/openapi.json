@@ -36,9 +36,26 @@
       "post": {
         "operationId": "AuthController_login",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Login exitoso, cookie seei_session emitida"
+            "description": "Login exitoso, cookie seei_session emitida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MensajeDto"
+                }
+              }
+            }
           },
           "401": {
             "description": "Credenciales inválidas"
@@ -54,9 +71,26 @@
       "post": {
         "operationId": "AuthController_loginGoogle",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleLoginDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Login exitoso, cookie seei_session emitida"
+            "description": "Login exitoso, cookie seei_session emitida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MensajeDto"
+                }
+              }
+            }
           },
           "401": {
             "description": "Credenciales inválidas"
@@ -125,7 +159,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Sesión válida"
+            "description": "Sesión válida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SesionUsuarioDto"
+                }
+              }
+            }
           },
           "401": {
             "description": "Sin cookie de sesión o sesión inexistente/expirada"
@@ -1681,6 +1722,82 @@
   "servers": [],
   "components": {
     "schemas": {
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "description": "Código institucional único del usuario",
+            "example": "seed-comite"
+          },
+          "password": {
+            "type": "string",
+            "description": "Contraseña en texto plano (nunca persistida ni auditada)"
+          }
+        },
+        "required": [
+          "codigo",
+          "password"
+        ]
+      },
+      "MensajeDto": {
+        "type": "object",
+        "properties": {
+          "mensaje": {
+            "type": "string",
+            "description": "Mensaje descriptivo del resultado de la operación",
+            "example": "Login exitoso"
+          }
+        },
+        "required": [
+          "mensaje"
+        ]
+      },
+      "GoogleLoginDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "ID token de Google emitido tras el login OAuth en el cliente"
+          },
+          "password": {
+            "type": "string",
+            "description": "Contraseña actual, requerida solo para confirmar la vinculación de una cuenta existente con password_hash"
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "SesionUsuarioDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "ID del usuario autenticado"
+          },
+          "rol": {
+            "type": "string",
+            "description": "Rol del usuario autenticado",
+            "enum": [
+              "administrador",
+              "director",
+              "comite",
+              "docente",
+              "estudiante"
+            ]
+          },
+          "creadoEn": {
+            "type": "number",
+            "description": "Timestamp Unix (segundos) de creación de la sesión"
+          }
+        },
+        "required": [
+          "userId",
+          "rol",
+          "creadoEn"
+        ]
+      },
       "UsuarioBloqueadoDto": {
         "type": "object",
         "properties": {

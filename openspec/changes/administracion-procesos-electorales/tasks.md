@@ -39,16 +39,16 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 ## PR 1 — Contrato de `/auth` (base = feature/tracker branch)
 
 ### Phase 1: Decoradores OpenAPI y proxy (D9/D10)
-- [ ] 1.1 Crear `apps/backend/src/auth/dto/mensaje.dto.ts`: `{ mensaje: string }` [D9]
-- [ ] 1.2 Crear `apps/backend/src/auth/dto/sesion-usuario.dto.ts`: espejo de `SesionUsuario`
+- [x] 1.1 Crear `apps/backend/src/auth/dto/mensaje.dto.ts`: `{ mensaje: string }` [D9]
+- [x] 1.2 Crear `apps/backend/src/auth/dto/sesion-usuario.dto.ts`: espejo de `SesionUsuario`
       (`userId`, `rol`, `creadoEn`) [D9]
-- [ ] 1.3 Modificar `auth.controller.ts`: `@ApiBody`/`@ApiResponse({type})` en `login`, `loginGoogle`,
+- [x] 1.3 Modificar `auth.controller.ts`: `@ApiBody`/`@ApiResponse({type})` en `login`, `loginGoogle`,
       `logout`, `whoami` — solo decoradores, sin cambio de runtime [D9]
-- [ ] 1.4 RED: `test/schema/*` o test de contrato confirma que `/auth/login`/`/auth/google` ya no
+- [x] 1.4 RED: `test/schema/*` o test de contrato confirma que `/auth/login`/`/auth/google` ya no
       declaran `requestBody?: never` y `whoami` expone `rol`
-- [ ] 1.5 GREEN: `pnpm generate:contracts` regenera `packages/contracts` — pasa 1.4
-- [ ] 1.6 Modificar `apps/frontend/vite.config.ts`: `server.proxy['/api'] → http://localhost:3000` [D10]
-- [ ] 1.7 Regresión: e2e de `#4`/`#5`/`#6` sobre `/auth` sin cambios; `pnpm openapi:extract` sin
+- [x] 1.5 GREEN: `pnpm generate:contracts` regenera `packages/contracts` — pasa 1.4
+- [x] 1.6 Modificar `apps/frontend/vite.config.ts`: `server.proxy['/api'] → http://localhost:3000` [D10]
+- [x] 1.7 Regresión: e2e de `#4`/`#5`/`#6` sobre `/auth` sin cambios; `pnpm openapi:extract` sin
       Postgres/Redis vivos
 
 ## PR 2 — Login por código (base = PR 1 branch)

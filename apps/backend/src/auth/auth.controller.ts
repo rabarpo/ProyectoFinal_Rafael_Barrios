@@ -11,14 +11,16 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard, type RequestConCookies } from './auth.guard';
 import { AuthService } from './auth.service';
 import { BloqueoService } from './bloqueo.service';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
+import { MensajeDto } from './dto/mensaje.dto';
 import { RecoveryConfirmDto } from './dto/recovery-confirm.dto';
 import { RecoveryRequestDto } from './dto/recovery-request.dto';
+import { SesionUsuarioDto } from './dto/sesion-usuario.dto';
 import { UsuarioBloqueadoDto } from './dto/usuario-bloqueado.dto';
 import { RecoveryService } from './recovery.service';
 import { Roles } from './roles.decorator';
@@ -56,7 +58,8 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   @ApiOperation({ summary: 'Login con código de usuario y contraseña; emite cookie de sesión httpOnly' })
-  @ApiResponse({ status: 200, description: 'Login exitoso, cookie seei_session emitida' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({ status: 200, description: 'Login exitoso, cookie seei_session emitida', type: MensajeDto })
   @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
   async login(
     @Body() dto: LoginDto,
@@ -86,7 +89,8 @@ export class AuthController {
   @Post('google')
   @HttpCode(200)
   @ApiOperation({ summary: 'Login con Google OAuth restringido a dominios institucionales' })
-  @ApiResponse({ status: 200, description: 'Login exitoso, cookie seei_session emitida' })
+  @ApiBody({ type: GoogleLoginDto })
+  @ApiResponse({ status: 200, description: 'Login exitoso, cookie seei_session emitida', type: MensajeDto })
   @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
   @ApiResponse({
     status: 409,
@@ -163,7 +167,7 @@ export class AuthController {
   @UseGuards(AuthGuard, RolesGuard)
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Devuelve la sesión autenticada actual (ejemplo de ruta protegida)' })
-  @ApiResponse({ status: 200, description: 'Sesión válida' })
+  @ApiResponse({ status: 200, description: 'Sesión válida', type: SesionUsuarioDto })
   @ApiResponse({ status: 401, description: 'Sin cookie de sesión o sesión inexistente/expirada' })
   whoami(@Req() req: RequestConUsuario): SesionUsuario | undefined {
     return req.usuario;

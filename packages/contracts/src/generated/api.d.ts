@@ -590,6 +590,39 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        LoginDto: {
+            /**
+             * @description Código institucional único del usuario
+             * @example seed-comite
+             */
+            codigo: string;
+            /** @description Contraseña en texto plano (nunca persistida ni auditada) */
+            password: string;
+        };
+        MensajeDto: {
+            /**
+             * @description Mensaje descriptivo del resultado de la operación
+             * @example Login exitoso
+             */
+            mensaje: string;
+        };
+        GoogleLoginDto: {
+            /** @description ID token de Google emitido tras el login OAuth en el cliente */
+            idToken: string;
+            /** @description Contraseña actual, requerida solo para confirmar la vinculación de una cuenta existente con password_hash */
+            password?: string;
+        };
+        SesionUsuarioDto: {
+            /** @description ID del usuario autenticado */
+            userId: string;
+            /**
+             * @description Rol del usuario autenticado
+             * @enum {string}
+             */
+            rol: "administrador" | "director" | "comite" | "docente" | "estudiante";
+            /** @description Timestamp Unix (segundos) de creación de la sesión */
+            creadoEn: number;
+        };
         UsuarioBloqueadoDto: {
             /** @description ID del usuario bloqueado */
             id: string;
@@ -798,14 +831,20 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginDto"];
+            };
+        };
         responses: {
             /** @description Login exitoso, cookie seei_session emitida */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["MensajeDto"];
+                };
             };
             /** @description Credenciales inválidas */
             401: {
@@ -823,14 +862,20 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleLoginDto"];
+            };
+        };
         responses: {
             /** @description Login exitoso, cookie seei_session emitida */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["MensajeDto"];
+                };
             };
             /** @description Credenciales inválidas */
             401: {
@@ -923,7 +968,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SesionUsuarioDto"];
+                };
             };
             /** @description Sin cookie de sesión o sesión inexistente/expirada */
             401: {
