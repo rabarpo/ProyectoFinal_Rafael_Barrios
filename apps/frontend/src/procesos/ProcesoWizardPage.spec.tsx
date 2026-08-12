@@ -1,6 +1,47 @@
-import { describe, expect, it } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { ProcesoWizardPage } from './ProcesoWizardPage';
+import * as procesosApi from './procesos-api';
+import type { PadronRespuestaDto, ProcesoRespuestaDto } from './procesos-api';
+
+// [design.md D7]: `procesos-api.padron`/`crear` son la única superficie de
+// red de este contenedor; se mockean para que los tests de navegación y
+// submit sean deterministas y no dependan de un backend vivo.
+vi.mock('./procesos-api', () => ({ padron: vi.fn(), crear: vi.fn() }));
+
+function padronVacio(): { data: PadronRespuestaDto; response: Response } {
+  return {
+    data: {
+      derechos_totales: 0,
+      estudiantes: 0,
+      padres: 0,
+      cuentas_distintas: 0,
+      aulas: [],
+      aulas_excluidas: [],
+    },
+    response: { ok: true } as Response,
+  };
+}
+
+function llenarPaso1(nombre: string, tipo: string) {
+  fireEvent.change(screen.getByLabelText(/nombre/i), { target: { value: nombre } });
+  fireEvent.change(screen.getByLabelText(/tipo de proceso/i), { target: { value: tipo } });
+  fireEvent.click(screen.getByRole('button', { name: /siguiente/i }));
+}
+
+function llenarPaso2Institucion() {
+  fireEvent.click(screen.getByRole('radio', { name: /^estudiantes$/i }));
+  fireEvent.click(screen.getByRole('radio', { name: /instituci[oó]n/i }));
+  fireEvent.click(screen.getByRole('button', { name: /siguiente/i }));
+}
+
+async function avanzarDebounce() {
+  await act(async () => {
+    vi.advanceTimersByTime(300);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
 
 // [spec: electoral-process-wizard, "Selección de tipo determina las opciones
 // de segmentación disponibles" y "Cuatro tipos de proceso soportados"];
@@ -56,5 +97,83 @@ describe('ProcesoWizardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /siguiente/i }));
 
     expect(screen.getByRole('radio', { name: /instituci[oó]n/i })).toBeInTheDocument();
+  });
+});
+
+// [spec: electoral-process-wizard, "El asistente pre-marca ocultar_resultados"
+// y "Creación en lote..."]; design.md D7 (usePadronEnVivo, submit vía
+// procesos-api.crear()).
+describe('ProcesoWizardPage — padrón, revisión y submit (PR9)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.mocked(procesosApi.padron).mockReset().mockResolvedValue(padronVacio());
+    vi.mocked(procesosApi.crear).mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('paso 4 muestra el checkbox de ocultar_resultados marcado por defecto', async () => {
+    render(<ProcesoWizardPage />);
+
+    llenarPaso1('Elección de comité 2026', 'municipio');
+    llenarPaso2Institucion();
+    await avanzarDebounce();
+
+    fireEvent.click(screen.getByRole('button', { name: /siguiente/i })); // paso 3 -> 4
+
+    expect(
+      screen.getByRole('checkbox', { name: /ocultar resultados/i }),
+    ).toBeChecked();
+  });
+
+  it('el conteo se vuelve a solicitar al cambiar la segmentación', async () => {
+    render(<ProcesoWizardPage />);
+
+    llenarPaso1('Elección de comité 2026', 'municipio');
+
+    fireEvent.click(screen.getByRole('radio', { name: /^estudiantes$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /instituci[oó]n/i }));
+    await avanzarDebounce();
+
+    expect(procesosApi.padron).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('radio', { name: /^padres de familia$/i }));
+    await avanzarDebounce();
+
+    expect(procesosApi.padron).toHaveBeenCalledTimes(2);
+  });
+
+  it('la navegación completa de 4 pasos llama POST /procesos al confirmar', async () => {
+    vi.mocked(procesosApi.crear).mockResolvedValue({
+      data: { id: 'proceso-1' } as ProcesoRespuestaDto,
+      response: { ok: true, status: 201 } as Response,
+    });
+
+    render(<ProcesoWizardPage />);
+
+    llenarPaso1('Elección de comité 2026', 'municipio');
+    llenarPaso2Institucion();
+    await avanzarDebounce();
+
+    fireEvent.click(screen.getByRole('button', { name: /siguiente/i })); // paso 3 -> 4
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(procesosApi.crear).toHaveBeenCalledTimes(1);
+    expect(procesosApi.crear).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nombre: 'Elección de comité 2026',
+        tipo: 'municipio',
+        publico_objetivo: 'estudiantes',
+        alcance: 'institucion',
+        ocultar_resultados: true,
+      }),
+    );
   });
 });

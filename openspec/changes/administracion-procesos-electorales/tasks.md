@@ -257,22 +257,22 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 ## PR 9 — Wizard frontend: padrón + revisión + montaje (base = PR 8 branch)
 
 ### Phase 26: `usePadronEnVivo`
-- [ ] 26.1 Crear `usePadronEnVivo.ts`: debounce 300ms + `AbortController` + número de secuencia
-- [ ] 26.2 RED unit: respuesta fuera de orden no pisa el conteo vigente
-- [ ] 26.3 RED unit: petición previa se aborta al cambiar la segmentación
-- [ ] 26.4 GREEN: implementación del hook — pasa 26.2-26.3
+- [x] 26.1 Crear `usePadronEnVivo.ts`: debounce 300ms + `AbortController` + número de secuencia
+- [x] 26.2 RED unit: respuesta fuera de orden no pisa el conteo vigente
+- [x] 26.3 RED unit: petición previa se aborta al cambiar la segmentación
+- [x] 26.4 GREEN: implementación del hook — pasa 26.2-26.3
 
 ### Phase 27: Pasos 3-4 y submit
-- [ ] 27.1 Crear `pasos/PasoPadron.tsx`: conteo en vivo, desglose por aula, aulas excluidas, aviso
+- [x] 27.1 Crear `pasos/PasoPadron.tsx`: conteo en vivo, desglose por aula, aulas excluidas, aviso
       `MATRICULA_DUPLICADA`
-- [ ] 27.2 Crear `pasos/PasoRevision.tsx`: resumen + checkbox `ocultar_resultados` + confirmar
-- [ ] 27.3 RED componente: paso 4 muestra el checkbox marcado por defecto [spec scenario]
-- [ ] 27.4 RED componente: el conteo se vuelve a solicitar al cambiar la segmentación
-- [ ] 27.5 RED componente: navegación completa de 4 pasos llama `POST /procesos` al confirmar
-- [ ] 27.6 GREEN: submit → `procesos-api.crear()` + confirmación — pasa 27.3-27.5
+- [x] 27.2 Crear `pasos/PasoRevision.tsx`: resumen + checkbox `ocultar_resultados` + confirmar
+- [x] 27.3 RED componente: paso 4 muestra el checkbox marcado por defecto [spec scenario]
+- [x] 27.4 RED componente: el conteo se vuelve a solicitar al cambiar la segmentación
+- [x] 27.5 RED componente: navegación completa de 4 pasos llama `POST /procesos` al confirmar
+- [x] 27.6 GREEN: submit → `procesos-api.crear()` + confirmación — pasa 27.3-27.5
 
 ### Phase 28: Montaje en `AppShell`
-- [ ] 28.1 Modificar `apps/frontend/src/app/App.tsx`: montar `ProcesoWizardPage` como único hijo
+- [x] 28.1 Modificar `apps/frontend/src/app/App.tsx`: montar `ProcesoWizardPage` como único hijo
       de `AppShell` (deviation de nombre de archivo — ver apply-progress: `AppShell.tsx` ya era
       genérico desde PR2/PR3, `App.tsx` es el punto real de composición)
 - [ ] 28.2 Verificación manual (rollout R6): sin cookie → login; login → shell+asistente; crear
@@ -281,11 +281,11 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
       cerrado el rollout de #11
 
 ### Phase 29: Regresión final PR9
-- [ ] 29.1 `pnpm typecheck` verde (root `turbo run typecheck`: 7/7 tasks); sin rutas nuevas de
+- [x] 29.1 `pnpm typecheck` verde (root `turbo run typecheck`: 7/7 tasks); sin rutas nuevas de
       backend — 0 archivos de `apps/backend/src/` tocados en esta sesión; contrato sin cambios de
       superficie (`packages/contracts` se regeneró por el propio `turbo run typecheck`/`test`, sin
       diff de forma más allá de lo ya presente al iniciar la sesión)
-- [ ] 29.2 `pnpm --filter @seei/frontend test`: 17/17 archivos, 60/60 tests verdes (incluye
+- [x] 29.2 `pnpm --filter @seei/frontend test`: 17/17 archivos, 60/60 tests verdes (incluye
       `usePadronEnVivo`, `ProcesoWizardPage` con las 7 pruebas de PR9, `App.spec.tsx` con
       `ProcesoWizardPage` ya montado). `pnpm turbo run test` a nivel de e2e de `#4`/`#5`/`#6`
       (backend) **no pudo verificarse contra infraestructura real**: Docker sigue sin estar
