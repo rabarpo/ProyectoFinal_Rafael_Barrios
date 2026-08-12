@@ -9,8 +9,11 @@ import { ConfiguracionLecturaService } from './configuracion-lectura.service';
  * presente ⇒ los valores se devuelven tal cual, sin transformación.
  */
 
-function construirServicio(findUnique: jest.Mock) {
-  const prisma = { configuracion: { findUnique } };
+function construirServicio(findUnique: jest.Mock, anioEscolarFindFirst?: jest.Mock) {
+  const prisma = {
+    configuracion: { findUnique },
+    anioEscolar: { findFirst: anioEscolarFindFirst ?? jest.fn() },
+  };
   const servicio = new ConfiguracionLecturaService(prisma as unknown as PrismaService);
   return { servicio, prisma };
 }
@@ -82,5 +85,34 @@ describe('ConfiguracionLecturaService (D2/D3)', () => {
     const { servicio } = construirServicio(findUnique);
     await servicio.obtener();
     expect(findUnique).toHaveBeenCalledWith({ where: { clave: 'institucional' } });
+  });
+
+  // administracion-procesos-electorales, PR4 (design.md D2b, tarea 9.1). `anioEscolarActivoId()`
+  // resuelve por `AnioEscolar.activo = true`, NUNCA por `Configuracion.anio_escolar_id` — esa
+  // columna puede quedar desfasada (`AniosEscolaresService.activar()` nunca la sincroniza). El
+  // mock de `configuracion.findUnique` nunca se invoca desde este método: si el método leyera
+  // `Configuracion.anio_escolar_id` en cambio, este assert de "no invocado" fallaría.
+  describe('anioEscolarActivoId() (D2b)', () => {
+    it('[9.1] devuelve el id del AnioEscolar activo=true aunque Configuracion.anio_escolar_id apunte a otro', async () => {
+      const findUnique = jest.fn().mockResolvedValue({
+        anio_escolar_id: 'anio-desfasado',
+      });
+      const anioEscolarFindFirst = jest.fn().mockResolvedValue({ id: 'anio-realmente-activo' });
+      const { servicio } = construirServicio(findUnique, anioEscolarFindFirst);
+
+      await expect(servicio.anioEscolarActivoId()).resolves.toBe('anio-realmente-activo');
+      expect(anioEscolarFindFirst).toHaveBeenCalledWith({
+        where: { activo: true },
+        select: { id: true },
+      });
+      expect(findUnique).not.toHaveBeenCalled();
+    });
+
+    it('[9.1] devuelve null cuando ningún AnioEscolar tiene activo=true', async () => {
+      const anioEscolarFindFirst = jest.fn().mockResolvedValue(null);
+      const { servicio } = construirServicio(jest.fn(), anioEscolarFindFirst);
+
+      await expect(servicio.anioEscolarActivoId()).resolves.toBeNull();
+    });
   });
 });

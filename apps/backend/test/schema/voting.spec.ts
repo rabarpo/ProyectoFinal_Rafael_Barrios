@@ -25,8 +25,10 @@ describe('voting_core', () => {
     const procesoId = randomUUID();
     await query(
       `INSERT INTO "ProcesoElectoral"
-         (id, nombre, tipo, estado, fecha_apertura_prevista, fecha_cierre_prevista)
-       VALUES ($1, 'proceso-voting-core', 'municipio', 'borrador', now(), now())`,
+         (id, nombre, tipo, estado, fecha_apertura_prevista, fecha_cierre_prevista,
+          publico_objetivo, alcance)
+       VALUES ($1, 'proceso-voting-core', 'municipio', 'borrador', now(), now(),
+               'estudiantes', 'institucion')`,
       [procesoId],
     );
     return procesoId;

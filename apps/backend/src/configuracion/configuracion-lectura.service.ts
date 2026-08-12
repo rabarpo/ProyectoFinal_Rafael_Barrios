@@ -46,4 +46,19 @@ export class ConfiguracionLecturaService {
     const fila = await this.obtener();
     return fila?.dominios_google ?? [];
   }
+
+  /**
+   * administracion-procesos-electorales, PR4 (design.md D2b, tarea 9.2). Resuelve el año escolar
+   * activo por `AnioEscolar.activo = true` (índice único parcial `anio_escolar_activo_unico_idx`),
+   * NUNCA por `Configuracion.anio_escolar_id`: esa columna solo se lee en
+   * `AniosEscolaresService.eliminar()` como guarda de dependientes y `activar()` nunca la
+   * sincroniza, así que puede quedar desfasada respecto del año realmente activo.
+   */
+  async anioEscolarActivoId(): Promise<string | null> {
+    const fila = await this.prisma.anioEscolar.findFirst({
+      where: { activo: true },
+      select: { id: true },
+    });
+    return fila?.id ?? null;
+  }
 }

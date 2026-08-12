@@ -112,29 +112,29 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 ## PR 4 — Cimientos backend (base = PR 3 branch)
 
 ### Phase 8: Delta de schema (D1)
-- [ ] 8.1 Modificar `apps/backend/prisma/schema.prisma`: enums `PublicoObjetivo`/
+- [x] 8.1 Modificar `apps/backend/prisma/schema.prisma`: enums `PublicoObjetivo`/
       `AlcanceSegmentacion` + 4 columnas en `ProcesoElectoral`
-- [ ] 8.2 Crear migración `20260811010000_proceso_publico_objetivo_snapshot/migration.sql`:
+- [x] 8.2 Crear migración `20260811010000_proceso_publico_objetivo_snapshot/migration.sql`:
       `CREATE TYPE`, `ADD COLUMN` con `DEFAULT` transitorio, luego `DROP DEFAULT`
-- [ ] 8.3 GREEN: `information_schema.columns` confirma `publico_objetivo`/`alcance` sin
+- [x] 8.3 GREEN: `information_schema.columns` confirma `publico_objetivo`/`alcance` sin
       `column_default`
-- [ ] 8.4 Modificar `test/schema/{electoral,voting,support-tables}.spec.ts`: fixtures declaran
+- [x] 8.4 Modificar `test/schema/{electoral,voting,support-tables}.spec.ts`: fixtures declaran
       ambos campos (typecheck lo exige)
 
 ### Phase 9: Año escolar activo (D2b)
-- [ ] 9.1 RED integración: `anioEscolarActivoId()` devuelve el año `activo=true` aunque
+- [x] 9.1 RED integración: `anioEscolarActivoId()` devuelve el año `activo=true` aunque
       `Configuracion.anio_escolar_id` apunte a otro
-- [ ] 9.2 Modificar `configuracion-lectura.service.ts`: `anioEscolarActivoId()` vía
+- [x] 9.2 Modificar `configuracion-lectura.service.ts`: `anioEscolarActivoId()` vía
       `findFirst({where:{activo:true}})` — GREEN 9.1
 
 ### Phase 10: Claves de auditoría (D6)
-- [ ] 10.1 Modificar `audit-event-types.ts`: agregar `PROCESO_CREADO`/`PROCESO_EDITADO`/
+- [x] 10.1 Modificar `audit-event-types.ts`: agregar `PROCESO_CREADO`/`PROCESO_EDITADO`/
       `PROCESO_ELIMINADO`
-- [ ] 10.2 GREEN: `test/schema/auditoria.spec.ts` [TM4] confirma `WHEN` del trigger de ADR-0016
+- [x] 10.2 GREEN: `test/schema/auditoria.spec.ts` [TM4] confirma `WHEN` del trigger de ADR-0016
       intacto
 
 ### Phase 11: Regresión PR4
-- [ ] 11.1 `pnpm openapi:extract` sin Postgres/Redis vivos; `pnpm typecheck` verde
+- [x] 11.1 `pnpm openapi:extract` sin Postgres/Redis vivos; `pnpm typecheck` verde
 
 ## PR 5 — `PadronService` (base = PR 4 branch)
 

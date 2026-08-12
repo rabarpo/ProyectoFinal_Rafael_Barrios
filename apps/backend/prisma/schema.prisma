@@ -184,18 +184,38 @@ enum EstadoParticipacion {
   baja
 }
 
+// administracion-procesos-electorales (design.md D1): delta declarado contra este grupo. Sin
+// default final (`ADD DEFAULT`+`DROP DEFAULT` en la migración es transitorio, solo para poblar
+// filas preexistentes) para que omitir el campo en un `create` no compile.
+enum PublicoObjetivo {
+  estudiantes
+  padres
+  comunidad
+}
+
+enum AlcanceSegmentacion {
+  institucion
+  nivel
+  grados
+  aulas
+}
+
 model ProcesoElectoral {
-  id                      String        @id @default(uuid()) @db.Uuid
+  id                      String              @id @default(uuid()) @db.Uuid
   nombre                  String
   descripcion             String?
   tipo                    TipoProceso
-  estado                  EstadoProceso @default(borrador)
-  fecha_apertura_prevista DateTime      @db.Timestamptz(3)
-  fecha_cierre_prevista   DateTime      @db.Timestamptz(3)
-  apertura_real           DateTime?     @db.Timestamptz(3)
-  cierre_real             DateTime?     @db.Timestamptz(3)
-  ocultar_resultados      Boolean       @default(false)
-  creado_en               DateTime      @default(now()) @db.Timestamptz(3)
+  estado                  EstadoProceso       @default(borrador)
+  fecha_apertura_prevista DateTime            @db.Timestamptz(3)
+  fecha_cierre_prevista   DateTime            @db.Timestamptz(3)
+  apertura_real           DateTime?           @db.Timestamptz(3)
+  cierre_real             DateTime?           @db.Timestamptz(3)
+  ocultar_resultados      Boolean             @default(false)
+  creado_en               DateTime            @default(now()) @db.Timestamptz(3)
+  publico_objetivo        PublicoObjetivo
+  alcance                 AlcanceSegmentacion
+  nivel_id_snapshot       String?             @db.Uuid
+  grado_ids_snapshot      String[]            @default([]) @db.Uuid
 
   listas       Lista[]
   candidatos   Candidato[]

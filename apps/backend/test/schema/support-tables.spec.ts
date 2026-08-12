@@ -24,8 +24,10 @@ describe('support_tables', () => {
       const procesoId = randomUUID();
       await client.query(
         `INSERT INTO "ProcesoElectoral"
-           (id, nombre, tipo, estado, fecha_apertura_prevista, fecha_cierre_prevista)
-         VALUES ($1, 'proceso-electoral-4-3', 'municipio', 'borrador', now(), now())`,
+           (id, nombre, tipo, estado, fecha_apertura_prevista, fecha_cierre_prevista,
+            publico_objetivo, alcance)
+         VALUES ($1, 'proceso-electoral-4-3', 'municipio', 'borrador', now(), now(),
+                 'estudiantes', 'institucion')`,
         [procesoId],
       );
 

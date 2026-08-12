@@ -32,6 +32,11 @@
 // se declara ahora (D9 pide las tres en el mismo PR) pero se emite recién en PR3 cuando exista
 // `POST /configuracion/logo`. Ninguna de las tres toca un `Voto`, así que tampoco activan la
 // obligación versionada de ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4].
+// administracion-procesos-electorales, PR4 (design.md D6, tarea 10.1): tres claves aditivas para
+// `ProcesoElectoral`, una por operación y nunca una por `ProcesoAula` — la creación en lote de
+// `representante_aula` sigue emitiendo un único `PROCESO_CREADO` con el conteo `aulas: N` en el
+// payload. Ninguna de las tres toca un `Voto`, así que tampoco activan la obligación versionada de
+// ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4].
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
@@ -73,6 +78,9 @@ export const AUDIT_EVENT_TYPES = {
   CONFIGURACION_ACTUALIZADA: 'CONFIGURACION_ACTUALIZADA',
   CONFIGURACION_DOMINIOS_GOOGLE_ACTUALIZADO: 'CONFIGURACION_DOMINIOS_GOOGLE_ACTUALIZADO',
   CONFIGURACION_LOGO_ACTUALIZADO: 'CONFIGURACION_LOGO_ACTUALIZADO',
+  PROCESO_CREADO: 'PROCESO_CREADO',
+  PROCESO_EDITADO: 'PROCESO_EDITADO',
+  PROCESO_ELIMINADO: 'PROCESO_ELIMINADO',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];
