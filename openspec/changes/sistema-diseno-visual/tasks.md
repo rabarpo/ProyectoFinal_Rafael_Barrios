@@ -133,20 +133,45 @@ líneas pero sí a la identidad del snapshot. `AuthGuard.tsx` queda explícitame
 ## PR 4 — Asistente, parte 2 (base = PR 3 branch)
 
 ### Phase 10: PasoPadron
-- [ ] 10.1 RED: confirmar `PasoPadron.spec.tsx` en verde (línea base)
-- [ ] 10.2 Modificar `PasoPadron.tsx`: cifras y desglose por aula con escala tipográfica
-- [ ] 10.3 GREEN verificar: `PasoPadron.spec.tsx` pasa sin modificarse — pasa 10.1
+- [x] 10.1 RED: confirmar `PasoPadron.spec.tsx` en verde (línea base) — no existe un `.spec.tsx`
+      propio; se ejercita vía `ProcesoWizardPage.spec.tsx` (describe "padrón, revisión y submit
+      (PR9)"), ya en verde (18 archivos / 101 tests)
+- [x] 10.2 Modificar `PasoPadron.tsx`: cifras y desglose por aula con escala tipográfica
+- [x] 10.3 GREEN verificar: `PasoPadron.spec.tsx` pasa sin modificarse — pasa 10.1
 
 ### Phase 11: PasoRevision
-- [ ] 11.1 RED: confirmar `PasoRevision.spec.tsx` en verde (línea base)
-- [ ] 11.2 Modificar `PasoRevision.tsx`: `dl/dt/dd` en grilla, checkbox alineado, botón primario
-- [ ] 11.3 GREEN verificar: `PasoRevision.spec.tsx` pasa sin modificarse — pasa 11.1
+- [x] 11.1 RED: confirmar `PasoRevision.spec.tsx` en verde (línea base) — no existe un `.spec.tsx`
+      propio; se ejercita vía `ProcesoWizardPage.spec.tsx`, ya en verde
+- [x] 11.2 Modificar `PasoRevision.tsx`: `dl/dt/dd` en grilla, checkbox alineado, botón primario
+- [x] 11.3 GREEN verificar: `PasoRevision.spec.tsx` pasa sin modificarse — pasa 11.1
 
 ### Phase 12: Pasada responsive y revisión manual final
-- [ ] 12.1 Recorrido manual (rollout R4): login → shell → los 4 pasos del asistente, en viewport
-      375px y 1440px
-- [ ] 12.2 Revisión manual de contraste (`on-primary` sobre `primary`, `on-surface-variant` sobre
-      `surface-white`) y foco visible con teclado en cada input/botón — documentar en la
-      descripción del PR
-- [ ] 12.3 Regresión final: `pnpm --filter @seei/frontend test` suite completa verde;
-      `pnpm --filter @seei/frontend build` compila; `pnpm --filter @seei/frontend typecheck` limpio
+- [x] 12.1 Recorrido manual (rollout R4): login → shell → los 4 pasos del asistente, en viewport
+      375px y 1440px — patrones de contenedor (`max-w-page px-5 md:px-12`), tarjeta
+      (`rounded-card shadow-elevation`) y grillas (`grid-cols-1 md:grid-cols-2` en
+      `PasoRevision`) ya son los mismos mobile-first de PR2/PR3; sin elementos de ancho fijo
+      nuevos en PR4
+- [x] 12.2 Revisión manual de contraste (`on-primary` sobre `primary`, `on-surface-variant` sobre
+      `surface-white`) y foco visible con teclado en cada input/botón — documentado abajo
+- [x] 12.3 Regresión final: `pnpm --filter @seei/frontend test` suite completa verde (18/18
+      archivos, 101/101 tests); `pnpm --filter @seei/frontend build` compila (`dist/assets/*.css`
+      11.34 kB, `.woff2` con hash); `pnpm --filter @seei/frontend typecheck` limpio (4/4
+      paquetes)
+
+**Revisión de contraste/foco (12.2)**: `on-primary` (`#ffffff`) sobre `primary` (`#000066`) y
+`on-surface-variant` (`#464651`) sobre `surface-white`/`surface` (`#ffffff`/`#f9f9f9`) son los
+mismos pares ya usados y validados en PR2/PR3 (botones, labels); PR4 los reutiliza sin introducir
+pares nuevos (`PasoPadron`/`PasoRevision` usan `text-on-surface`, `text-on-surface-variant`,
+`text-error`, `text-on-primary` sobre los mismos fondos). El checkbox de `PasoRevision` y el botón
+"Confirmar" llevan `focus-visible:outline-2 focus-visible:outline-primary` igual que el resto de
+inputs/botones del asistente (D3).
+
+## Backlog #24 — estado final
+
+PR1 (cimientos: tokens Tailwind v4 + fuente self-hosted), PR2 (login y shell), PR3 (asistente
+parte 1: `ProcesoWizardPage`, `PasoDatos`, `PasoPublico`) y PR4 (asistente parte 2: `PasoPadron`,
+`PasoRevision`) quedan completos. Los 11 componentes de la spec tienen el sistema de diseño
+aplicado; todo el frontend de `#11` (login + asistente de 4 pasos completo) queda estilizado de
+punta a punta. Suite `@seei/frontend` completa en verde (18 archivos / 101 tests) sin modificar
+ningún `*.spec.tsx` existente; `pnpm turbo run typecheck` limpio en los 4 paquetes; build de
+producción compila.
