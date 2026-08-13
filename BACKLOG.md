@@ -29,6 +29,7 @@ técnica**, no por prioridad de negocio.
 | 21 | Vista de auditoría | Consulta solo lectura filtrable por tipo, exportación a CSV/PDF que se autoregistra como evento, garantía de que ninguna vista vincula identidad con elección, reconstrucción completa de la cadena de un proceso cerrado (ADR-0010) | #3, #14 | Ley de Protección de Datos Personales (datos de menores) — norma externa, no institucional: la spec implementa los plazos del ADR-0010 y la revisión legal se hace después, no bloquea |
 | 22 | Contingencia de jornada | Extensión de la hora de cierre como acción auditada, anulación de códigos de comprobante posteriores al respaldo, revoto de los votantes afectados y acta de incidencias (ADR-0013) | #17 | — (el procedimiento del ADR-0013 es la fuente; alimentará las bases futuras) |
 | 23 | Prueba de carga y ensayo de restauración | Escenario k6/artillery con 1,000 votantes concurrentes (ráfaga de `POST /votos` + polling del panel) y ensayo completo de restauración ejecutando el procedimiento de contingencia, no solo la parte técnica (ADR-0007/0013) | #22 | — |
+| 24 | Aplicación del sistema de diseño visual | Traducir `DESIGN-SYSTEM.md` (paleta, tipografía Hanken Grotesk, espaciado, sombras, componentes) a variables CSS/config de Tailwind y aplicarlo a los componentes ya existentes del login (#11 PR1-PR3, hoy sin estilo) y a los que se vayan agregando (asistente de #11, candidatos de #12, boleta de #14, etc.) | #11 | `DESIGN-SYSTEM.md` (raíz del repo) — documento de estilo, no requiere spec de negocio |
 
 ## Ausencia de reglamento previo
 
