@@ -275,10 +275,14 @@ Contingencia predeclarada por `design.md`: separar `PATCH` del PR7 (mitad más c
 - [x] 28.1 Modificar `apps/frontend/src/app/App.tsx`: montar `ProcesoWizardPage` como único hijo
       de `AppShell` (deviation de nombre de archivo — ver apply-progress: `AppShell.tsx` ya era
       genérico desde PR2/PR3, `App.tsx` es el punto real de composición)
-- [ ] 28.2 Verificación manual (rollout R6): sin cookie → login; login → shell+asistente; crear
-      borrador; logout → login — **PENDIENTE**: no ejecutada en este entorno (sin Docker/Postgres
-      vivo, ver Phase 29); requiere verificación manual humana en navegador antes de dar por
-      cerrado el rollout de #11
+- [x] 28.2 Verificación manual (rollout R6): sin cookie → login; login → shell+asistente; crear
+      borrador; logout → login — **VERIFICADA** por el usuario en navegador contra
+      `https://seei.localhost:8443` (Caddy remapeado a 8080/8443 por conflicto de IIS con el
+      puerto 80 en esta máquina Windows; ver docker-compose.yml para el mapeo estándar 80/443).
+      Backend confirmado también vía curl (login, `POST /procesos/padron`, `POST /procesos`,
+      logout, `401` post-logout) antes de la verificación visual. Los 4 pasos del asistente
+      renderizan sin estilos (controles HTML nativos) — esperado: la aplicación del sistema de
+      diseño es Backlog #24, fuera de alcance de este change.
 
 ### Phase 29: Regresión final PR9
 - [x] 29.1 `pnpm typecheck` verde (root `turbo run typecheck`: 7/7 tasks); sin rutas nuevas de
