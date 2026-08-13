@@ -19,5 +19,5 @@ export function BotonGoogle({ onCredential }: BotonGoogleProps) {
 
   if (!clientId) return null;
 
-  return <div ref={contenedorRef} data-testid="boton-google" />;
+  return <div ref={contenedorRef} data-testid="boton-google" className="flex justify-center" />;
 }

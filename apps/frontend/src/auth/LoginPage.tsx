@@ -70,17 +70,28 @@ export function LoginPage() {
   }
 
   return (
-    <div>
-      <h1>Iniciar sesión</h1>
-      <FormularioCredenciales onEnviar={manejarEnvio} cargando={cargando} mensajeError={mensajeError} />
-      <BotonGoogle onCredential={manejarCredencialGoogle} />
-      {idTokenPendiente && (
-        <DialogoVinculacion
+    <div className="flex min-h-screen items-center justify-center bg-background px-5 py-10 text-on-surface md:px-12">
+      <div className="w-full max-w-md rounded-card bg-surface-white p-6 shadow-elevation">
+        <h1 className="text-headline-lg-mobile text-on-surface md:text-headline-lg">
+          Iniciar sesión
+        </h1>
+        <FormularioCredenciales
+          onEnviar={manejarEnvio}
           cargando={cargando}
-          onConfirmar={manejarVinculacion}
-          onCancelar={() => setIdTokenPendiente(undefined)}
+          mensajeError={mensajeError}
         />
-      )}
+        <p className="my-4 text-center text-label-md text-on-surface-variant">o</p>
+        <div className="flex justify-center">
+          <BotonGoogle onCredential={manejarCredencialGoogle} />
+        </div>
+        {idTokenPendiente && (
+          <DialogoVinculacion
+            cargando={cargando}
+            onConfirmar={manejarVinculacion}
+            onCancelar={() => setIdTokenPendiente(undefined)}
+          />
+        )}
+      </div>
     </div>
   );
 }

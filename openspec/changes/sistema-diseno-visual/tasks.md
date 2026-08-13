@@ -61,39 +61,41 @@ líneas pero sí a la identidad del snapshot. `AuthGuard.tsx` queda explícitame
 ## PR 2 — Login y shell (base = PR 1 branch)
 
 ### Phase 2: AppShell y App (D7)
-- [ ] 2.1 RED: confirmar `AppShell.spec.tsx`/`App.spec.tsx` en verde antes de tocar los componentes
+- [x] 2.1 RED: confirmar `AppShell.spec.tsx`/`App.spec.tsx` en verde antes de tocar los componentes
       (línea base)
-- [ ] 2.2 Modificar `AppShell.tsx`: `<header>` con `border-b border-border-gray bg-surface-white` +
+- [x] 2.2 Modificar `AppShell.tsx`: `<header>` con `border-b border-border-gray bg-surface-white` +
       contenedor de página (`mx-auto w-full max-w-page px-5 md:px-12`), rol en
       `text-label-md text-on-surface-variant`, "Cerrar sesión" como botón terciario; `<main>` con
       mismo contenedor + `py-10 md:py-12`; `<div>` raíz `min-h-screen bg-background text-on-surface`
       — sin logo, sin navegación [D7]
-- [ ] 2.3 Modificar `App.tsx` solo si la composición necesita una clase de raíz; si no, documentar
-      que queda sin cambios
-- [ ] 2.4 GREEN verificar: `AppShell.spec.tsx`/`App.spec.tsx` pasan sin modificarse — pasa 2.1
+- [x] 2.3 Modificar `App.tsx` solo si la composición necesita una clase de raíz; si no, documentar
+      que queda sin cambios — `App.tsx` no tiene elemento raíz propio (solo compone
+      `AuthProvider`/`AuthGuard`/`AppShell`), queda sin cambios
+- [x] 2.4 GREEN verificar: `AppShell.spec.tsx`/`App.spec.tsx` pasan sin modificarse — pasa 2.1
 
 ### Phase 3: LoginPage y FormularioCredenciales
-- [ ] 3.1 RED: confirmar `LoginPage.spec.tsx`/`FormularioCredenciales.spec.tsx` en verde (línea
-      base)
-- [ ] 3.2 Modificar `LoginPage.tsx`: contenedor centrado + tarjeta + separador "o" antes de
+- [x] 3.1 RED: confirmar `LoginPage.spec.tsx`/`FormularioCredenciales.spec.tsx` en verde (línea
+      base) — `LoginPage.tsx` no tiene spec propio, se ejercita vía `App.spec.tsx`,
+      `LoginFlow.spec.tsx` y `GoogleFlow.spec.tsx`; los tres en verde
+- [x] 3.2 Modificar `LoginPage.tsx`: contenedor centrado + tarjeta + separador "o" antes de
       `BotonGoogle`
-- [ ] 3.3 Modificar `FormularioCredenciales.tsx`: `<div>` por par label+input (D4.1), input/botón
+- [x] 3.3 Modificar `FormularioCredenciales.tsx`: `<div>` por par label+input (D4.1), input/botón
       con patrones de D3
-- [ ] 3.4 GREEN verificar: specs pasan sin modificarse, cero cambio de selector/texto — pasa 3.1
+- [x] 3.4 GREEN verificar: specs pasan sin modificarse, cero cambio de selector/texto — pasa 3.1
 
 ### Phase 4: DialogoVinculacion y BotonGoogle (D4, D6)
-- [ ] 4.1 RED: confirmar `DialogoVinculacion.spec.tsx`/`BotonGoogle.spec.tsx` en verde, en
+- [x] 4.1 RED: confirmar `DialogoVinculacion.spec.tsx`/`BotonGoogle.spec.tsx` en verde, en
       particular `toBeEmptyDOMElement()` sin `VITE_GOOGLE_CLIENT_ID` (línea base)
-- [ ] 4.2 Modificar `DialogoVinculacion.tsx`: tarjeta sobre el mismo `div[role="dialog"]`
+- [x] 4.2 Modificar `DialogoVinculacion.tsx`: tarjeta sobre el mismo `div[role="dialog"]`
       (D4 regla 2), fila de botones
-- [ ] 4.3 Modificar `BotonGoogle.tsx`: `className` sobre el `div[data-testid="boton-google"]`
+- [x] 4.3 Modificar `BotonGoogle.tsx`: `className` sobre el `div[data-testid="boton-google"]`
       existente, cero wrapper nuevo, cero selectores descendientes, cero `width`/`transform`/
       `filter`/`scale` sobre el contenedor [D6]
-- [ ] 4.4 GREEN verificar: specs pasan sin modificarse, `toBeEmptyDOMElement()` sigue cumpliéndose
+- [x] 4.4 GREEN verificar: specs pasan sin modificarse, `toBeEmptyDOMElement()` sigue cumpliéndose
       — pasa 4.1
 
 ### Phase 5: Regresión PR2
-- [ ] 5.1 `pnpm --filter @seei/frontend test` suite completa verde; `pnpm --filter @seei/frontend
+- [x] 5.1 `pnpm --filter @seei/frontend test` suite completa verde; `pnpm --filter @seei/frontend
       typecheck` limpio
 
 ## PR 3 — Asistente, parte 1 (base = PR 2 branch)

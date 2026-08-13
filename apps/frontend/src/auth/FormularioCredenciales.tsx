@@ -27,31 +27,50 @@ export function FormularioCredenciales({
 
   return (
     <form
+      className="flex flex-col gap-4"
       onSubmit={(evento) => {
         evento.preventDefault();
         if (camposCompletos) onEnviar(codigo, password);
       }}
     >
-      <label htmlFor={idCodigo}>Código institucional</label>
-      <input
-        id={idCodigo}
-        value={codigo}
-        onChange={(evento) => setCodigo(evento.target.value)}
-        autoComplete="username"
-      />
+      <div>
+        <label htmlFor={idCodigo} className="text-label-md text-on-surface-variant">
+          Código institucional
+        </label>
+        <input
+          id={idCodigo}
+          value={codigo}
+          onChange={(evento) => setCodigo(evento.target.value)}
+          autoComplete="username"
+          className="mt-1 w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
+        />
+      </div>
 
-      <label htmlFor={idPassword}>Contraseña</label>
-      <input
-        id={idPassword}
-        type="password"
-        value={password}
-        onChange={(evento) => setPassword(evento.target.value)}
-        autoComplete="current-password"
-      />
+      <div>
+        <label htmlFor={idPassword} className="text-label-md text-on-surface-variant">
+          Contraseña
+        </label>
+        <input
+          id={idPassword}
+          type="password"
+          value={password}
+          onChange={(evento) => setPassword(evento.target.value)}
+          autoComplete="current-password"
+          className="mt-1 w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
+        />
+      </div>
 
-      {mensajeError && <p role="alert">{mensajeError}</p>}
+      {mensajeError && (
+        <p role="alert" className="text-label-md text-error">
+          {mensajeError}
+        </p>
+      )}
 
-      <button type="submit" disabled={!camposCompletos || cargando}>
+      <button
+        type="submit"
+        disabled={!camposCompletos || cargando}
+        className="rounded-control bg-primary px-6 py-3 text-label-md text-on-primary disabled:opacity-50"
+      >
         Continuar
       </button>
     </form>

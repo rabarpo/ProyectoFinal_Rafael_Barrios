@@ -12,14 +12,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const rol = contexto.estado === 'autenticado' ? contexto.sesion.rol : null;
 
   return (
-    <div>
-      <header>
-        {rol && <span>Rol: {rol}</span>}
-        <button type="button" onClick={() => contexto.logout()}>
-          Cerrar sesión
-        </button>
+    <div className="min-h-screen bg-background text-on-surface">
+      <header className="border-b border-border-gray bg-surface-white">
+        <div className="mx-auto flex w-full max-w-page items-center justify-between px-5 py-4 md:px-12">
+          {rol && (
+            <span className="text-label-md text-on-surface-variant">Rol: {rol}</span>
+          )}
+          <button
+            type="button"
+            onClick={() => contexto.logout()}
+            className="rounded-control px-4 py-3 text-label-md text-primary"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </header>
-      <main>{children}</main>
+      <main className="mx-auto w-full max-w-page px-5 py-10 md:px-12 md:py-12">{children}</main>
     </div>
   );
 }
