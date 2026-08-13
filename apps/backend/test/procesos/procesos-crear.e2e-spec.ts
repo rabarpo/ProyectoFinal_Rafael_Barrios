@@ -175,6 +175,13 @@ describe('POST /procesos e2e — creación y lote de ProcesoAula [D3/D6]', () =>
     await prisma.$disconnect();
   });
 
+  // Índice único parcial `WHERE activo = true` en AnioEscolar (prisma/schema.prisma, comentario
+  // sobre el modelo): sin esto, el segundo test de este archivo que llame
+  // crearAnioEscolarActivo() rompe la constraint contra el AnioEscolar que dejó el test anterior.
+  afterEach(async () => {
+    await prisma.anioEscolar.updateMany({ data: { activo: false } });
+  });
+
   // 17.6: rol no autorizado se rechaza sin ejecutar el handler.
   it('[17.6] sin cookie responde 401', async () => {
     const respuesta = await postCrear(dtoBase({ alcance: 'institucion', tipo: 'municipio' }), null);
@@ -242,11 +249,12 @@ describe('POST /procesos e2e — creación y lote de ProcesoAula [D3/D6]', () =>
     const { codigo } = await crearUsuarioDirecto({ rol: 'administrador' });
     const cookie = await loginYObtenerCookie(codigo);
     await crearAnioEscolarActivo();
+    const antesProcesos = await prisma.procesoElectoral.count();
 
     const respuesta = await postCrear(dtoBase({ alcance: 'institucion' }), cookie);
     expect(respuesta.status).toBe(409);
     expect(await respuesta.json()).toMatchObject({ codigo: 'SEGMENTACION_INVALIDA' });
-    expect(await prisma.procesoElectoral.count()).toBe(0);
+    expect(await prisma.procesoElectoral.count()).toBe(antesProcesos);
   });
 
   // 17.5: exactamente una fila PROCESO_CREADO por creación, incluido el lote.

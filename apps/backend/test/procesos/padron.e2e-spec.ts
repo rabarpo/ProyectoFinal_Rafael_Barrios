@@ -168,6 +168,13 @@ describe('POST /procesos/padron e2e — padrón en vivo sin materialización [D2
     await prisma.$disconnect();
   });
 
+  // Índice único parcial `WHERE activo = true` en AnioEscolar (prisma/schema.prisma, comentario
+  // sobre el modelo): sin esto, el segundo test de este archivo que llame
+  // crearAnioEscolarActivo() rompe la constraint contra el AnioEscolar que dejó el test anterior.
+  afterEach(async () => {
+    await prisma.anioEscolar.updateMany({ data: { activo: false } });
+  });
+
   // 14.2: 401 sin cookie.
   it('[14.2] sin cookie responde 401', async () => {
     const respuesta = await postPadron({ publico_objetivo: 'estudiantes', alcance: 'institucion' }, null);

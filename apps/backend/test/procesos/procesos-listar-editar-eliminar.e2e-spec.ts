@@ -195,6 +195,13 @@ describe('GET/PATCH/DELETE /procesos e2e — listado, edición y eliminación [D
     await prisma.$disconnect();
   });
 
+  // Índice único parcial `WHERE activo = true` en AnioEscolar (prisma/schema.prisma, comentario
+  // sobre el modelo): sin esto, el segundo test de este archivo que llame
+  // crearAnioEscolarActivo() rompe la constraint contra el AnioEscolar que dejó el test anterior.
+  afterEach(async () => {
+    await prisma.anioEscolar.updateMany({ data: { activo: false } });
+  });
+
   // 19.2: GET /procesos?estado=borrador filtra correctamente.
   it('[19.2] GET /procesos?estado=borrador incluye únicamente procesos en borrador', async () => {
     const { codigo } = await crearUsuarioDirecto({ rol: 'administrador' });
