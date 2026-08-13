@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 // Bloque `test` sin `globals: true` (convención del monorepo, ver design.md —
 // "Coexistencia de Jest y Vitest"): los specs importan describe/it/expect/etc.
@@ -12,7 +13,7 @@ import react from '@vitejs/plugin-react';
 // habilita CORS a propósito (`src/main.ts`); el proxy evita tener que abrirlo con `credentials:
 // true`, que debilitaría `sameSite: 'lax'` como única defensa CSRF (pregunta abierta desde #4).
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     proxy: {
       '/api': 'http://localhost:3000',

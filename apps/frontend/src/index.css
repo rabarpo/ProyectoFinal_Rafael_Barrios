@@ -1,0 +1,120 @@
+@import 'tailwindcss';
+
+/* [design.md D2] Hanken Grotesk, woff2 variable vendorizado (subconjunto latin, eje wght
+   100-900, sin itálica). Self-hosted: cero CDN externo de tipografía, requisito de la spec de
+   sistema-diseno-visual. La licencia OFL 1.1 viaja junto al archivo en ./assets/fonts/OFL.txt.
+   Fuera de toda @layer a propósito: elimina cualquier duda de orden de cascada (es una at-rule
+   declarativa, no una regla que compita por especificidad). */
+@font-face {
+  font-family: 'Hanken Grotesk';
+  src: url('./assets/fonts/HankenGrotesk-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* [design.md D3] Traducción 1:1 del front-matter de DESIGN-SYSTEM.md a variables de tema de
+   Tailwind v4. Fidelidad 1:1 con el documento para que la trazabilidad doc -> token sea mecánica
+   y auditable, incluso para claves que este change no usa todavía (outline, tertiary, secondary,
+   academic-red — ver design.md, "Cuatro trampas del front-matter"). */
+@theme {
+  --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+
+  /* Color — 52 claves 1:1 con el front-matter de DESIGN-SYSTEM.md (design.md D3: fidelidad 1:1,
+     incluidas las claves que este change no usa todavía — outline, tertiary, secondary,
+     academic-red vs secondary — ver "Cuatro trampas del front-matter"). No se resetea el
+     namespace --color-*: la paleta por defecto de v4 (white/black/etc.) queda disponible. */
+  --color-surface: #f9f9f9;
+  --color-surface-dim: #dadada;
+  --color-surface-bright: #f9f9f9;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f3f3;
+  --color-surface-container: #eeeeee;
+  --color-surface-container-high: #e8e8e8;
+  --color-surface-container-highest: #e2e2e2;
+  --color-on-surface: #1a1c1c;
+  --color-on-surface-variant: #464651;
+  --color-inverse-surface: #2f3131;
+  --color-inverse-on-surface: #f1f1f1;
+  --color-outline: #767683;
+  --color-outline-variant: #c7c5d3;
+  --color-surface-tint: #5056ac;
+  --color-primary: #000066;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #030568;
+  --color-on-primary-container: #767cd5;
+  --color-inverse-primary: #bfc2ff;
+  --color-secondary: #b41d11;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #d83828;
+  --color-on-secondary-container: #fffbff;
+  --color-tertiary: #000000;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #00201c;
+  --color-on-tertiary-container: #1a9386;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-primary-fixed: #e0e0ff;
+  --color-primary-fixed-dim: #bfc2ff;
+  --color-on-primary-fixed: #030568;
+  --color-on-primary-fixed-variant: #373d92;
+  --color-secondary-fixed: #ffdad4;
+  --color-secondary-fixed-dim: #ffb4a8;
+  --color-on-secondary-fixed: #410000;
+  --color-on-secondary-fixed-variant: #930000;
+  --color-tertiary-fixed: #8cf5e5;
+  --color-tertiary-fixed-dim: #6fd8c9;
+  --color-on-tertiary-fixed: #00201c;
+  --color-on-tertiary-fixed-variant: #005048;
+  --color-background: #f9f9f9;
+  --color-on-background: #1a1c1c;
+  --color-surface-variant: #e2e2e2;
+  --color-academic-red: #990000;
+  --color-institution-blue: #000066;
+  --color-surface-white: #ffffff;
+  --color-status-warning: #ffc107;
+  --color-border-gray: #d1d5db;
+
+  /* Tipografía — ocho variantes con defaults acoplados (line-height/font-weight/letter-spacing) */
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 56px;
+  --text-display-lg--font-weight: 700;
+  --text-display-lg--letter-spacing: -0.02em;
+
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--font-weight: 600;
+
+  --text-headline-lg-mobile: 24px;
+  --text-headline-lg-mobile--line-height: 32px;
+  --text-headline-lg-mobile--font-weight: 600;
+
+  --text-title-md: 20px;
+  --text-title-md--line-height: 28px;
+  --text-title-md--font-weight: 500;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--font-weight: 400;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+
+  --text-label-md: 14px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--font-weight: 600;
+  --text-label-md--letter-spacing: 0.01em;
+
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-caption--font-weight: 400;
+
+  /* Forma, espaciado, elevación y contenedor */
+  --radius-control: 0.25rem;
+  --radius-card: 0.5rem;
+  --shadow-elevation: 0 4px 20px rgb(0 0 102 / 0.08);
+  --container-page: 80rem;
+}
