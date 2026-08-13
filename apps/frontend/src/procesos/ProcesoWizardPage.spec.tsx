@@ -98,6 +98,22 @@ describe('ProcesoWizardPage', () => {
 
     expect(screen.getByRole('radio', { name: /instituci[oó]n/i })).toBeInTheDocument();
   });
+
+  // [design.md D5]: el indicador de progreso es texto plano, no un heading
+  // (ProcesoWizardPage.spec.tsx:53/69 ya usan getByRole('heading', …) para
+  // los títulos de cada paso, y no deben chocar con el indicador).
+  it('muestra "Paso 2 de 4" como texto, no como heading', () => {
+    render(<ProcesoWizardPage />);
+
+    fireEvent.change(screen.getByLabelText(/nombre/i), { target: { value: 'Elección municipal' } });
+    fireEvent.change(screen.getByLabelText(/tipo de proceso/i), {
+      target: { value: 'municipio' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /siguiente/i }));
+
+    expect(screen.getByText(/paso 2 de 4/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /paso 2 de 4/i })).not.toBeInTheDocument();
+  });
 });
 
 // [spec: electoral-process-wizard, "El asistente pre-marca ocultar_resultados"

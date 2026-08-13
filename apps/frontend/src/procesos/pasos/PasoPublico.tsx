@@ -66,13 +66,15 @@ export function PasoPublico({
   }, [esRepresentanteAula, segmentacion.alcance]);
 
   return (
-    <section>
-      <h2>Público y segmentación</h2>
+    <section className="flex flex-col gap-4">
+      <h2 className="text-headline-lg-mobile md:text-headline-lg text-on-surface">
+        Público y segmentación
+      </h2>
 
-      <fieldset>
-        <legend>Público objetivo</legend>
+      <fieldset className="flex flex-col gap-2 rounded-control border border-border-gray p-4">
+        <legend className="text-label-md text-on-surface-variant">Público objetivo</legend>
         {OPCIONES_PUBLICO.map((opcion) => (
-          <label key={opcion.valor}>
+          <label key={opcion.valor} className="flex items-center gap-2 text-body-md text-on-surface">
             <input
               type="radio"
               name="publico_objetivo"
@@ -85,10 +87,10 @@ export function PasoPublico({
         ))}
       </fieldset>
 
-      <fieldset>
-        <legend>Alcance</legend>
+      <fieldset className="flex flex-col gap-2 rounded-control border border-border-gray p-4">
+        <legend className="text-label-md text-on-surface-variant">Alcance</legend>
         {opcionesAlcance.map((opcion) => (
-          <label key={opcion.valor}>
+          <label key={opcion.valor} className="flex items-center gap-2 text-body-md text-on-surface">
             <input
               type="radio"
               name="alcance"
@@ -103,36 +105,45 @@ export function PasoPublico({
       </fieldset>
 
       {segmentacion.alcance === 'nivel' && (
-        <>
-          <label htmlFor={idNivel}>Nivel</label>
+        <div className="flex flex-col gap-1">
+          <label htmlFor={idNivel} className="text-label-md text-on-surface-variant">
+            Nivel
+          </label>
           <input
             id={idNivel}
             value={segmentacion.nivel_id ?? ''}
             onChange={(e) => onCambiarNivel(e.target.value)}
+            className="w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
           />
-        </>
+        </div>
       )}
 
       {segmentacion.alcance === 'grados' && (
-        <>
-          <label htmlFor={idGrados}>Grados (IDs separados por coma)</label>
+        <div className="flex flex-col gap-1">
+          <label htmlFor={idGrados} className="text-label-md text-on-surface-variant">
+            Grados (IDs separados por coma)
+          </label>
           <input
             id={idGrados}
             value={segmentacion.grado_ids.join(', ')}
             onChange={(e) => onCambiarGrados(separarValores(e.target.value))}
+            className="w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
           />
-        </>
+        </div>
       )}
 
       {segmentacion.alcance === 'aulas' && (
-        <>
-          <label htmlFor={idAulas}>Aulas (IDs separados por coma)</label>
+        <div className="flex flex-col gap-1">
+          <label htmlFor={idAulas} className="text-label-md text-on-surface-variant">
+            Aulas (IDs separados por coma)
+          </label>
           <input
             id={idAulas}
             value={segmentacion.aula_ids.join(', ')}
             onChange={(e) => onCambiarAulas(separarValores(e.target.value))}
+            className="w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
           />
-        </>
+        </div>
       )}
     </section>
   );

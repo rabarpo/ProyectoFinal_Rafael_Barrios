@@ -67,70 +67,81 @@ export function ProcesoWizardPage() {
 
   if (creado) {
     return (
-      <div>
-        <p>Proceso creado como borrador.</p>
+      <div className="mx-auto w-full max-w-page px-5 md:px-12">
+        <p className="text-body-md text-on-surface">Proceso creado como borrador.</p>
       </div>
     );
   }
 
   return (
-    <div>
-      {estado.paso === 1 && (
-        <PasoDatos
-          datos={estado.datos}
-          onCambiarNombre={(valor) => dispatch({ tipo: 'CAMBIAR_NOMBRE', valor })}
-          onCambiarDescripcion={(valor) => dispatch({ tipo: 'CAMBIAR_DESCRIPCION', valor })}
-          onCambiarTipo={(valor) => dispatch({ tipo: 'CAMBIAR_TIPO_PROCESO', valor })}
-          onCambiarFechaApertura={(valor) => dispatch({ tipo: 'CAMBIAR_FECHA_APERTURA', valor })}
-          onCambiarFechaCierre={(valor) => dispatch({ tipo: 'CAMBIAR_FECHA_CIERRE', valor })}
-        />
-      )}
+    <div className="mx-auto w-full max-w-page px-5 md:px-12">
+      <div className="rounded-card bg-surface-white shadow-elevation p-6">
+        <p className="text-label-md text-primary">Paso {estado.paso} de 4</p>
 
-      {estado.paso === 2 && (
-        <PasoPublico
-          segmentacion={estado.segmentacion}
-          tipoProceso={estado.datos.tipo}
-          onCambiarPublicoObjetivo={(valor) => dispatch({ tipo: 'CAMBIAR_PUBLICO_OBJETIVO', valor })}
-          onCambiarAlcance={(valor) => dispatch({ tipo: 'CAMBIAR_ALCANCE', valor })}
-          onCambiarNivel={(valor) => dispatch({ tipo: 'CAMBIAR_NIVEL', valor })}
-          onCambiarGrados={(valor) => dispatch({ tipo: 'CAMBIAR_GRADOS', valor })}
-          onCambiarAulas={(valor) => dispatch({ tipo: 'CAMBIAR_AULAS', valor })}
-        />
-      )}
-
-      {estado.paso === 3 && <PasoPadron estadoPadron={estadoPadron} />}
-
-      {estado.paso === 4 && (
-        <PasoRevision
-          datos={estado.datos}
-          segmentacion={estado.segmentacion}
-          estadoPadron={estadoPadron}
-          ocultarResultados={estado.ocultar_resultados}
-          onCambiarOcultarResultados={(valor) =>
-            dispatch({ tipo: 'CAMBIAR_OCULTAR_RESULTADOS', valor })
-          }
-          onConfirmar={confirmar}
-          enviando={enviando}
-          errorEnvio={errorEnvio}
-        />
-      )}
-
-      <nav>
-        {estado.paso > 1 && (
-          <button type="button" onClick={() => dispatch({ tipo: 'ANTERIOR' })}>
-            Anterior
-          </button>
+        {estado.paso === 1 && (
+          <PasoDatos
+            datos={estado.datos}
+            onCambiarNombre={(valor) => dispatch({ tipo: 'CAMBIAR_NOMBRE', valor })}
+            onCambiarDescripcion={(valor) => dispatch({ tipo: 'CAMBIAR_DESCRIPCION', valor })}
+            onCambiarTipo={(valor) => dispatch({ tipo: 'CAMBIAR_TIPO_PROCESO', valor })}
+            onCambiarFechaApertura={(valor) => dispatch({ tipo: 'CAMBIAR_FECHA_APERTURA', valor })}
+            onCambiarFechaCierre={(valor) => dispatch({ tipo: 'CAMBIAR_FECHA_CIERRE', valor })}
+          />
         )}
-        {estado.paso < 4 && (
-          <button
-            type="button"
-            disabled={!pasoActualCompleto}
-            onClick={() => dispatch({ tipo: 'SIGUIENTE' })}
-          >
-            Siguiente
-          </button>
+
+        {estado.paso === 2 && (
+          <PasoPublico
+            segmentacion={estado.segmentacion}
+            tipoProceso={estado.datos.tipo}
+            onCambiarPublicoObjetivo={(valor) =>
+              dispatch({ tipo: 'CAMBIAR_PUBLICO_OBJETIVO', valor })
+            }
+            onCambiarAlcance={(valor) => dispatch({ tipo: 'CAMBIAR_ALCANCE', valor })}
+            onCambiarNivel={(valor) => dispatch({ tipo: 'CAMBIAR_NIVEL', valor })}
+            onCambiarGrados={(valor) => dispatch({ tipo: 'CAMBIAR_GRADOS', valor })}
+            onCambiarAulas={(valor) => dispatch({ tipo: 'CAMBIAR_AULAS', valor })}
+          />
         )}
-      </nav>
+
+        {estado.paso === 3 && <PasoPadron estadoPadron={estadoPadron} />}
+
+        {estado.paso === 4 && (
+          <PasoRevision
+            datos={estado.datos}
+            segmentacion={estado.segmentacion}
+            estadoPadron={estadoPadron}
+            ocultarResultados={estado.ocultar_resultados}
+            onCambiarOcultarResultados={(valor) =>
+              dispatch({ tipo: 'CAMBIAR_OCULTAR_RESULTADOS', valor })
+            }
+            onConfirmar={confirmar}
+            enviando={enviando}
+            errorEnvio={errorEnvio}
+          />
+        )}
+
+        <nav className="mt-6 flex justify-between">
+          {estado.paso > 1 && (
+            <button
+              type="button"
+              className="rounded-control px-4 py-3 text-label-md text-primary"
+              onClick={() => dispatch({ tipo: 'ANTERIOR' })}
+            >
+              Anterior
+            </button>
+          )}
+          {estado.paso < 4 && (
+            <button
+              type="button"
+              className="ml-auto rounded-control bg-primary px-6 py-3 text-label-md text-on-primary disabled:opacity-50"
+              disabled={!pasoActualCompleto}
+              onClick={() => dispatch({ tipo: 'SIGUIENTE' })}
+            >
+              Siguiente
+            </button>
+          )}
+        </nav>
+      </div>
     </div>
   );
 }

@@ -39,50 +39,81 @@ export function PasoDatos({
   const idCierre = useId();
 
   return (
-    <section>
-      <h2>Datos del proceso</h2>
+    <section className="flex flex-col gap-4">
+      <h2 className="text-headline-lg-mobile md:text-headline-lg text-on-surface">
+        Datos del proceso
+      </h2>
 
-      <label htmlFor={idNombre}>Nombre</label>
-      <input id={idNombre} value={datos.nombre} onChange={(e) => onCambiarNombre(e.target.value)} />
+      <div className="flex flex-col gap-1">
+        <label htmlFor={idNombre} className="text-label-md text-on-surface-variant">
+          Nombre
+        </label>
+        <input
+          id={idNombre}
+          value={datos.nombre}
+          onChange={(e) => onCambiarNombre(e.target.value)}
+          className="w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
+        />
+      </div>
 
-      <label htmlFor={idDescripcion}>Descripción</label>
-      <textarea
-        id={idDescripcion}
-        value={datos.descripcion}
-        onChange={(e) => onCambiarDescripcion(e.target.value)}
-      />
+      <div className="flex flex-col gap-1">
+        <label htmlFor={idDescripcion} className="text-label-md text-on-surface-variant">
+          Descripción
+        </label>
+        <textarea
+          id={idDescripcion}
+          value={datos.descripcion}
+          onChange={(e) => onCambiarDescripcion(e.target.value)}
+          className="w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
+        />
+      </div>
 
-      <label htmlFor={idTipo}>Tipo de proceso</label>
-      <select
-        id={idTipo}
-        value={datos.tipo ?? ''}
-        onChange={(e) => onCambiarTipo(e.target.value as TipoProceso)}
-      >
-        <option value="" disabled>
-          Elegí un tipo
-        </option>
-        {OPCIONES_TIPO.map((opcion) => (
-          <option key={opcion.valor} value={opcion.valor}>
-            {opcion.etiqueta}
+      <div className="flex flex-col gap-1">
+        <label htmlFor={idTipo} className="text-label-md text-on-surface-variant">
+          Tipo de proceso
+        </label>
+        <select
+          id={idTipo}
+          value={datos.tipo ?? ''}
+          onChange={(e) => onCambiarTipo(e.target.value as TipoProceso)}
+          className="w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <option value="" disabled>
+            Elegí un tipo
           </option>
-        ))}
-      </select>
+          {OPCIONES_TIPO.map((opcion) => (
+            <option key={opcion.valor} value={opcion.valor}>
+              {opcion.etiqueta}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <label htmlFor={idApertura}>Fecha de apertura prevista</label>
-      <input
-        id={idApertura}
-        type="datetime-local"
-        value={datos.fecha_apertura_prevista}
-        onChange={(e) => onCambiarFechaApertura(e.target.value)}
-      />
+      <div className="flex flex-col gap-1">
+        <label htmlFor={idApertura} className="text-label-md text-on-surface-variant">
+          Fecha de apertura prevista
+        </label>
+        <input
+          id={idApertura}
+          type="datetime-local"
+          value={datos.fecha_apertura_prevista}
+          onChange={(e) => onCambiarFechaApertura(e.target.value)}
+          className="w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
+        />
+      </div>
 
-      <label htmlFor={idCierre}>Fecha de cierre prevista</label>
-      <input
-        id={idCierre}
-        type="datetime-local"
-        value={datos.fecha_cierre_prevista}
-        onChange={(e) => onCambiarFechaCierre(e.target.value)}
-      />
+      <div className="flex flex-col gap-1">
+        <label htmlFor={idCierre} className="text-label-md text-on-surface-variant">
+          Fecha de cierre prevista
+        </label>
+        <input
+          id={idCierre}
+          type="datetime-local"
+          value={datos.fecha_cierre_prevista}
+          onChange={(e) => onCambiarFechaCierre(e.target.value)}
+          className="w-full rounded-control border border-border-gray bg-surface-white px-3 py-2 text-body-md text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
+        />
+      </div>
     </section>
   );
 }

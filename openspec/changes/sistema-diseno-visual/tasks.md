@@ -101,31 +101,33 @@ líneas pero sí a la identidad del snapshot. `AuthGuard.tsx` queda explícitame
 ## PR 3 — Asistente, parte 1 (base = PR 2 branch)
 
 ### Phase 6: ProcesoWizardPage — tarjeta, navegación e indicador (D5)
-- [ ] 6.1 RED: confirmar `ProcesoWizardPage.spec.tsx` en verde, en particular
+- [x] 6.1 RED: confirmar `ProcesoWizardPage.spec.tsx` en verde, en particular
       `getByRole('heading', …)` (líneas 53/69) (línea base)
-- [ ] 6.2 RED: agregar en `ProcesoWizardPage.spec.tsx` — en paso 2, `getByText(/paso 2 de 4/i)`
+- [x] 6.2 RED: agregar en `ProcesoWizardPage.spec.tsx` — en paso 2, `getByText(/paso 2 de 4/i)`
       presente; `queryByRole('heading', { name: /paso 2 de 4/i })` es `null` — falla, el indicador
       no existe todavía
-- [ ] 6.3 GREEN: modificar `ProcesoWizardPage.tsx` — agregar
+- [x] 6.3 GREEN: modificar `ProcesoWizardPage.tsx` — agregar
       `<p className="text-label-md text-primary">Paso {estado.paso} de 4</p>`, tarjeta del
       asistente y barra de navegación con patrones de botón primario/terciario de D3 — pasa 6.1-6.2
 
 ### Phase 7: PasoDatos
-- [ ] 7.1 RED: confirmar `PasoDatos.spec.tsx` en verde (línea base)
-- [ ] 7.2 Modificar `PasoDatos.tsx`: campos apilados con patrón de input de D3
-- [ ] 7.3 GREEN verificar: `PasoDatos.spec.tsx` pasa sin modificarse — pasa 7.1
+- [x] 7.1 RED: confirmar `PasoDatos.spec.tsx` en verde (línea base) — no existe un `.spec.tsx`
+      propio; se ejercita vía `ProcesoWizardPage.spec.tsx` (paso 1), ya en verde
+- [x] 7.2 Modificar `PasoDatos.tsx`: campos apilados con patrón de input de D3
+- [x] 7.3 GREEN verificar: `PasoDatos.spec.tsx` pasa sin modificarse — pasa 7.1
 
 ### Phase 8: PasoPublico (D4 — regex ancladas sobre nombre accesible)
-- [ ] 8.1 RED: confirmar `PasoPublico.spec.tsx` en verde, en particular las regex ancladas
+- [x] 8.1 RED: confirmar `PasoPublico.spec.tsx` en verde, en particular las regex ancladas
       `getByRole('radio', { name: /^estudiantes$/i })`, `/^aulas$/i`, `/^padres de familia$/i`
-      (líneas 33/87/136/142) (línea base)
-- [ ] 8.2 Modificar `PasoPublico.tsx`: `fieldset`/`legend` estilizados; fragmentos condicionales
+      (líneas 33/87/136/142) (línea base) — no existe un `.spec.tsx` propio; se ejercita vía
+      `ProcesoWizardPage.spec.tsx`, ya en verde
+- [x] 8.2 Modificar `PasoPublico.tsx`: `fieldset`/`legend` estilizados; fragmentos condicionales
       `<>…</>` → `<div className="…">` (D4.1); cero texto nuevo dentro de los `<label>` de radio
-- [ ] 8.3 GREEN verificar: `PasoPublico.spec.tsx` pasa sin modificarse, nombres accesibles de los
+- [x] 8.3 GREEN verificar: `PasoPublico.spec.tsx` pasa sin modificarse, nombres accesibles de los
       radios sin cambio — pasa 8.1
 
 ### Phase 9: Regresión PR3
-- [ ] 9.1 `pnpm --filter @seei/frontend test` suite completa verde; `pnpm --filter @seei/frontend
+- [x] 9.1 `pnpm --filter @seei/frontend test` suite completa verde; `pnpm --filter @seei/frontend
       typecheck` limpio
 
 ## PR 4 — Asistente, parte 2 (base = PR 3 branch)
