@@ -2008,6 +2008,662 @@
           "procesos"
         ]
       }
+    },
+    "/listas": {
+      "post": {
+        "operationId": "ListasController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Lista creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "409": {
+            "description": "ProcesoElectoral inexistente o número duplicado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea una Lista acotada a un ProcesoElectoral existente",
+        "tags": [
+          "listas"
+        ]
+      },
+      "get": {
+        "operationId": "ListasController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de listas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListaRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro malformado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista Listas, con filtro opcional por proceso_id y estado",
+        "tags": [
+          "listas"
+        ]
+      }
+    },
+    "/listas/{id}": {
+      "get": {
+        "operationId": "ListasController_detalle",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Lista encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "Lista no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta una Lista por id",
+        "tags": [
+          "listas"
+        ]
+      },
+      "patch": {
+        "operationId": "ListasController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Lista actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido"
+          },
+          "404": {
+            "description": "Lista no encontrada"
+          },
+          "409": {
+            "description": "Número duplicado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Edita los datos de una Lista (nunca su ProcesoElectoral)",
+        "tags": [
+          "listas"
+        ]
+      },
+      "delete": {
+        "operationId": "ListasController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Lista eliminada"
+          },
+          "404": {
+            "description": "Lista no encontrada"
+          },
+          "409": {
+            "description": "Existe Voto o Candidato dependiente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente una Lista sin Voto/Candidato dependiente",
+        "tags": [
+          "listas"
+        ]
+      }
+    },
+    "/listas/{id}/estado": {
+      "patch": {
+        "operationId": "ListasController_cambiarEstado",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Estado actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListaRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "estado fuera de {activo, baja}"
+          },
+          "404": {
+            "description": "Lista no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Da de baja o reactiva una Lista, permitido en cualquier estado de Proceso",
+        "tags": [
+          "listas"
+        ]
+      }
+    },
+    "/listas/{id}/plan-trabajo": {
+      "put": {
+        "operationId": "ListasController_subirPlanTrabajo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Plan de trabajo persistido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanTrabajoRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Formato no permitido, archivo vacío o excede 5 MB"
+          },
+          "404": {
+            "description": "Lista no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Sube o reemplaza el plan de trabajo de una Lista (PDF, máximo 5 MB)",
+        "tags": [
+          "listas"
+        ]
+      },
+      "get": {
+        "operationId": "ListasController_obtenerPlanTrabajo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "PDF del plan de trabajo"
+          },
+          "404": {
+            "description": "Lista sin plan de trabajo almacenado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Descarga el plan de trabajo de una Lista",
+        "tags": [
+          "listas"
+        ]
+      },
+      "delete": {
+        "operationId": "ListasController_eliminarPlanTrabajo",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Plan de trabajo eliminado"
+          },
+          "404": {
+            "description": "Lista no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina el plan de trabajo de una Lista, sin afectar el resto de sus datos",
+        "tags": [
+          "listas"
+        ]
+      }
+    },
+    "/opciones": {
+      "post": {
+        "operationId": "OpcionesController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "OpcionConsulta creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpcionRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "409": {
+            "description": "ProcesoElectoral inexistente o etiqueta duplicada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea una OpcionConsulta acotada a un ProcesoElectoral existente",
+        "tags": [
+          "opciones"
+        ]
+      },
+      "get": {
+        "operationId": "OpcionesController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de opciones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OpcionRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro malformado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista OpcionesConsulta, con filtro opcional por proceso_id",
+        "tags": [
+          "opciones"
+        ]
+      }
+    },
+    "/opciones/{id}": {
+      "get": {
+        "operationId": "OpcionesController_detalle",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OpcionConsulta encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpcionRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "OpcionConsulta no encontrada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta una OpcionConsulta por id",
+        "tags": [
+          "opciones"
+        ]
+      },
+      "patch": {
+        "operationId": "OpcionesController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OpcionConsulta actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpcionRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido"
+          },
+          "404": {
+            "description": "OpcionConsulta no encontrada"
+          },
+          "409": {
+            "description": "Etiqueta duplicada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Edita los datos de una OpcionConsulta (nunca su ProcesoElectoral)",
+        "tags": [
+          "opciones"
+        ]
+      },
+      "delete": {
+        "operationId": "OpcionesController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "OpcionConsulta eliminada"
+          },
+          "404": {
+            "description": "OpcionConsulta no encontrada"
+          },
+          "409": {
+            "description": "Existe Voto dependiente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente una OpcionConsulta sin Voto dependiente",
+        "tags": [
+          "opciones"
+        ]
+      }
+    },
+    "/candidatos": {
+      "post": {
+        "operationId": "CandidatosController_crear",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Candidato creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidatoRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido, foto ausente, formato no permitido o excede 2 MB"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "409": {
+            "description": "ProcesoElectoral/Lista inexistente o incoherencia jerárquica"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Crea un Candidato acotado a un ProcesoElectoral existente (foto obligatoria)",
+        "tags": [
+          "candidatos"
+        ]
+      },
+      "get": {
+        "operationId": "CandidatosController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de candidatos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CandidatoRespuestaDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Filtro malformado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista Candidatos, con filtro opcional por proceso_id, lista_id y estado",
+        "tags": [
+          "candidatos"
+        ]
+      }
+    },
+    "/candidatos/{id}": {
+      "get": {
+        "operationId": "CandidatosController_detalle",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Candidato encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidatoRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "Candidato no encontrado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta un Candidato por id",
+        "tags": [
+          "candidatos"
+        ]
+      },
+      "patch": {
+        "operationId": "CandidatosController_actualizar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Candidato actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidatoRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido, formato no permitido o excede 2 MB"
+          },
+          "404": {
+            "description": "Candidato no encontrado"
+          },
+          "409": {
+            "description": "Lista inexistente o incoherencia jerárquica"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Edita los datos de un Candidato (nunca su ProcesoElectoral); foto opcional",
+        "tags": [
+          "candidatos"
+        ]
+      },
+      "delete": {
+        "operationId": "CandidatosController_eliminar",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Candidato eliminado"
+          },
+          "404": {
+            "description": "Candidato no encontrado"
+          },
+          "409": {
+            "description": "Existe Voto dependiente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Elimina físicamente un Candidato sin Voto dependiente",
+        "tags": [
+          "candidatos"
+        ]
+      }
+    },
+    "/candidatos/{id}/foto": {
+      "get": {
+        "operationId": "CandidatosController_obtenerFoto",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Binario de la foto con el Content-Type persistido"
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Candidato no encontrado o sin foto almacenada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Descarga la foto de un Candidato",
+        "tags": [
+          "candidatos"
+        ]
+      }
+    },
+    "/candidatos/{id}/estado": {
+      "patch": {
+        "operationId": "CandidatosController_cambiarEstado",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Estado actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidatoRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "estado fuera de {activo, baja}"
+          },
+          "404": {
+            "description": "Candidato no encontrado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Da de baja o reactiva un Candidato, permitido en cualquier estado de Proceso",
+        "tags": [
+          "candidatos"
+        ]
+      }
     }
   },
   "info": {
@@ -3002,6 +3658,169 @@
         "required": [
           "publico_objetivo",
           "alcance"
+        ]
+      },
+      "ListaRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID de la lista"
+          },
+          "proceso_id": {
+            "type": "string",
+            "description": "ID del ProcesoElectoral al que pertenece"
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre de la lista"
+          },
+          "numero": {
+            "type": "number",
+            "description": "Número de lista"
+          },
+          "simbolo": {
+            "type": "string",
+            "description": "Símbolo de la lista"
+          },
+          "lema": {
+            "type": "string",
+            "description": "Lema de la lista"
+          },
+          "propuesta": {
+            "type": "string",
+            "description": "Propuesta de la lista"
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado de participación de la lista",
+            "enum": [
+              "activo",
+              "baja"
+            ]
+          },
+          "baja_en": {
+            "type": "string",
+            "description": "Fecha/hora de la baja (ISO 8601), ausente si está activa"
+          },
+          "plan_trabajo_presente": {
+            "type": "boolean",
+            "description": "true si la lista tiene un plan de trabajo en PDF almacenado"
+          },
+          "plan_trabajo_nombre": {
+            "type": "string",
+            "description": "Nombre original del PDF del plan de trabajo, si existe"
+          }
+        },
+        "required": [
+          "id",
+          "proceso_id",
+          "nombre",
+          "numero",
+          "estado",
+          "plan_trabajo_presente"
+        ]
+      },
+      "PlanTrabajoRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "plan_trabajo_presente": {
+            "type": "boolean",
+            "description": "true si la lista tiene un plan de trabajo en PDF almacenado"
+          },
+          "plan_trabajo_nombre": {
+            "type": "string",
+            "description": "Nombre original del PDF, ausente si no hay plan de trabajo"
+          }
+        },
+        "required": [
+          "plan_trabajo_presente"
+        ]
+      },
+      "OpcionRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID de la opción"
+          },
+          "proceso_id": {
+            "type": "string",
+            "description": "ID del ProcesoElectoral al que pertenece"
+          },
+          "etiqueta": {
+            "type": "string",
+            "description": "Etiqueta de la opción"
+          },
+          "descripcion": {
+            "type": "string",
+            "description": "Descripción de la opción"
+          }
+        },
+        "required": [
+          "id",
+          "proceso_id",
+          "etiqueta"
+        ]
+      },
+      "CandidatoRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del candidato"
+          },
+          "proceso_id": {
+            "type": "string",
+            "description": "ID del ProcesoElectoral al que pertenece"
+          },
+          "lista_id": {
+            "type": "string",
+            "description": "ID de la Lista a la que pertenece, si aplica"
+          },
+          "nombres": {
+            "type": "string",
+            "description": "Nombres completos del candidato"
+          },
+          "grado": {
+            "type": "string",
+            "description": "Grado al que pertenece el candidato"
+          },
+          "aula": {
+            "type": "string",
+            "description": "Aula a la que pertenece el candidato"
+          },
+          "cargo": {
+            "type": "string",
+            "description": "Cargo postulado"
+          },
+          "foto_presente": {
+            "type": "boolean",
+            "description": "true si el candidato tiene una foto almacenada"
+          },
+          "foto_mime": {
+            "type": "string",
+            "description": "MIME de la foto almacenada, si existe"
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado de participación del candidato",
+            "enum": [
+              "activo",
+              "baja"
+            ]
+          },
+          "baja_en": {
+            "type": "string",
+            "description": "Fecha/hora de la baja (ISO 8601), ausente si está activo"
+          }
+        },
+        "required": [
+          "id",
+          "proceso_id",
+          "nombres",
+          "foto_presente",
+          "estado"
         ]
       }
     }

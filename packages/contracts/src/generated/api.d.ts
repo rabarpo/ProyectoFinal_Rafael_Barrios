@@ -640,6 +640,187 @@ export interface paths {
         patch: operations["ProcesosController_editar"];
         trace?: never;
     };
+    "/listas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista Listas, con filtro opcional por proceso_id y estado */
+        get: operations["ListasController_listar"];
+        put?: never;
+        /** Crea una Lista acotada a un ProcesoElectoral existente */
+        post: operations["ListasController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/listas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta una Lista por id */
+        get: operations["ListasController_detalle"];
+        put?: never;
+        post?: never;
+        /** Elimina físicamente una Lista sin Voto/Candidato dependiente */
+        delete: operations["ListasController_eliminar"];
+        options?: never;
+        head?: never;
+        /** Edita los datos de una Lista (nunca su ProcesoElectoral) */
+        patch: operations["ListasController_actualizar"];
+        trace?: never;
+    };
+    "/listas/{id}/estado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Da de baja o reactiva una Lista, permitido en cualquier estado de Proceso */
+        patch: operations["ListasController_cambiarEstado"];
+        trace?: never;
+    };
+    "/listas/{id}/plan-trabajo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descarga el plan de trabajo de una Lista */
+        get: operations["ListasController_obtenerPlanTrabajo"];
+        /** Sube o reemplaza el plan de trabajo de una Lista (PDF, máximo 5 MB) */
+        put: operations["ListasController_subirPlanTrabajo"];
+        post?: never;
+        /** Elimina el plan de trabajo de una Lista, sin afectar el resto de sus datos */
+        delete: operations["ListasController_eliminarPlanTrabajo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista OpcionesConsulta, con filtro opcional por proceso_id */
+        get: operations["OpcionesController_listar"];
+        put?: never;
+        /** Crea una OpcionConsulta acotada a un ProcesoElectoral existente */
+        post: operations["OpcionesController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opciones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta una OpcionConsulta por id */
+        get: operations["OpcionesController_detalle"];
+        put?: never;
+        post?: never;
+        /** Elimina físicamente una OpcionConsulta sin Voto dependiente */
+        delete: operations["OpcionesController_eliminar"];
+        options?: never;
+        head?: never;
+        /** Edita los datos de una OpcionConsulta (nunca su ProcesoElectoral) */
+        patch: operations["OpcionesController_actualizar"];
+        trace?: never;
+    };
+    "/candidatos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista Candidatos, con filtro opcional por proceso_id, lista_id y estado */
+        get: operations["CandidatosController_listar"];
+        put?: never;
+        /** Crea un Candidato acotado a un ProcesoElectoral existente (foto obligatoria) */
+        post: operations["CandidatosController_crear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/candidatos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta un Candidato por id */
+        get: operations["CandidatosController_detalle"];
+        put?: never;
+        post?: never;
+        /** Elimina físicamente un Candidato sin Voto dependiente */
+        delete: operations["CandidatosController_eliminar"];
+        options?: never;
+        head?: never;
+        /** Edita los datos de un Candidato (nunca su ProcesoElectoral); foto opcional */
+        patch: operations["CandidatosController_actualizar"];
+        trace?: never;
+    };
+    "/candidatos/{id}/foto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descarga la foto de un Candidato */
+        get: operations["CandidatosController_obtenerFoto"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/candidatos/{id}/estado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Da de baja o reactiva un Candidato, permitido en cualquier estado de Proceso */
+        patch: operations["CandidatosController_cambiarEstado"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1024,6 +1205,76 @@ export interface components {
             fecha_cierre_prevista?: string;
             /** @description Pre-marcado del asistente (D7) */
             ocultar_resultados?: boolean;
+        };
+        ListaRespuestaDto: {
+            /** @description ID de la lista */
+            id: string;
+            /** @description ID del ProcesoElectoral al que pertenece */
+            proceso_id: string;
+            /** @description Nombre de la lista */
+            nombre: string;
+            /** @description Número de lista */
+            numero: number;
+            /** @description Símbolo de la lista */
+            simbolo?: string;
+            /** @description Lema de la lista */
+            lema?: string;
+            /** @description Propuesta de la lista */
+            propuesta?: string;
+            /**
+             * @description Estado de participación de la lista
+             * @enum {string}
+             */
+            estado: "activo" | "baja";
+            /** @description Fecha/hora de la baja (ISO 8601), ausente si está activa */
+            baja_en?: string;
+            /** @description true si la lista tiene un plan de trabajo en PDF almacenado */
+            plan_trabajo_presente: boolean;
+            /** @description Nombre original del PDF del plan de trabajo, si existe */
+            plan_trabajo_nombre?: string;
+        };
+        PlanTrabajoRespuestaDto: {
+            /** @description true si la lista tiene un plan de trabajo en PDF almacenado */
+            plan_trabajo_presente: boolean;
+            /** @description Nombre original del PDF, ausente si no hay plan de trabajo */
+            plan_trabajo_nombre?: string;
+        };
+        OpcionRespuestaDto: {
+            /** @description ID de la opción */
+            id: string;
+            /** @description ID del ProcesoElectoral al que pertenece */
+            proceso_id: string;
+            /** @description Etiqueta de la opción */
+            etiqueta: string;
+            /** @description Descripción de la opción */
+            descripcion?: string;
+        };
+        CandidatoRespuestaDto: {
+            /** @description ID del candidato */
+            id: string;
+            /** @description ID del ProcesoElectoral al que pertenece */
+            proceso_id: string;
+            /** @description ID de la Lista a la que pertenece, si aplica */
+            lista_id?: string;
+            /** @description Nombres completos del candidato */
+            nombres: string;
+            /** @description Grado al que pertenece el candidato */
+            grado?: string;
+            /** @description Aula a la que pertenece el candidato */
+            aula?: string;
+            /** @description Cargo postulado */
+            cargo?: string;
+            /** @description true si el candidato tiene una foto almacenada */
+            foto_presente: boolean;
+            /** @description MIME de la foto almacenada, si existe */
+            foto_mime?: string;
+            /**
+             * @description Estado de participación del candidato
+             * @enum {string}
+             */
+            estado: "activo" | "baja";
+            /** @description Fecha/hora de la baja (ISO 8601), ausente si está activo */
+            baja_en?: string;
         };
     };
     responses: never;
@@ -3194,6 +3445,750 @@ export interface operations {
             };
             /** @description Referencia inexistente, segmentación inválida, sin elegibles, proceso no editable o sin año escolar activo */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListasController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de listas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaRespuestaDto"][];
+                };
+            };
+            /** @description Filtro malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListasController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista creada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ProcesoElectoral inexistente o número duplicado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListasController_detalle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista encontrada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaRespuestaDto"];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lista no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListasController_eliminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista eliminada */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lista no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Existe Voto o Candidato dependiente */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListasController_actualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lista no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Número duplicado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListasController_cambiarEstado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaRespuestaDto"];
+                };
+            };
+            /** @description estado fuera de {activo, baja} */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lista no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListasController_obtenerPlanTrabajo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF del plan de trabajo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lista sin plan de trabajo almacenado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListasController_subirPlanTrabajo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan de trabajo persistido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanTrabajoRespuestaDto"];
+                };
+            };
+            /** @description Formato no permitido, archivo vacío o excede 5 MB */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lista no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListasController_eliminarPlanTrabajo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan de trabajo eliminado */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lista no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpcionesController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de opciones */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpcionRespuestaDto"][];
+                };
+            };
+            /** @description Filtro malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpcionesController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OpcionConsulta creada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpcionRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ProcesoElectoral inexistente o etiqueta duplicada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpcionesController_detalle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OpcionConsulta encontrada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpcionRespuestaDto"];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description OpcionConsulta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpcionesController_eliminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OpcionConsulta eliminada */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description OpcionConsulta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Existe Voto dependiente */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpcionesController_actualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OpcionConsulta actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpcionRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description OpcionConsulta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Etiqueta duplicada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CandidatosController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de candidatos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidatoRespuestaDto"][];
+                };
+            };
+            /** @description Filtro malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CandidatosController_crear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidato creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidatoRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido, foto ausente, formato no permitido o excede 2 MB */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ProcesoElectoral/Lista inexistente o incoherencia jerárquica */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CandidatosController_detalle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidato encontrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidatoRespuestaDto"];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Candidato no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CandidatosController_eliminar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidato eliminado */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Candidato no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Existe Voto dependiente */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CandidatosController_actualizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidato actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidatoRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido, formato no permitido o excede 2 MB */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Candidato no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lista inexistente o incoherencia jerárquica */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CandidatosController_obtenerFoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Binario de la foto con el Content-Type persistido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Candidato no encontrado o sin foto almacenada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CandidatosController_cambiarEstado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidatoRespuestaDto"];
+                };
+            };
+            /** @description estado fuera de {activo, baja} */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Candidato no encontrado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
