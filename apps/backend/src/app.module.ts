@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AcademicoModule } from './academico/academico.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
 import { AuthModule } from './auth/auth.module';
+import { CandidatosModule } from './candidatos/candidatos.module';
 import { ConfiguracionLecturaModule } from './configuracion/configuracion-lectura.module';
 import { ConfiguracionModule } from './configuracion/configuracion.module';
 import { HealthModule } from './health/health.module';
@@ -27,6 +28,9 @@ import { UsersModule } from './users/users.module';
 // administracion-procesos-electorales, PR5 (design.md "Cambios de archivos", tarea 12.4).
 // `ProcesosModule` se registra al final de la lista, mismo criterio de orden que los módulos de
 // dominio previos — cambio aditivo puro, sin tocar rutas existentes.
+//
+// candidatos-listas-opciones-consulta, PR2 (design.md "Cambios de archivos", tarea 4.4).
+// `CandidatosModule` se registra al final, mismo criterio de orden — cambio aditivo puro.
 @Module({
   imports: [
     HealthModule,
@@ -39,6 +43,7 @@ import { UsersModule } from './users/users.module';
     ConfiguracionLecturaModule,
     ConfiguracionModule,
     ProcesosModule,
+    CandidatosModule,
   ],
 })
 export class AppModule {}
