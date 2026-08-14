@@ -1,6 +1,7 @@
 import { useRuta } from './useRuta';
 import { ProcesoWizardPage } from '../procesos/ProcesoWizardPage';
 import { ProcesosIndexPage } from '../procesos/ProcesosIndexPage';
+import { AperturaProcesoPage } from '../procesos/AperturaProcesoPage';
 import { RegistroCandidatoPage } from '../candidatos/RegistroCandidatoPage';
 import { GestionCandidatosPage } from '../candidatos/GestionCandidatosPage';
 
@@ -10,9 +11,10 @@ import { GestionCandidatosPage } from '../candidatos/GestionCandidatosPage';
  * (threat matrix "Enrutamiento (cliente)"). `candidato-nuevo`/
  * `candidato-edicion` montan `RegistroCandidatoPage` real desde PR7
  * (tasks.md 21.5); `candidatos` (listado/gestión) monta `GestionCandidatosPage`
- * real desde PR8 (tasks.md 23.6) — sin stubs restantes en el alcance de este
- * change. `no-encontrada` se renderiza dentro del shell, nunca lanza ni deja
- * `undefined`.
+ * real desde PR8 (tasks.md 23.6); `apertura` monta `AperturaProcesoPage` real
+ * desde `#13`/PR5 (design.md D13, tasks.md 18.2) — sin stubs restantes en el
+ * alcance de este change. `no-encontrada` se renderiza dentro del shell,
+ * nunca lanza ni deja `undefined`.
  */
 function VistaNoEncontrada() {
   return <p className="text-body-md text-on-surface">Página no encontrada.</p>;
@@ -32,6 +34,8 @@ export function Enrutador() {
       return <RegistroCandidatoPage procesoId={ruta.procesoId} />;
     case 'candidato-edicion':
       return <RegistroCandidatoPage procesoId={ruta.procesoId} candidatoId={ruta.candidatoId} />;
+    case 'apertura':
+      return <AperturaProcesoPage procesoId={ruta.procesoId} />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }

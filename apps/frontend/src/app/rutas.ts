@@ -12,6 +12,7 @@ export type Ruta =
   | { nombre: 'candidatos'; procesoId: string }
   | { nombre: 'candidato-nuevo'; procesoId: string }
   | { nombre: 'candidato-edicion'; procesoId: string; candidatoId: string }
+  | { nombre: 'apertura'; procesoId: string }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -54,6 +55,10 @@ export function parsearRuta(pathname: string): Ruta {
     }
   }
 
+  if (partes[0] === 'procesos' && partes.length === 3 && partes[2] === 'abrir') {
+    return { nombre: 'apertura', procesoId: partes[1] };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -69,6 +74,8 @@ export function rutaAPath(ruta: Ruta): string {
       return `/procesos/${ruta.procesoId}/candidatos/nuevo`;
     case 'candidato-edicion':
       return `/procesos/${ruta.procesoId}/candidatos/${ruta.candidatoId}`;
+    case 'apertura':
+      return `/procesos/${ruta.procesoId}/abrir`;
     case 'no-encontrada':
       return ruta.pathname;
   }

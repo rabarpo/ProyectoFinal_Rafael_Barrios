@@ -8,7 +8,9 @@ import { navegar } from '../app/useRuta';
  * no hay forma de alcanzar los candidatos de un proceso creado en otra
  * sesión. Reutiliza `procesos-api.listar()` (#11, sin consumidor hasta este
  * PR). Tokens exclusivamente de `index.css`, mismo lenguaje visual que
- * `ProcesoWizardPage`/`LoginPage` (design.md D13).
+ * `ProcesoWizardPage`/`LoginPage` (design.md D13). "Abrir proceso" (design.md
+ * D13, `#13`/PR5, tasks.md 18.3) solo aparece cuando `estado === 'borrador'`:
+ * es la única transición de estado que este índice expone.
  */
 export function ProcesosIndexPage() {
   const [procesos, setProcesos] = useState<ProcesoRespuestaDto[]>([]);
@@ -72,13 +74,24 @@ export function ProcesosIndexPage() {
                     {proceso.tipo} · {proceso.estado}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="rounded-control px-4 py-3 text-label-md text-primary hover:bg-surface-container"
-                  onClick={() => navegar({ nombre: 'candidatos', procesoId: proceso.id })}
-                >
-                  Gestionar candidatos
-                </button>
+                <div className="flex gap-2">
+                  {proceso.estado === 'borrador' && (
+                    <button
+                      type="button"
+                      className="rounded-control px-4 py-3 text-label-md text-primary hover:bg-surface-container"
+                      onClick={() => navegar({ nombre: 'apertura', procesoId: proceso.id })}
+                    >
+                      Abrir proceso
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="rounded-control px-4 py-3 text-label-md text-primary hover:bg-surface-container"
+                    onClick={() => navegar({ nombre: 'candidatos', procesoId: proceso.id })}
+                  >
+                    Gestionar candidatos
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

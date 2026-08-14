@@ -7,6 +7,8 @@ export type ProcesoRespuestaDto = components['schemas']['ProcesoRespuestaDto'];
 export type ProcesoDetalleRespuestaDto = components['schemas']['ProcesoDetalleRespuestaDto'];
 export type SegmentacionDto = components['schemas']['SegmentacionDto'];
 export type PadronRespuestaDto = components['schemas']['PadronRespuestaDto'];
+export type AbrirProcesoDto = components['schemas']['AbrirProcesoDto'];
+export type AperturaRespuestaDto = components['schemas']['AperturaRespuestaDto'];
 
 /**
  * Wrappers tipados sobre `createSeeiClient('/api')` (design.md D7), en el
@@ -52,4 +54,15 @@ export async function eliminar(id: string) {
 
 export async function padron(dto: SegmentacionDto, signal?: AbortSignal) {
   return client().POST('/procesos/padron', { body: dto, signal });
+}
+
+// design.md D13/D9: `confirmar` siempre viaja `true` — `AperturaProcesoPage`
+// solo invoca `abrir()` tras el gesto explícito del checkbox de
+// `PanelConfirmacionApertura` (D9's `confirmar !== true` ⇒ 400 nunca se
+// ejercita desde este cliente).
+export async function abrir(id: string) {
+  return client().POST('/procesos/{id}/abrir', {
+    params: { path: { id } },
+    body: { confirmar: true },
+  });
 }
