@@ -111,7 +111,7 @@ describe('5.5 — mismo texto exacto para cuenta bloqueada y contraseña incorre
     const { unmount } = render(<App />);
     await waitFor(() => screen.getByLabelText(/código institucional/i));
     fireEvent.change(screen.getByLabelText(/código institucional/i), { target: { value: 'x' } });
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'y' } });
+    fireEvent.change(screen.getByLabelText(/contraseña/i, { selector: 'input' }), { target: { value: 'y' } });
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
     const mensajeBloqueada = await screen.findByRole('alert');
     const textoBloqueada = mensajeBloqueada.textContent;
@@ -122,7 +122,7 @@ describe('5.5 — mismo texto exacto para cuenta bloqueada y contraseña incorre
     render(<App />);
     await waitFor(() => screen.getByLabelText(/código institucional/i));
     fireEvent.change(screen.getByLabelText(/código institucional/i), { target: { value: 'x' } });
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'z' } });
+    fireEvent.change(screen.getByLabelText(/contraseña/i, { selector: 'input' }), { target: { value: 'z' } });
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
     const mensajeIncorrecta = await screen.findByRole('alert');
 

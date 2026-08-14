@@ -24,7 +24,7 @@ describe('FormularioCredenciales', () => {
     fireEvent.change(screen.getByLabelText(/código institucional/i), {
       target: { value: 'seed-comite' },
     });
-    fireEvent.change(screen.getByLabelText(/contraseña/i), {
+    fireEvent.change(screen.getByLabelText(/contraseña/i, { selector: 'input' }), {
       target: { value: 'clave-secreta' },
     });
     const boton = screen.getByRole('button', { name: /continuar/i });

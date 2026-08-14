@@ -67,7 +67,7 @@ describe('Flujo de login (App)', () => {
     fireEvent.change(screen.getByLabelText(/código institucional/i), {
       target: { value: 'seed-comite' },
     });
-    fireEvent.change(screen.getByLabelText(/contraseña/i), {
+    fireEvent.change(screen.getByLabelText(/contraseña/i, { selector: 'input' }), {
       target: { value: 'clave-mala' },
     });
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));

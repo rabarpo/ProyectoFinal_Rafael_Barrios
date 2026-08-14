@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BotonGoogle } from './BotonGoogle';
 import { DialogoVinculacion } from './DialogoVinculacion';
 import { FormularioCredenciales } from './FormularioCredenciales';
+import { IconoEscudo, IconoInstitucion } from './iconos';
 import { useSesion } from './sesion-context';
 
 const MENSAJES: Record<'credenciales' | 'vinculacion' | 'red', string> = {
@@ -70,28 +71,55 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-5 py-10 text-on-surface md:px-12">
-      <div className="w-full max-w-md rounded-card bg-surface-white p-6 shadow-elevation">
-        <h1 className="text-headline-lg-mobile text-on-surface md:text-headline-lg">
-          Iniciar sesión
-        </h1>
-        <FormularioCredenciales
-          onEnviar={manejarEnvio}
-          cargando={cargando}
-          mensajeError={mensajeError}
-        />
-        <p className="my-4 text-center text-label-md text-on-surface-variant">o</p>
-        <div className="flex justify-center">
-          <BotonGoogle onCredential={manejarCredencialGoogle} />
+    <div className="flex min-h-screen flex-col bg-background text-on-surface">
+      <header className="flex h-16 w-full items-center border-b border-border-gray bg-surface-white px-5 md:px-12">
+        <div className="flex items-center gap-3">
+          <IconoInstitucion className="size-7 text-primary" />
+          <span className="text-title-md font-bold text-primary md:text-headline-lg-mobile">
+            Portal de Votación Institucional
+          </span>
         </div>
-        {idTokenPendiente && (
-          <DialogoVinculacion
+      </header>
+
+      <main className="flex flex-1 items-center justify-center px-5 py-10 md:px-12">
+        <div className="w-full max-w-md rounded-card border border-border-gray bg-surface-white p-6 shadow-elevation md:p-8">
+          <div className="mb-6 flex flex-col items-center text-center">
+            <div className="mb-3 flex size-16 items-center justify-center rounded-full border-2 border-primary/10 bg-surface-container">
+              <IconoEscudo className="size-9 text-primary" />
+            </div>
+            <h1 className="text-headline-lg-mobile text-primary md:text-headline-lg">SEEI</h1>
+            <p className="mt-1 text-body-md text-on-surface-variant">
+              Acceso al Sistema Electoral Estudiantil Institucional
+            </p>
+          </div>
+
+          <FormularioCredenciales
+            onEnviar={manejarEnvio}
             cargando={cargando}
-            onConfirmar={manejarVinculacion}
-            onCancelar={() => setIdTokenPendiente(undefined)}
+            mensajeError={mensajeError}
           />
-        )}
-      </div>
+          <p className="my-4 text-center text-label-md text-on-surface-variant">o</p>
+          <div className="flex justify-center">
+            <BotonGoogle onCredential={manejarCredencialGoogle} />
+          </div>
+          {idTokenPendiente && (
+            <div className="mt-6">
+              <DialogoVinculacion
+                cargando={cargando}
+                onConfirmar={manejarVinculacion}
+                onCancelar={() => setIdTokenPendiente(undefined)}
+              />
+            </div>
+          )}
+
+          <div className="mt-8 flex items-start gap-3 rounded-control border border-border-gray/50 bg-surface-container-low p-4">
+            <IconoEscudo className="mt-0.5 size-5 shrink-0 text-on-tertiary-container" />
+            <p className="text-caption text-on-surface-variant">
+              Tu voto es secreto y personal. No compartas tus credenciales con terceros.
+            </p>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
