@@ -24,6 +24,15 @@ const ESTADOS_VALIDOS = ['borrador', 'abierto', 'cerrado', 'acta_emitida'] as co
 const CALIDAD_ESTUDIANTE = 'estudiante';
 const CALIDAD_PADRE = 'padre';
 
+// apertura-proceso-congelamiento-padron (#13, PR3; design.md D7, tarea 9.7). `DerechoVoto` inserta
+// 5 columnas por fila y Prisma genera el `id` uuid del lado del cliente, así que cada fila liga 5
+// parámetros — el protocolo de Postgres tope en 65535 por sentencia (~13k filas). VERIFICADO en
+// apply: el query builder de `@prisma/client` (`createMany`) arma un único `INSERT ... VALUES` con
+// todas las filas del array de entrada — no trocea internamente sobre el límite de parámetros del
+// protocolo. El troceado manual de abajo es, por lo tanto, necesario (no redundante); 5000 deja
+// margen amplio sin acercarse al techo real de ~13k filas.
+const LOTE_DERECHOS = 5000;
+
 type PrismaAulasGradosNivelMatricula = Pick<PrismaService, 'aula' | 'grado' | 'nivel' | 'matricula'>;
 
 function mapearRespuesta(
@@ -195,6 +204,79 @@ async function respuestaApertura(
     derechos_totales: derechosEstudiante + derechosPadre,
     derechos_estudiante: derechosEstudiante,
     derechos_padre: derechosPadre,
+  };
+}
+
+/**
+ * apertura-proceso-congelamiento-padron (#13, PR3; design.md D6-D8, tareas 9.1-9.6). Materializa
+ * `DerechoVoto` dentro de la misma transacción que la guarda de `abrir()`. Las dos consultas son
+ * espejo EXACTO de las dos `groupBy` de `PadronService.calcular()` (mismo `baseWhere`, mismo
+ * criterio de elegibilidad), pero acá se usa `findMany` en vez de `groupBy` porque hace falta el
+ * `usuario_id`/`aula_id` de cada fila, no un conteo agregado. El conjunto de aulas llega YA
+ * congelado (`ProcesoAula[]` leído por el caller vía `tx.procesoAula.findMany()`) — esta función
+ * NUNCA llama `resolverAulas()`: recalcularía el alcance contra el árbol académico actual y podría
+ * cambiar QUÉ aulas participan, violando la regla de negocio adoptada (solo se recalcula QUIÉN es
+ * elegible, nunca QUÉ aulas). `derechosPorAula()` de `padron.service.ts` decide un total agregado;
+ * acá la selección es fila por fila según `publicoObjetivo`, D8: `comunidad` emite las DOS filas
+ * (`estudiante` + `padre`) para la misma cuenta `Usuario` de un estudiante con apoderado activo.
+ */
+async function materializarDerechosVoto(
+  tx: Prisma.TransactionClient,
+  procesoId: string,
+  publicoObjetivo: ProcesoElectoral['publico_objetivo'],
+  anioEscolarId: string,
+  aulaIds: string[],
+): Promise<{ estudiante: number; padre: number }> {
+  if (aulaIds.length === 0) {
+    throw new ConflictException({
+      codigo: PROCESOS_ERROR_CODES.SEGMENTACION_SIN_ELEGIBLES,
+      aulas_evaluadas: 0,
+    });
+  }
+
+  const baseWhere: Prisma.MatriculaWhereInput = {
+    anio_escolar_id: anioEscolarId,
+    aula_id: { in: aulaIds },
+    usuario: { estado: 'activo', rol: 'estudiante' },
+  };
+
+  const [matriculasElegibles, matriculasConApoderado] = await Promise.all([
+    tx.matricula.findMany({ where: baseWhere, select: { usuario_id: true, aula_id: true } }),
+    tx.matricula.findMany({
+      where: { ...baseWhere, usuario: { estado: 'activo', rol: 'estudiante', apoderados: { some: {} } } },
+      select: { usuario_id: true, aula_id: true },
+    }),
+  ]);
+
+  const filas: Prisma.DerechoVotoCreateManyInput[] = [];
+
+  if (publicoObjetivo === 'estudiantes' || publicoObjetivo === 'comunidad') {
+    for (const m of matriculasElegibles) {
+      filas.push({ proceso_id: procesoId, usuario_id: m.usuario_id, en_calidad_de: CALIDAD_ESTUDIANTE, aula_snapshot: m.aula_id });
+    }
+  }
+  if (publicoObjetivo === 'padres' || publicoObjetivo === 'comunidad') {
+    for (const m of matriculasConApoderado) {
+      filas.push({ proceso_id: procesoId, usuario_id: m.usuario_id, en_calidad_de: CALIDAD_PADRE, aula_snapshot: m.aula_id });
+    }
+  }
+
+  if (filas.length === 0) {
+    throw new ConflictException({
+      codigo: PROCESOS_ERROR_CODES.SEGMENTACION_SIN_ELEGIBLES,
+      aulas_evaluadas: aulaIds.length,
+    });
+  }
+
+  // D7: troceado manual en LOTE_DERECHOS — ver el comentario de la constante (verificado en apply,
+  // `createMany` de Prisma NO trocea internamente sobre el límite de parámetros del protocolo).
+  for (let i = 0; i < filas.length; i += LOTE_DERECHOS) {
+    await tx.derechoVoto.createMany({ data: filas.slice(i, i + LOTE_DERECHOS) });
+  }
+
+  return {
+    estudiante: filas.filter((f) => f.en_calidad_de === CALIDAD_ESTUDIANTE).length,
+    padre: filas.filter((f) => f.en_calidad_de === CALIDAD_PADRE).length,
   };
 }
 
@@ -468,11 +550,12 @@ export class ProcesosService {
    * bloqueada hasta el commit de la primera y, bajo `READ COMMITTED`, Postgres re-evalúa el `WHERE`
    * (EvalPlanQual) y devuelve 0 filas — la relectura de abajo interpreta ese resultado.
    *
-   * PR2 solo cubre la guarda + relectura: el camino exitoso (guarda con 1 fila) todavía NO
-   * materializa `DerechoVoto` ni audita — `respuestaApertura()` cuenta con `count()` real sobre una
-   * tabla vacía (D10), por diseño. PR3 (D6-D8/D11) extiende este mismo camino dentro de la MISMA
-   * transacción: lee el `ProcesoAula[]` congelado, materializa `DerechoVoto` y audita
-   * `PROCESO_ABIERTO` exactamente una vez.
+   * PR3 (D6-D8/D11) extiende el camino exitoso (guarda con 1 fila) dentro de la MISMA transacción:
+   * lee el `ProcesoAula[]` congelado, materializa `DerechoVoto` vía `materializarDerechosVoto()` y
+   * audita `PROCESO_ABIERTO` exactamente una vez. El camino idempotente (D5) no cambia: no
+   * materializa de nuevo ni audita otra vez — `respuestaApertura()` ya contaba sobre
+   * `DerechoVoto`/`ProcesoAula` reales desde PR2, así que el 200 idempotente refleja lo que PR3
+   * escribió en la primera apertura sin código adicional.
    */
   async abrir(id: string, dto: AbrirProcesoDto, actorId: string): Promise<AperturaRespuestaDto> {
     if (dto.confirmar !== true) {
@@ -519,11 +602,33 @@ export class ProcesosService {
       }
 
       const [
-        { id: procesoId, apertura_real: aperturaReal, ocultar_resultados: ocultarResultados },
+        { id: procesoId, apertura_real: aperturaReal, ocultar_resultados: ocultarResultados, publico_objetivo: publicoObjetivo, tipo },
       ] = filas;
 
-      // PR3 (D6-D8/D11) inserta acá la materialización de DerechoVoto + auditoría PROCESO_ABIERTO,
-      // dentro de la misma transacción, antes de construir la respuesta.
+      // D6: aulas YA congeladas — jamás resolverAulas() acá (ver materializarDerechosVoto()).
+      const procesoAulas = await tx.procesoAula.findMany({ where: { proceso_id: procesoId }, select: { aula_id: true } });
+      const aulaIds = procesoAulas.map((pa) => pa.aula_id);
+
+      const conteos = await materializarDerechosVoto(tx, procesoId, publicoObjetivo, anioEscolarId, aulaIds);
+
+      await this.auditoria.log(
+        tx,
+        AUDIT_EVENT_TYPES.PROCESO_ABIERTO,
+        actorId,
+        'ProcesoElectoral',
+        procesoId,
+        {
+          tipo,
+          publico_objetivo: publicoObjetivo,
+          aulas: aulaIds.length,
+          derechos_totales: conteos.estudiante + conteos.padre,
+          derechos_estudiante: conteos.estudiante,
+          derechos_padre: conteos.padre,
+          ocultar_resultados: ocultarResultados,
+          apertura_real: aperturaReal.toISOString(),
+        } as Prisma.InputJsonValue,
+      );
+
       return respuestaApertura(tx, procesoId, aperturaReal, ocultarResultados);
     });
   }

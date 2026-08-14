@@ -608,17 +608,28 @@ function construirPrismaAbrir(overrides: {
   procesoElectoralFindUnique?: jest.Mock;
   procesoAulaCount?: jest.Mock;
   derechoVotoCount?: jest.Mock;
+  procesoAulaFindMany?: jest.Mock;
+  matriculaFindMany?: jest.Mock;
+  derechoVotoCreateMany?: jest.Mock;
 }) {
   const queryRaw = overrides.queryRaw ?? jest.fn().mockResolvedValue([]);
   const procesoElectoralFindUnique = overrides.procesoElectoralFindUnique ?? jest.fn().mockResolvedValue(null);
   const procesoAulaCount = overrides.procesoAulaCount ?? jest.fn().mockResolvedValue(0);
   const derechoVotoCount = overrides.derechoVotoCount ?? jest.fn().mockResolvedValue(0);
+  // PR3 (Phase 9): dos findMany espejo de PadronService.calcular() (elegibles + con apoderado) y
+  // el createMany troceado de DerechoVoto. `procesoAula.findMany` lee el conjunto YA congelado
+  // (D6) — a propósito el mock NO declara `aula`/`grado`/`nivel`: si `abrir()` llamara
+  // `resolverAulas()` por error, el test fallaría con un TypeError en vez de pasar en verde.
+  const procesoAulaFindMany = overrides.procesoAulaFindMany ?? jest.fn().mockResolvedValue([]);
+  const matriculaFindMany = overrides.matriculaFindMany ?? jest.fn().mockResolvedValue([]);
+  const derechoVotoCreateMany = overrides.derechoVotoCreateMany ?? jest.fn().mockResolvedValue({ count: 0 });
 
   const tx = {
     $queryRaw: queryRaw,
     procesoElectoral: { findUnique: procesoElectoralFindUnique },
-    procesoAula: { count: procesoAulaCount },
-    derechoVoto: { count: derechoVotoCount },
+    procesoAula: { count: procesoAulaCount, findMany: procesoAulaFindMany },
+    matricula: { findMany: matriculaFindMany },
+    derechoVoto: { count: derechoVotoCount, createMany: derechoVotoCreateMany },
   };
 
   const prisma = {
@@ -632,6 +643,9 @@ function construirPrismaAbrir(overrides: {
     procesoElectoralFindUnique,
     procesoAulaCount,
     derechoVotoCount,
+    procesoAulaFindMany,
+    matriculaFindMany,
+    derechoVotoCreateMany,
   };
 }
 
@@ -739,8 +753,14 @@ describe('ProcesosService.abrir() — guarda exitosa desde borrador (D3/D4, tare
       publico_objetivo: 'estudiantes' as const,
       tipo: 'representante_aula' as const,
     };
+    const matriculaFindMany = jest
+      .fn()
+      .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
+      .mockResolvedValueOnce([]);
     const { prisma, queryRaw, procesoElectoralFindUnique } = construirPrismaAbrir({
       queryRaw: jest.fn().mockResolvedValue([filaGuarda]),
+      procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
+      matriculaFindMany,
     });
     const { servicio, auditoria } = construirServicioAbrir(prisma, 'anio-1');
 
@@ -753,8 +773,204 @@ describe('ProcesosService.abrir() — guarda exitosa desde borrador (D3/D4, tare
     // va primero, nunca leer-y-luego-escribir).
     expect(queryRaw).toHaveBeenCalledTimes(1);
     expect(procesoElectoralFindUnique).not.toHaveBeenCalled();
-    // PR2 todavía no materializa ni audita (PR3, D6-D8/D11): el conteo de respuestaApertura() lee
-    // una tabla vacía por diseño (D10).
+    // PR3 (Phase 10): la apertura exitosa SÍ audita ahora, exactamente una vez.
+    expect(auditoria.log).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * apertura-proceso-congelamiento-padron (#13, PR3; design.md D6-D8/D11, tareas 9.1-10.3).
+ * Materialización de `DerechoVoto` + auditoría `PROCESO_ABIERTO`, ambas dentro del camino exitoso
+ * (guarda con 1 fila) de `abrir()`. `tx.procesoAula.findMany()` lee el `ProcesoAula[]` YA
+ * congelado desde `crear()`/`editar()` — el mock de `tx` no declara `aula`/`grado`/`nivel`, así que
+ * si el código volviera a llamar `resolverAulas()` el test fallaría con TypeError en vez de pasar.
+ */
+
+function filaGuardaExitosa(overrides: {
+  publico_objetivo?: 'estudiantes' | 'padres' | 'comunidad';
+  tipo?: 'municipio' | 'representante_aula' | 'padres' | 'consulta';
+}) {
+  return {
+    id: 'proceso-1',
+    apertura_real: new Date('2026-08-13T12:00:00.000Z'),
+    ocultar_resultados: false,
+    publico_objetivo: overrides.publico_objetivo ?? 'estudiantes',
+    tipo: overrides.tipo ?? 'representante_aula',
+  };
+}
+
+describe('ProcesosService.abrir() — materialización de DerechoVoto (D6, tarea 9.1)', () => {
+  it('[9.1] dos findMany sobre Matricula espejo de PadronService.calcular(); NUNCA resolverAulas()', async () => {
+    const matriculaFindMany = jest
+      .fn()
+      .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
+      .mockResolvedValueOnce([]);
+    const { prisma, matriculaFindMany: mfm, procesoAulaFindMany } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({})]),
+      procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
+      matriculaFindMany,
+    });
+    const { servicio } = construirServicioAbrir(prisma, 'anio-1');
+
+    await servicio.abrir('proceso-1', { confirmar: true }, 'actor-1');
+
+    expect(procesoAulaFindMany).toHaveBeenCalledWith({
+      where: { proceso_id: 'proceso-1' },
+      select: { aula_id: true },
+    });
+    expect(mfm).toHaveBeenCalledTimes(2);
+    // Primera llamada: elegibles (base, sin apoderados.some); segunda: con apoderado activo.
+    const primeraWhere = mfm.mock.calls[0][0].where;
+    const segundaWhere = mfm.mock.calls[1][0].where;
+    expect(primeraWhere.anio_escolar_id).toBe('anio-1');
+    expect(primeraWhere.aula_id).toEqual({ in: ['au1'] });
+    expect(primeraWhere.usuario).toEqual({ estado: 'activo', rol: 'estudiante' });
+    expect(segundaWhere.usuario).toEqual({
+      estado: 'activo',
+      rol: 'estudiante',
+      apoderados: { some: {} },
+    });
+  });
+});
+
+describe("ProcesosService.abrir() — publico_objetivo='estudiantes' (tarea 9.2)", () => {
+  it('[9.2] solo crea filas en_calidad_de=estudiante, ignora el conjunto con apoderado', async () => {
+    const matriculaFindMany = jest
+      .fn()
+      .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
+      .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }]);
+    const { prisma, derechoVotoCreateMany } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'estudiantes' })]),
+      procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
+      matriculaFindMany,
+    });
+    const { servicio } = construirServicioAbrir(prisma, 'anio-1');
+
+    await servicio.abrir('proceso-1', { confirmar: true }, 'actor-1');
+
+    expect(derechoVotoCreateMany).toHaveBeenCalledTimes(1);
+    expect(derechoVotoCreateMany).toHaveBeenCalledWith({
+      data: [{ proceso_id: 'proceso-1', usuario_id: 'u1', en_calidad_de: 'estudiante', aula_snapshot: 'au1' }],
+    });
+  });
+});
+
+describe("ProcesosService.abrir() — doble derecho para publico_objetivo='comunidad' (D8, tarea 9.3)", () => {
+  it('[9.3] estudiante con apoderado activo -> dos filas (estudiante+padre) para el mismo Usuario', async () => {
+    const matriculaFindMany = jest
+      .fn()
+      .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
+      .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }]);
+    const { prisma, derechoVotoCreateMany } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'comunidad' })]),
+      procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
+      matriculaFindMany,
+    });
+    const { servicio } = construirServicioAbrir(prisma, 'anio-1');
+
+    await servicio.abrir('proceso-1', { confirmar: true }, 'actor-1');
+
+    expect(derechoVotoCreateMany).toHaveBeenCalledTimes(1);
+    expect(derechoVotoCreateMany).toHaveBeenCalledWith({
+      data: [
+        { proceso_id: 'proceso-1', usuario_id: 'u1', en_calidad_de: 'estudiante', aula_snapshot: 'au1' },
+        { proceso_id: 'proceso-1', usuario_id: 'u1', en_calidad_de: 'padre', aula_snapshot: 'au1' },
+      ],
+    });
+  });
+});
+
+describe('ProcesosService.abrir() — createMany troceado en LOTE_DERECHOS (D7, tarea 9.4)', () => {
+  it('[9.4] padrón > 5000 filas -> createMany se llama dos veces, en trozos de 5000 y el resto', async () => {
+    const elegibles = Array.from({ length: 5001 }, (_, i) => ({ usuario_id: `u${i}`, aula_id: 'au1' }));
+    const matriculaFindMany = jest.fn().mockResolvedValueOnce(elegibles).mockResolvedValueOnce([]);
+    const { prisma, derechoVotoCreateMany } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'estudiantes' })]),
+      procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
+      matriculaFindMany,
+    });
+    const { servicio } = construirServicioAbrir(prisma, 'anio-1');
+
+    await servicio.abrir('proceso-1', { confirmar: true }, 'actor-1');
+
+    expect(derechoVotoCreateMany).toHaveBeenCalledTimes(2);
+    expect(derechoVotoCreateMany.mock.calls[0][0].data).toHaveLength(5000);
+    expect(derechoVotoCreateMany.mock.calls[1][0].data).toHaveLength(1);
+  });
+});
+
+describe('ProcesosService.abrir() — padrón vacío (D8, tarea 9.5)', () => {
+  it('[9.5] 0 filas elegibles -> 409 SEGMENTACION_SIN_ELEGIBLES, sin createMany ni auditoría', async () => {
+    const matriculaFindMany = jest.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    const { prisma, derechoVotoCreateMany } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'comunidad' })]),
+      procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
+      matriculaFindMany,
+    });
+    const { servicio, auditoria } = construirServicioAbrir(prisma, 'anio-1');
+
+    await expect(servicio.abrir('proceso-1', { confirmar: true }, 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'SEGMENTACION_SIN_ELEGIBLES', aulas_evaluadas: 1 },
+    });
+    expect(derechoVotoCreateMany).not.toHaveBeenCalled();
     expect(auditoria.log).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * apertura-proceso-congelamiento-padron (#13, PR3; design.md D11, tareas 10.1-10.3). Auditoría
+ * `PROCESO_ABIERTO` — una sola vez por transición real, nunca en el camino idempotente (D5/6.4,
+ * cubierto arriba y reconfirmado acá).
+ */
+describe('ProcesosService.abrir() — auditoría PROCESO_ABIERTO (D11, tarea 10.1)', () => {
+  it('[10.1] apertura exitosa -> auditoria.log(tx, PROCESO_ABIERTO, actorId, ProcesoElectoral, id, payload) una vez', async () => {
+    const matriculaFindMany = jest
+      .fn()
+      .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
+      .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }]);
+    const { prisma } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'comunidad', tipo: 'consulta' })]),
+      procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }, { aula_id: 'au2' }]),
+      matriculaFindMany,
+    });
+    const { servicio, auditoria } = construirServicioAbrir(prisma, 'anio-1');
+
+    await servicio.abrir('proceso-1', { confirmar: true }, 'actor-1');
+
+    expect(auditoria.log).toHaveBeenCalledTimes(1);
+    expect(auditoria.log).toHaveBeenCalledWith(
+      expect.anything(),
+      'PROCESO_ABIERTO',
+      'actor-1',
+      'ProcesoElectoral',
+      'proceso-1',
+      expect.objectContaining({
+        tipo: 'consulta',
+        publico_objetivo: 'comunidad',
+        aulas: 2,
+        derechos_totales: 2,
+        derechos_estudiante: 1,
+        derechos_padre: 1,
+        ocultar_resultados: false,
+        apertura_real: '2026-08-13T12:00:00.000Z',
+      }),
+    );
+  });
+});
+
+describe('ProcesosService.abrir() — reintento idempotente no audita de nuevo (D11, tarea 10.2)', () => {
+  it('[10.2] guarda 0 filas + estado releído "abierto" -> auditoria.log NO se invoca', async () => {
+    const { prisma, derechoVotoCreateMany } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([]),
+      procesoElectoralFindUnique: jest.fn().mockResolvedValue(PROCESO_ABIERTO_BASE),
+      procesoAulaCount: jest.fn().mockResolvedValue(2),
+      derechoVotoCount: jest.fn().mockResolvedValue(0),
+    });
+    const { servicio, auditoria } = construirServicioAbrir(prisma, 'anio-1');
+
+    await servicio.abrir('proceso-1', { confirmar: true }, 'actor-1');
+
+    expect(auditoria.log).not.toHaveBeenCalled();
+    expect(derechoVotoCreateMany).not.toHaveBeenCalled();
   });
 });
