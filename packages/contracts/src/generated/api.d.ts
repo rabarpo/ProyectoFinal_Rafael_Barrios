@@ -640,6 +640,23 @@ export interface paths {
         patch: operations["ProcesosController_editar"];
         trace?: never;
     };
+    "/procesos/{id}/abrir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transiciona borrador -> abierto de forma concurrency-safe e idempotente (D3-D5) */
+        post: operations["ProcesosController_abrir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/listas": {
         parameters: {
             query?: never;
@@ -1205,6 +1222,31 @@ export interface components {
             fecha_cierre_prevista?: string;
             /** @description Pre-marcado del asistente (D7) */
             ocultar_resultados?: boolean;
+        };
+        AbrirProcesoDto: {
+            /** @description Confirmación explícita del usuario; debe ser exactamente `true` */
+            confirmar: boolean;
+        };
+        AperturaRespuestaDto: {
+            /** @description ID del proceso electoral */
+            id: string;
+            /**
+             * @description Estado del proceso tras la apertura (siempre "abierto")
+             * @enum {string}
+             */
+            estado: "abierto";
+            /** @description Momento de apertura sellado con el reloj de Postgres (ISO-8601) */
+            apertura_real: string;
+            /** @description ocultar_resultados congelado al momento de la apertura */
+            ocultar_resultados: boolean;
+            /** @description Cantidad de aulas del proceso (ProcesoAula) */
+            aulas: number;
+            /** @description Total de filas DerechoVoto materializadas */
+            derechos_totales: number;
+            /** @description Filas DerechoVoto con en_calidad_de = estudiante */
+            derechos_estudiante: number;
+            /** @description Filas DerechoVoto con en_calidad_de = padre */
+            derechos_padre: number;
         };
         ListaRespuestaDto: {
             /** @description ID de la lista */
@@ -3444,6 +3486,67 @@ export interface operations {
                 content?: never;
             };
             /** @description Referencia inexistente, segmentación inválida, sin elegibles, proceso no editable o sin año escolar activo */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_abrir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AbrirProcesoDto"];
+            };
+        };
+        responses: {
+            /** @description Proceso abierto (o ya lo estaba, idempotente) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AperturaRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido (confirmar) o :id no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso no abrible desde su estado actual, sin elegibles o sin año escolar activo */
             409: {
                 headers: {
                     [name: string]: unknown;

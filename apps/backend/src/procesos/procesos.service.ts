@@ -9,11 +9,20 @@ import type { CrearProcesoDto } from './dto/crear-proceso.dto';
 import type { ListarProcesosQueryDto } from './dto/listar-procesos.query';
 import type { ProcesoDetalleRespuestaDto } from './dto/proceso-detalle-respuesta.dto';
 import type { ProcesoRespuestaDto } from './dto/proceso-respuesta.dto';
+import type { AbrirProcesoDto } from './dto/abrir-proceso.dto';
+import type { AperturaRespuestaDto } from './dto/apertura-respuesta.dto';
 import { resolverAulas, validarSegmentacion } from './padron.service';
 import { PROCESOS_ERROR_CODES } from './procesos.errors';
 
 const TIPOS_VALIDOS = ['municipio', 'representante_aula', 'padres', 'consulta'] as const;
 const ESTADOS_VALIDOS = ['borrador', 'abierto', 'cerrado', 'acta_emitida'] as const;
+
+// apertura-proceso-congelamiento-padron (#13, PR2; design.md D6/D8). `en_calidad_de` sigue siendo
+// `String` en el schema (sin enum `CalidadVotante`): los dos literales posibles se fijan acá porque
+// PR2 ya los necesita para el conteo de `respuestaApertura()`; PR3 (D6/D8) reusa las mismas dos
+// cadenas para escribir las filas reales de `DerechoVoto`.
+const CALIDAD_ESTUDIANTE = 'estudiante';
+const CALIDAD_PADRE = 'padre';
 
 type PrismaAulasGradosNivelMatricula = Pick<PrismaService, 'aula' | 'grado' | 'nivel' | 'matricula'>;
 
@@ -154,6 +163,39 @@ function validarActualizacion(
   const ocultarResultados = dto.ocultar_resultados !== undefined ? dto.ocultar_resultados : existente.ocultar_resultados;
 
   return { nombre, descripcion, apertura, cierre, ocultarResultados };
+}
+
+/**
+ * apertura-proceso-congelamiento-padron (#13, PR2; design.md D10, tarea 6.6). Construye
+ * `AperturaRespuestaDto` a partir del estado VIGENTE, no de "lo que se creó ahora": el camino
+ * idempotente (D5) y el camino de la primera apertura reusan exactamente esta función, así ambos
+ * responden con la misma forma. Los conteos se leen con `count()` real dentro de la misma
+ * transacción — en PR2 la tabla `DerechoVoto` está siempre vacía para procesos recién abiertos
+ * porque la materialización todavía no existe (PR3, D6-D8); esta función ya queda correcta para
+ * cuando PR3 la puebla, sin cambios.
+ */
+async function respuestaApertura(
+  tx: Prisma.TransactionClient,
+  procesoId: string,
+  aperturaReal: Date,
+  ocultarResultados: boolean,
+): Promise<AperturaRespuestaDto> {
+  const [aulas, derechosEstudiante, derechosPadre] = await Promise.all([
+    tx.procesoAula.count({ where: { proceso_id: procesoId } }),
+    tx.derechoVoto.count({ where: { proceso_id: procesoId, en_calidad_de: CALIDAD_ESTUDIANTE } }),
+    tx.derechoVoto.count({ where: { proceso_id: procesoId, en_calidad_de: CALIDAD_PADRE } }),
+  ]);
+
+  return {
+    id: procesoId,
+    estado: 'abierto',
+    apertura_real: aperturaReal.toISOString(),
+    ocultar_resultados: ocultarResultados,
+    aulas,
+    derechos_totales: derechosEstudiante + derechosPadre,
+    derechos_estudiante: derechosEstudiante,
+    derechos_padre: derechosPadre,
+  };
 }
 
 /**
@@ -412,6 +454,77 @@ export class ProcesosService {
           aulas,
         } as Prisma.InputJsonValue,
       );
+    });
+  }
+
+  /**
+   * apertura-proceso-congelamiento-padron (#13, PR2; design.md D3-D5/D9, tareas 6.1-6.6). Guarda de
+   * concurrencia: a diferencia de `crear()`/`editar()`, aquí la escritura va PRIMERO y las lecturas
+   * DESPUÉS, todas dentro de la misma `$transaction` (D4, desviación consciente del patrón vigente).
+   * `tx.$queryRaw` con `UPDATE ... WHERE estado='borrador' RETURNING ...` (D3) es la única sentencia
+   * cruda del servicio — la plantilla etiquetada de Prisma parametriza `${id}` como `$1`, nunca
+   * concatena texto (segundo precedente del repo tras `HealthController`'s `SELECT 1`). El `UPDATE`
+   * condicional toma el lock de fila: una segunda petición concurrente sobre el mismo proceso queda
+   * bloqueada hasta el commit de la primera y, bajo `READ COMMITTED`, Postgres re-evalúa el `WHERE`
+   * (EvalPlanQual) y devuelve 0 filas — la relectura de abajo interpreta ese resultado.
+   *
+   * PR2 solo cubre la guarda + relectura: el camino exitoso (guarda con 1 fila) todavía NO
+   * materializa `DerechoVoto` ni audita — `respuestaApertura()` cuenta con `count()` real sobre una
+   * tabla vacía (D10), por diseño. PR3 (D6-D8/D11) extiende este mismo camino dentro de la MISMA
+   * transacción: lee el `ProcesoAula[]` congelado, materializa `DerechoVoto` y audita
+   * `PROCESO_ABIERTO` exactamente una vez.
+   */
+  async abrir(id: string, dto: AbrirProcesoDto, actorId: string): Promise<AperturaRespuestaDto> {
+    if (dto.confirmar !== true) {
+      throw new BadRequestException({
+        codigo: PROCESOS_ERROR_CODES.CAMPO_INVALIDO,
+        campo: 'confirmar',
+        motivo: 'requerido',
+      });
+    }
+
+    const anioEscolarId = await this.configuracionLectura.anioEscolarActivoId();
+    if (!anioEscolarId) {
+      throw new ConflictException({ codigo: PROCESOS_ERROR_CODES.SIN_ANIO_ESCOLAR_ACTIVO });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const filas = await tx.$queryRaw<
+        {
+          id: string;
+          apertura_real: Date;
+          ocultar_resultados: boolean;
+          publico_objetivo: ProcesoElectoral['publico_objetivo'];
+          tipo: ProcesoElectoral['tipo'];
+        }[]
+      >`
+        UPDATE "ProcesoElectoral"
+           SET estado = 'abierto', apertura_real = clock_timestamp()
+         WHERE id = ${id}::uuid AND estado = 'borrador'
+        RETURNING id, apertura_real, ocultar_resultados, publico_objetivo, tipo`;
+
+      if (filas.length === 0) {
+        const existente = await tx.procesoElectoral.findUnique({ where: { id } });
+        if (!existente) {
+          throw new NotFoundException();
+        }
+        if (existente.estado === 'abierto') {
+          // D5: no-op idempotente silencioso — 200 con el estado vigente, sin auditoría adicional.
+          return respuestaApertura(tx, existente.id, existente.apertura_real!, existente.ocultar_resultados);
+        }
+        throw new ConflictException({
+          codigo: PROCESOS_ERROR_CODES.PROCESO_NO_ABRIBLE,
+          estado: existente.estado,
+        });
+      }
+
+      const [
+        { id: procesoId, apertura_real: aperturaReal, ocultar_resultados: ocultarResultados },
+      ] = filas;
+
+      // PR3 (D6-D8/D11) inserta acá la materialización de DerechoVoto + auditoría PROCESO_ABIERTO,
+      // dentro de la misma transacción, antes de construir la respuesta.
+      return respuestaApertura(tx, procesoId, aperturaReal, ocultarResultados);
     });
   }
 }

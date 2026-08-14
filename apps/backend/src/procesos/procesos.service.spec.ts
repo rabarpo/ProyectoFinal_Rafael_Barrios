@@ -585,3 +585,176 @@ describe('ProcesosService.eliminar() — rechazo fuera de borrador (spec, tarea 
     expect(auditoria.log).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * apertura-proceso-congelamiento-padron (#13, PR2; design.md D3-D5/D9/D10, tareas 6.1-6.6/7.2).
+ * `abrir()` — guarda de concurrencia cruda (`$queryRaw` `UPDATE ... RETURNING`, primera sentencia
+ * cruda de un servicio en el repo, precedente `HealthController` (`SELECT 1`)) + relectura
+ * idempotente/409 dentro de la misma transacción (D4: la escritura va primero, las lecturas
+ * después, al revés de `crear()`/`editar()`). El mock de `tx.$queryRaw` es `jest.fn()` (D3, patrón
+ * de `HealthController.spec.ts`). PR2 NO materializa `DerechoVoto` (PR3): los conteos del DTO de
+ * respuesta se leen con `count()` real sobre una tabla aún vacía en este PR, por diseño (D10) — dan
+ * siempre 0 hasta que PR3 agregue `createMany`.
+ */
+
+const PROCESO_ABIERTO_BASE = {
+  ...PROCESO_EXISTENTE_BASE,
+  estado: 'abierto' as const,
+  apertura_real: new Date('2026-08-13T12:00:00.000Z'),
+};
+
+function construirPrismaAbrir(overrides: {
+  queryRaw?: jest.Mock;
+  procesoElectoralFindUnique?: jest.Mock;
+  procesoAulaCount?: jest.Mock;
+  derechoVotoCount?: jest.Mock;
+}) {
+  const queryRaw = overrides.queryRaw ?? jest.fn().mockResolvedValue([]);
+  const procesoElectoralFindUnique = overrides.procesoElectoralFindUnique ?? jest.fn().mockResolvedValue(null);
+  const procesoAulaCount = overrides.procesoAulaCount ?? jest.fn().mockResolvedValue(0);
+  const derechoVotoCount = overrides.derechoVotoCount ?? jest.fn().mockResolvedValue(0);
+
+  const tx = {
+    $queryRaw: queryRaw,
+    procesoElectoral: { findUnique: procesoElectoralFindUnique },
+    procesoAula: { count: procesoAulaCount },
+    derechoVoto: { count: derechoVotoCount },
+  };
+
+  const prisma = {
+    $transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) => cb(tx)),
+  };
+
+  return {
+    prisma,
+    tx,
+    queryRaw,
+    procesoElectoralFindUnique,
+    procesoAulaCount,
+    derechoVotoCount,
+  };
+}
+
+function construirServicioAbrir(prisma: unknown, anioEscolarActivoId: string | null) {
+  const configuracionLectura = {
+    anioEscolarActivoId: jest.fn().mockResolvedValue(anioEscolarActivoId),
+  };
+  const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
+  const servicio = new ProcesosService(
+    prisma as unknown as PrismaService,
+    configuracionLectura as unknown as ConfiguracionLecturaService,
+    auditoria as unknown as AuditoriaService,
+  );
+  return { servicio, configuracionLectura, auditoria };
+}
+
+describe('ProcesosService.abrir() — confirmación explícita (D9, tarea 6.1)', () => {
+  it('[6.1] confirmar ausente -> 400 CAMPO_INVALIDO, sin abrir transacción', async () => {
+    const { prisma } = construirPrismaAbrir({});
+    const { servicio } = construirServicioAbrir(prisma, 'anio-1');
+
+    await expect(servicio.abrir('proceso-1', {} as never, 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'CAMPO_INVALIDO', campo: 'confirmar', motivo: 'requerido' },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('[6.1] confirmar=false -> 400 CAMPO_INVALIDO, sin abrir transacción', async () => {
+    const { prisma } = construirPrismaAbrir({});
+    const { servicio } = construirServicioAbrir(prisma, 'anio-1');
+
+    await expect(servicio.abrir('proceso-1', { confirmar: false }, 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'CAMPO_INVALIDO', campo: 'confirmar', motivo: 'requerido' },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProcesosService.abrir() — año escolar activo (tarea 6.2)', () => {
+  it('[6.2] sin año escolar activo -> 409 SIN_ANIO_ESCOLAR_ACTIVO, antes de abrir la transacción', async () => {
+    const { prisma } = construirPrismaAbrir({});
+    const { servicio } = construirServicioAbrir(prisma, null);
+
+    await expect(servicio.abrir('proceso-1', { confirmar: true }, 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'SIN_ANIO_ESCOLAR_ACTIVO' },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProcesosService.abrir() — guarda con 0 filas, proceso inexistente (tarea 6.3)', () => {
+  it('[6.3] guarda 0 filas + findUnique null -> 404 NotFoundException', async () => {
+    const { prisma } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([]),
+      procesoElectoralFindUnique: jest.fn().mockResolvedValue(null),
+    });
+    const { servicio } = construirServicioAbrir(prisma, 'anio-1');
+
+    await expect(servicio.abrir('no-existe', { confirmar: true }, 'actor-1')).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('ProcesosService.abrir() — guarda con 0 filas, ya abierto (idempotencia, tarea 6.4)', () => {
+  it('[6.4] guarda 0 filas + estado releído "abierto" -> 200 idempotente, conteos por count()', async () => {
+    const { prisma, procesoAulaCount, derechoVotoCount } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([]),
+      procesoElectoralFindUnique: jest.fn().mockResolvedValue(PROCESO_ABIERTO_BASE),
+      procesoAulaCount: jest.fn().mockResolvedValue(2),
+      derechoVotoCount: jest.fn().mockResolvedValue(0),
+    });
+    const { servicio, auditoria } = construirServicioAbrir(prisma, 'anio-1');
+
+    const respuesta = await servicio.abrir('proceso-1', { confirmar: true }, 'actor-1');
+
+    expect(respuesta.estado).toBe('abierto');
+    expect(respuesta.id).toBe('proceso-1');
+    expect(respuesta.aulas).toBe(2);
+    expect(respuesta.derechos_totales).toBe(0);
+    expect(procesoAulaCount).toHaveBeenCalledWith({ where: { proceso_id: 'proceso-1' } });
+    expect(derechoVotoCount).toHaveBeenCalled();
+    expect(auditoria.log).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProcesosService.abrir() — guarda con 0 filas, estado no abrible (tarea 6.5)', () => {
+  it.each(['cerrado', 'acta_emitida'] as const)('[6.5] estado releído %s -> 409 PROCESO_NO_ABRIBLE', async (estado) => {
+    const { prisma } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([]),
+      procesoElectoralFindUnique: jest.fn().mockResolvedValue({ ...PROCESO_EXISTENTE_BASE, estado }),
+    });
+    const { servicio } = construirServicioAbrir(prisma, 'anio-1');
+
+    await expect(servicio.abrir('proceso-1', { confirmar: true }, 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'PROCESO_NO_ABRIBLE', estado },
+    });
+  });
+});
+
+describe('ProcesosService.abrir() — guarda exitosa desde borrador (D3/D4, tarea 6.6)', () => {
+  it('[6.6] guarda con 1 fila -> UPDATE...RETURNING parametrizado, respuesta 200 con apertura_real sellada', async () => {
+    const filaGuarda = {
+      id: 'proceso-1',
+      apertura_real: new Date('2026-08-13T12:00:00.000Z'),
+      ocultar_resultados: true,
+      publico_objetivo: 'estudiantes' as const,
+      tipo: 'representante_aula' as const,
+    };
+    const { prisma, queryRaw, procesoElectoralFindUnique } = construirPrismaAbrir({
+      queryRaw: jest.fn().mockResolvedValue([filaGuarda]),
+    });
+    const { servicio, auditoria } = construirServicioAbrir(prisma, 'anio-1');
+
+    const respuesta = await servicio.abrir('proceso-1', { confirmar: true }, 'actor-1');
+
+    expect(respuesta.estado).toBe('abierto');
+    expect(respuesta.apertura_real).toBe('2026-08-13T12:00:00.000Z');
+    expect(respuesta.ocultar_resultados).toBe(true);
+    // La guarda es la ÚNICA fuente de la transición: no hay un findUnique previo (D4 — la escritura
+    // va primero, nunca leer-y-luego-escribir).
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    expect(procesoElectoralFindUnique).not.toHaveBeenCalled();
+    // PR2 todavía no materializa ni audita (PR3, D6-D8/D11): el conteo de respuestaApertura() lee
+    // una tabla vacía por diseño (D10).
+    expect(auditoria.log).not.toHaveBeenCalled();
+  });
+});

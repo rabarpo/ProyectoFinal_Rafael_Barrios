@@ -25,7 +25,9 @@ import { AuthGuard } from '../auth/auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import type { SesionUsuario } from '../auth/sesion-usuario';
+import { AbrirProcesoDto } from './dto/abrir-proceso.dto';
 import { ActualizarProcesoDto } from './dto/actualizar-proceso.dto';
+import { AperturaRespuestaDto } from './dto/apertura-respuesta.dto';
 import { CrearProcesoDto } from './dto/crear-proceso.dto';
 import { ListarProcesosQueryDto } from './dto/listar-procesos.query';
 import { PadronRespuestaDto } from './dto/padron-respuesta.dto';
@@ -137,6 +139,28 @@ export class ProcesosController {
     @Req() req: RequestConUsuario,
   ): Promise<ProcesoRespuestaDto> {
     return this.procesosService.editar(id, dto, req.usuario!.userId);
+  }
+
+  @Post(':id/abrir')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Transiciona borrador -> abierto de forma concurrency-safe e idempotente (D3-D5)' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: AbrirProcesoDto })
+  @ApiResponse({ status: 200, description: 'Proceso abierto (o ya lo estaba, idempotente)', type: AperturaRespuestaDto })
+  @ApiResponse({ status: 400, description: 'Campo inválido (confirmar) o :id no-UUID' })
+  @ApiResponse({
+    status: 409,
+    description: 'Proceso no abrible desde su estado actual, sin elegibles o sin año escolar activo',
+  })
+  @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
+  @ApiResponse({ status: 403, description: 'Rol distinto de administrador/director/comite' })
+  @ApiResponse({ status: 404, description: 'Proceso inexistente' })
+  async abrir(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AbrirProcesoDto,
+    @Req() req: RequestConUsuario,
+  ): Promise<AperturaRespuestaDto> {
+    return this.procesosService.abrir(id, dto, req.usuario!.userId);
   }
 
   @Delete(':id')

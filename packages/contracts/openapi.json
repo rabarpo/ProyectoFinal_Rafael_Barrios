@@ -2009,6 +2009,67 @@
         ]
       }
     },
+    "/procesos/{id}/abrir": {
+      "post": {
+        "operationId": "ProcesosController_abrir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbrirProcesoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proceso abierto (o ya lo estaba, idempotente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AperturaRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido (confirmar) o :id no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Proceso inexistente"
+          },
+          "409": {
+            "description": "Proceso no abrible desde su estado actual, sin elegibles o sin año escolar activo"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Transiciona borrador -> abierto de forma concurrency-safe e idempotente (D3-D5)",
+        "tags": [
+          "procesos"
+        ]
+      }
+    },
     "/listas": {
       "post": {
         "operationId": "ListasController_crear",
@@ -3658,6 +3719,68 @@
         "required": [
           "publico_objetivo",
           "alcance"
+        ]
+      },
+      "AbrirProcesoDto": {
+        "type": "object",
+        "properties": {
+          "confirmar": {
+            "type": "boolean",
+            "description": "Confirmación explícita del usuario; debe ser exactamente `true`"
+          }
+        },
+        "required": [
+          "confirmar"
+        ]
+      },
+      "AperturaRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del proceso electoral"
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado del proceso tras la apertura (siempre \"abierto\")",
+            "enum": [
+              "abierto"
+            ]
+          },
+          "apertura_real": {
+            "type": "string",
+            "description": "Momento de apertura sellado con el reloj de Postgres (ISO-8601)"
+          },
+          "ocultar_resultados": {
+            "type": "boolean",
+            "description": "ocultar_resultados congelado al momento de la apertura"
+          },
+          "aulas": {
+            "type": "number",
+            "description": "Cantidad de aulas del proceso (ProcesoAula)"
+          },
+          "derechos_totales": {
+            "type": "number",
+            "description": "Total de filas DerechoVoto materializadas"
+          },
+          "derechos_estudiante": {
+            "type": "number",
+            "description": "Filas DerechoVoto con en_calidad_de = estudiante"
+          },
+          "derechos_padre": {
+            "type": "number",
+            "description": "Filas DerechoVoto con en_calidad_de = padre"
+          }
+        },
+        "required": [
+          "id",
+          "estado",
+          "apertura_real",
+          "ocultar_resultados",
+          "aulas",
+          "derechos_totales",
+          "derechos_estudiante",
+          "derechos_padre"
         ]
       },
       "ListaRespuestaDto": {
