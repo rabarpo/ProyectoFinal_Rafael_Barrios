@@ -8,6 +8,10 @@ export const PROCESOS_ERROR_CODES = {
   SEGMENTACION_SIN_ELEGIBLES: 'SEGMENTACION_SIN_ELEGIBLES',
   PROCESO_NO_EDITABLE: 'PROCESO_NO_EDITABLE',
   SIN_ANIO_ESCOLAR_ACTIVO: 'SIN_ANIO_ESCOLAR_ACTIVO',
+  // apertura-proceso-congelamiento-padron (#13, PR1; design.md D5): única clave nueva de este
+  // change. Cubre la relectura post-guarda cuando el estado ya no es 'borrador' y tampoco es el
+  // no-op idempotente de 'abierto' (cerrado/acta_emitida) — el cliente discrimina por `estado`.
+  PROCESO_NO_ABRIBLE: 'PROCESO_NO_ABRIBLE',
 } as const;
 
 export type ProcesosErrorCode = (typeof PROCESOS_ERROR_CODES)[keyof typeof PROCESOS_ERROR_CODES];

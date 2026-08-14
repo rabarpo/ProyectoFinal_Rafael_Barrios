@@ -45,6 +45,11 @@
 // `estado`/`baja_en` en el schema, así que no tiene claves de baja/reactivación. Ninguna de las
 // catorce toca un `Voto`, así que tampoco activan la obligación versionada de ADR-0016 — ver
 // test/schema/auditoria.spec.ts, caso [TM4].
+// apertura-proceso-congelamiento-padron, PR1 (design.md D11, tarea 2.2): una clave aditiva
+// `PROCESO_ABIERTO`, emitida una sola vez por transición `borrador -> abierto` (nunca en el no-op
+// idempotente ni por fila de `DerechoVoto` materializada), con conteos en el payload. No escribe ni
+// referencia un `Voto`, así que tampoco activa la obligación versionada de ADR-0016 — ver
+// test/schema/auditoria.spec.ts, caso [TM4].
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
@@ -103,6 +108,7 @@ export const AUDIT_EVENT_TYPES = {
   OPCION_CONSULTA_CREADA: 'OPCION_CONSULTA_CREADA',
   OPCION_CONSULTA_ACTUALIZADA: 'OPCION_CONSULTA_ACTUALIZADA',
   OPCION_CONSULTA_ELIMINADA: 'OPCION_CONSULTA_ELIMINADA',
+  PROCESO_ABIERTO: 'PROCESO_ABIERTO',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];

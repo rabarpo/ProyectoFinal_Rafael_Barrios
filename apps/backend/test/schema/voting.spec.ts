@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Client } from 'pg';
 import { createPgClient, withTransaction, withSavepoint } from './helpers/pg-client';
 import { expectPgError } from './helpers/expect-pg-error';
-import { getConstraintDef, countPublicViews } from './helpers/catalog';
+import { getConstraintDef, getIndexDef, countPublicViews } from './helpers/catalog';
 
 /**
  * Grupo 3 — Núcleo de votación (base-schema-and-migrations, tareas 3.4-3.12).
@@ -48,12 +48,13 @@ describe('voting_core', () => {
     query: Client['query'],
     procesoId: string,
     usuarioId: string,
+    enCalidadDe: string = 'estudiante',
   ): Promise<string> {
     const derechoVotoId = randomUUID();
     await query(
       `INSERT INTO "DerechoVoto" (id, proceso_id, usuario_id, en_calidad_de, aula_snapshot)
-       VALUES ($1, $2, $3, 'estudiante', 'snapshot-test')`,
-      [derechoVotoId, procesoId, usuarioId],
+       VALUES ($1, $2, $3, $4, $5)`,
+      [derechoVotoId, procesoId, usuarioId, enCalidadDe, randomUUID()],
     );
     return derechoVotoId;
   }
@@ -67,8 +68,8 @@ describe('voting_core', () => {
       const derechoVotoId = randomUUID();
       const result = await client.query(
         `INSERT INTO "DerechoVoto" (id, proceso_id, usuario_id, en_calidad_de, aula_snapshot)
-         VALUES ($1, $2, $3, 'estudiante', 'snapshot-r3a') RETURNING id, proceso_id, usuario_id`,
-        [derechoVotoId, procesoId, usuarioId],
+         VALUES ($1, $2, $3, 'estudiante', $4) RETURNING id, proceso_id, usuario_id`,
+        [derechoVotoId, procesoId, usuarioId, randomUUID()],
       );
 
       expect(result.rows).toHaveLength(1);
@@ -87,8 +88,8 @@ describe('voting_core', () => {
           () =>
             client.query(
               `INSERT INTO "DerechoVoto" (id, proceso_id, usuario_id, en_calidad_de, aula_snapshot)
-               VALUES ($1, $2, $3, 'estudiante', 'snapshot-r3b')`,
-              [randomUUID(), randomUUID(), usuarioId],
+               VALUES ($1, $2, $3, 'estudiante', $4)`,
+              [randomUUID(), randomUUID(), usuarioId, randomUUID()],
             ),
           { code: '23503', constraint: 'DerechoVoto_proceso_id_fkey' },
         ),
@@ -212,5 +213,71 @@ describe('voting_core', () => {
   it('[R6] no existe ninguna vista en el esquema public', async () => {
     const total = await countPublicViews(client);
     expect(total).toBe(0);
+  });
+
+  // apertura-proceso-congelamiento-padron (#13, PR1, tarea 3.1, design.md D1): el índice único
+  // que respalda la unicidad de DerechoVoto existe con el nombre exacto que abrir() dependerá de
+  // (P2002 residual, D8).
+  it('[D1] expone DerechoVoto_proceso_id_usuario_id_en_calidad_de_key en pg_indexes', async () => {
+    const indice = await getIndexDef(client, 'DerechoVoto_proceso_id_usuario_id_en_calidad_de_key');
+    expect(indice).not.toBeNull();
+    expect(indice?.indexdef).toContain('UNIQUE');
+    expect(indice?.indexdef).toContain('proceso_id');
+    expect(indice?.indexdef).toContain('usuario_id');
+    expect(indice?.indexdef).toContain('en_calidad_de');
+  });
+
+  // apertura-proceso-congelamiento-padron (#13, PR1, tarea 3.2, design.md D1): un segundo
+  // DerechoVoto para la misma terna (proceso_id, usuario_id, en_calidad_de) es rechazado — es la
+  // red de seguridad final contra la carrera de doble apertura (D4/D5).
+  it('[D1] rechaza un segundo DerechoVoto duplicado por (proceso_id, usuario_id, en_calidad_de)', async () => {
+    await withTransaction(client, async () => {
+      const procesoId = await crearProceso(client.query.bind(client));
+      const usuarioId = await crearUsuario(client.query.bind(client), 'd1-dup');
+      await crearDerechoVoto(client.query.bind(client), procesoId, usuarioId, 'estudiante');
+
+      await withSavepoint(client, 's_d1_dup', () =>
+        expectPgError(
+          () =>
+            client.query(
+              `INSERT INTO "DerechoVoto" (id, proceso_id, usuario_id, en_calidad_de, aula_snapshot)
+               VALUES ($1, $2, $3, 'estudiante', $4)`,
+              [randomUUID(), procesoId, usuarioId, randomUUID()],
+            ),
+          { code: '23505', constraint: 'DerechoVoto_proceso_id_usuario_id_en_calidad_de_key' },
+        ),
+      );
+    });
+  });
+
+  // apertura-proceso-congelamiento-padron (#13, PR1, tarea 3.2, design.md D1): la misma cuenta
+  // puede tener dos filas para la misma terna cuando `en_calidad_de` difiere (alcance `comunidad`
+  // — estudiante + padre, ADR-0011).
+  it('[D1] acepta dos DerechoVoto para la misma cuenta con en_calidad_de distinto', async () => {
+    await withTransaction(client, async () => {
+      const procesoId = await crearProceso(client.query.bind(client));
+      const usuarioId = await crearUsuario(client.query.bind(client), 'd1-doble');
+
+      await crearDerechoVoto(client.query.bind(client), procesoId, usuarioId, 'estudiante');
+      const derechoPadreId = await crearDerechoVoto(
+        client.query.bind(client),
+        procesoId,
+        usuarioId,
+        'padre',
+      );
+
+      expect(derechoPadreId).toBeTruthy();
+    });
+  });
+
+  // apertura-proceso-congelamiento-padron (#13, PR1, tarea 3.3, design.md D2): aula_snapshot es
+  // `uuid` en information_schema — espejo plano de ProcesoAula.aula_id, sin FK ni relación Prisma.
+  it('[D2] aula_snapshot es de tipo uuid en information_schema.columns', async () => {
+    const result = await client.query<{ data_type: string }>(
+      `SELECT data_type FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'DerechoVoto' AND column_name = 'aula_snapshot'`,
+    );
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].data_type).toBe('uuid');
   });
 });

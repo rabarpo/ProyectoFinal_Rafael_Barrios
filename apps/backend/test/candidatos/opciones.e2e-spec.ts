@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { hash } from '@node-rs/argon2';
@@ -210,7 +211,7 @@ describe('Opciones e2e — CRUD y borrado guardado sin baja lógica [D5/D7/D9]',
         proceso_id: proceso.id,
         usuario_id: votante.id,
         en_calidad_de: 'estudiante',
-        aula_snapshot: 'snapshot-opciones-e2e',
+        aula_snapshot: randomUUID(),
       },
     });
     await prisma.voto.create({

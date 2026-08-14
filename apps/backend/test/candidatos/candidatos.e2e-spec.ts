@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { hash } from '@node-rs/argon2';
@@ -332,7 +333,7 @@ describe('Candidatos e2e — alta/edición multipart, baja y borrado guardado [D
         proceso_id: proceso.id,
         usuario_id: votante.id,
         en_calidad_de: 'estudiante',
-        aula_snapshot: 'snapshot-candidatos-e2e',
+        aula_snapshot: randomUUID(),
       },
     });
     const voto = await prisma.voto.create({
@@ -382,7 +383,7 @@ describe('Candidatos e2e — alta/edición multipart, baja y borrado guardado [D
         proceso_id: proceso.id,
         usuario_id: votante.id,
         en_calidad_de: 'estudiante',
-        aula_snapshot: 'snapshot-candidatos-e2e-2',
+        aula_snapshot: randomUUID(),
       },
     });
     await prisma.voto.create({

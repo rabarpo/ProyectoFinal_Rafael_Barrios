@@ -299,11 +299,18 @@ model DerechoVoto {
   proceso_id    String @db.Uuid
   usuario_id    String @db.Uuid
   en_calidad_de String
-  aula_snapshot String
+  // D2 (apertura-proceso-congelamiento-padron): espejo plano de ProcesoAula.aula_id, sin FK ni
+  // relación Prisma deliberadamente (ADR-0003/ADR-0010 — inmutabilidad de la congelación).
+  aula_snapshot String @db.Uuid
 
   proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
   usuario Usuario          @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
   votos   Voto[]
+
+  // D1 (apertura-proceso-congelamiento-padron): unicidad por proceso+usuario+calidad, permite
+  // hasta dos filas por cuenta en alcance `comunidad` (estudiante + padre) y actúa como red de
+  // seguridad final ante condiciones de carrera en reintentos concurrentes de apertura.
+  @@unique([proceso_id, usuario_id, en_calidad_de])
 }
 
 // NOTE: `exactamente una elección` vive como CHECK en SQL raw dentro de
