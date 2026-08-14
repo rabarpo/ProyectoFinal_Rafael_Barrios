@@ -1,0 +1,38 @@
+import { useRuta } from './useRuta';
+import { ProcesoWizardPage } from '../procesos/ProcesoWizardPage';
+import { ProcesosIndexPage } from '../procesos/ProcesosIndexPage';
+import { RegistroCandidatoPage } from '../candidatos/RegistroCandidatoPage';
+import { GestionCandidatosPage } from '../candidatos/GestionCandidatosPage';
+
+/**
+ * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
+ * `AppShell` — la sesión, no la URL, decide entre `LoginPage` y la app
+ * (threat matrix "Enrutamiento (cliente)"). `candidato-nuevo`/
+ * `candidato-edicion` montan `RegistroCandidatoPage` real desde PR7
+ * (tasks.md 21.5); `candidatos` (listado/gestión) monta `GestionCandidatosPage`
+ * real desde PR8 (tasks.md 23.6) — sin stubs restantes en el alcance de este
+ * change. `no-encontrada` se renderiza dentro del shell, nunca lanza ni deja
+ * `undefined`.
+ */
+function VistaNoEncontrada() {
+  return <p className="text-body-md text-on-surface">Página no encontrada.</p>;
+}
+
+export function Enrutador() {
+  const ruta = useRuta();
+
+  switch (ruta.nombre) {
+    case 'proceso-nuevo':
+      return <ProcesoWizardPage />;
+    case 'procesos':
+      return <ProcesosIndexPage />;
+    case 'candidatos':
+      return <GestionCandidatosPage procesoId={ruta.procesoId} />;
+    case 'candidato-nuevo':
+      return <RegistroCandidatoPage procesoId={ruta.procesoId} />;
+    case 'candidato-edicion':
+      return <RegistroCandidatoPage procesoId={ruta.procesoId} candidatoId={ruta.candidatoId} />;
+    case 'no-encontrada':
+      return <VistaNoEncontrada />;
+  }
+}

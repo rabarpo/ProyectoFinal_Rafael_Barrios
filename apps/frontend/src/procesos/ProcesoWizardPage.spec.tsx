@@ -9,6 +9,11 @@ import type { PadronRespuestaDto, ProcesoRespuestaDto } from './procesos-api';
 // submit sean deterministas y no dependan de un backend vivo.
 vi.mock('./procesos-api', () => ({ padron: vi.fn(), crear: vi.fn() }));
 
+// [design.md D12] El panel de éxito enlaza a "Gestionar candidatos" vía
+// `navegar()` (#12, PR6) — se mockea para no depender del enrutador real.
+const { navegarMock } = vi.hoisted(() => ({ navegarMock: vi.fn() }));
+vi.mock('../app/useRuta', () => ({ navegar: navegarMock }));
+
 function padronVacio(): { data: PadronRespuestaDto; response: Response } {
   return {
     data: {
@@ -191,5 +196,30 @@ describe('ProcesoWizardPage — padrón, revisión y submit (PR9)', () => {
         ocultar_resultados: true,
       }),
     );
+  });
+
+  it('el panel de éxito ofrece "Gestionar candidatos" y navega al índice del proceso creado', async () => {
+    vi.mocked(procesosApi.crear).mockResolvedValue({
+      data: { id: 'proceso-1' } as ProcesoRespuestaDto,
+      response: { ok: true, status: 201 } as Response,
+    });
+
+    render(<ProcesoWizardPage />);
+
+    llenarPaso1('Elección de comité 2026', 'municipio');
+    llenarPaso2Institucion();
+    await avanzarDebounce();
+
+    fireEvent.click(screen.getByRole('button', { name: /siguiente/i })); // paso 3 -> 4
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /gestionar candidatos/i }));
+
+    expect(navegarMock).toHaveBeenCalledWith({ nombre: 'candidatos', procesoId: 'proceso-1' });
   });
 });

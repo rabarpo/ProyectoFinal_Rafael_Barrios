@@ -3,10 +3,12 @@ import { estadoInicial, wizardReducer } from './wizard-reducer';
 import { usePadronEnVivo } from './usePadronEnVivo';
 import { crear } from './procesos-api';
 import type { CrearProcesoDto } from './procesos-api';
+import { navegar } from '../app/useRuta';
 import { PasoDatos } from './pasos/PasoDatos';
 import { PasoPublico } from './pasos/PasoPublico';
 import { PasoPadron } from './pasos/PasoPadron';
 import { PasoRevision } from './pasos/PasoRevision';
+import { PasoIndicador } from './PasoIndicador';
 
 /**
  * Contenedor del asistente (design.md D7): único componente con efectos
@@ -22,7 +24,7 @@ export function ProcesoWizardPage() {
   const [estado, dispatch] = useReducer(wizardReducer, undefined, estadoInicial);
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState<string | undefined>(undefined);
-  const [creado, setCreado] = useState(false);
+  const [creadoId, setCreadoId] = useState<string | undefined>(undefined);
 
   const estadoPadron = usePadronEnVivo(estado.segmentacion);
 
@@ -54,7 +56,7 @@ export function ProcesoWizardPage() {
     try {
       const { data, response } = await crear(dto);
       if (response.ok && data) {
-        setCreado(true);
+        setCreadoId(data.id);
       } else {
         setErrorEnvio('No se pudo crear el proceso');
       }
@@ -65,18 +67,43 @@ export function ProcesoWizardPage() {
     }
   }
 
-  if (creado) {
+  if (creadoId) {
     return (
       <div className="mx-auto w-full max-w-page px-5 md:px-12">
-        <p className="text-body-md text-on-surface">Proceso creado como borrador.</p>
+        <div className="rounded-card border border-border-gray bg-surface-white p-6 shadow-elevation">
+          <p className="text-body-md text-on-surface">Proceso creado como borrador.</p>
+          {/* [design.md D12] Punto de entrada al módulo de candidatos desde el
+              asistente: sin este enlace solo el índice (`ProcesosIndexPage`)
+              permitiría llegar a este proceso. */}
+          <button
+            type="button"
+            className="mt-4 rounded-control bg-primary px-6 py-3 text-label-md text-on-primary transition-colors hover:bg-primary-container"
+            onClick={() => navegar({ nombre: 'candidatos', procesoId: creadoId })}
+          >
+            Gestionar candidatos
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="mx-auto w-full max-w-page px-5 md:px-12">
-      <div className="rounded-card bg-surface-white shadow-elevation p-6">
-        <p className="text-label-md text-primary">Paso {estado.paso} de 4</p>
+      <div className="mb-6">
+        <h1 className="text-headline-lg-mobile text-primary md:text-headline-lg">
+          Nuevo proceso electoral
+        </h1>
+        <p className="mt-1 text-body-md text-on-surface-variant">
+          Completá los cuatro pasos para crear el proceso como borrador.
+        </p>
+      </div>
+
+      <div className="rounded-card border border-border-gray bg-surface-white p-6 shadow-elevation md:p-8">
+        <div className="mb-8">
+          {/* [design.md D5] Texto plano, no heading — el stepper es solo visual. */}
+          <p className="sr-only">Paso {estado.paso} de 4</p>
+          <PasoIndicador pasoActual={estado.paso} />
+        </div>
 
         {estado.paso === 1 && (
           <PasoDatos
@@ -120,11 +147,11 @@ export function ProcesoWizardPage() {
           />
         )}
 
-        <nav className="mt-6 flex justify-between">
+        <nav className="mt-8 flex justify-between border-t border-border-gray pt-6">
           {estado.paso > 1 && (
             <button
               type="button"
-              className="rounded-control px-4 py-3 text-label-md text-primary"
+              className="rounded-control px-4 py-3 text-label-md text-primary hover:bg-surface-container"
               onClick={() => dispatch({ tipo: 'ANTERIOR' })}
             >
               Anterior
@@ -133,7 +160,7 @@ export function ProcesoWizardPage() {
           {estado.paso < 4 && (
             <button
               type="button"
-              className="ml-auto rounded-control bg-primary px-6 py-3 text-label-md text-on-primary disabled:opacity-50"
+              className="ml-auto rounded-control bg-primary px-6 py-3 text-label-md text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
               disabled={!pasoActualCompleto}
               onClick={() => dispatch({ tipo: 'SIGUIENTE' })}
             >

@@ -1,21 +1,21 @@
 import { AuthProvider } from '../auth/AuthProvider';
 import { AuthGuard } from '../auth/AuthGuard';
 import { AppShell } from './AppShell';
-import { ProcesoWizardPage } from '../procesos/ProcesoWizardPage';
+import { Enrutador } from './Enrutador';
 
 /**
- * Raíz de la app (design.md D8): el asistente ya no se monta directo desde
- * `main.tsx` — vive detrás del guard, dentro del shell. Tarea 28.1:
- * `ProcesoWizardPage` (#8/#9) es el único hijo de `AppShell` — `AppShell.tsx`
- * ya era genérico (`children: ReactNode`, sin cambios propios necesarios
- * desde PR2/PR3), así que el punto de montaje real es esta composición.
+ * Raíz de la app (design.md D8/D11). Desde PR6 (#12), `AppShell` monta el
+ * `Enrutador` en vez del asistente directo: la sesión sigue eligiendo entre
+ * `LoginPage` y la app (`AuthGuard`, sin cambios), pero dentro de la app el
+ * `Enrutador` resuelve qué vista mostrar según `window.location.pathname`
+ * (`useRuta`, D10). `ProcesoWizardPage` sigue siendo la vista de `/`.
  */
 export function App() {
   return (
     <AuthProvider>
       <AuthGuard>
         <AppShell>
-          <ProcesoWizardPage />
+          <Enrutador />
         </AppShell>
       </AuthGuard>
     </AuthProvider>
