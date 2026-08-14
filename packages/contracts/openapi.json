@@ -2725,6 +2725,51 @@
           "candidatos"
         ]
       }
+    },
+    "/votos/papeleta/{derechoVotoId}": {
+      "get": {
+        "operationId": "VotosController_papeleta",
+        "parameters": [
+          {
+            "name": "derechoVotoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Papeleta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PapeletaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "derechoVotoId no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Derecho ajeno o inexistente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lectura de la papeleta para el derecho propio (D13, no es la validación)",
+        "tags": [
+          "votos"
+        ]
+      }
     }
   },
   "info": {
@@ -3944,6 +3989,95 @@
           "nombres",
           "foto_presente",
           "estado"
+        ]
+      },
+      "PapeletaProcesoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha_cierre_prevista": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "descripcion",
+          "fecha_cierre_prevista"
+        ]
+      },
+      "PapeletaOpcionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "etiqueta": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "etiqueta"
+        ]
+      },
+      "PapeletaComprobanteDto": {
+        "type": "object",
+        "properties": {
+          "codigo_comprobante": {
+            "type": "string"
+          },
+          "hora_servidor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "codigo_comprobante",
+          "hora_servidor"
+        ]
+      },
+      "PapeletaDto": {
+        "type": "object",
+        "properties": {
+          "proceso": {
+            "$ref": "#/components/schemas/PapeletaProcesoDto"
+          },
+          "en_calidad_de": {
+            "type": "string"
+          },
+          "opciones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PapeletaOpcionDto"
+            }
+          },
+          "ya_voto": {
+            "type": "boolean"
+          },
+          "comprobante": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PapeletaComprobanteDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proceso",
+          "en_calidad_de",
+          "opciones",
+          "ya_voto",
+          "comprobante"
         ]
       }
     }

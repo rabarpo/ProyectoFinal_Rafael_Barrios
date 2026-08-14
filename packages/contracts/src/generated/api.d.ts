@@ -838,6 +838,23 @@ export interface paths {
         patch: operations["CandidatosController_cambiarEstado"];
         trace?: never;
     };
+    "/votos/papeleta/{derechoVotoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lectura de la papeleta para el derecho propio (D13, no es la validación) */
+        get: operations["VotosController_papeleta"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1317,6 +1334,27 @@ export interface components {
             estado: "activo" | "baja";
             /** @description Fecha/hora de la baja (ISO 8601), ausente si está activo */
             baja_en?: string;
+        };
+        PapeletaProcesoDto: {
+            id: string;
+            nombre: string;
+            descripcion: string | null;
+            fecha_cierre_prevista: string;
+        };
+        PapeletaOpcionDto: {
+            id: string;
+            etiqueta: string;
+        };
+        PapeletaComprobanteDto: {
+            codigo_comprobante: string;
+            hora_servidor: string;
+        };
+        PapeletaDto: {
+            proceso: components["schemas"]["PapeletaProcesoDto"];
+            en_calidad_de: string;
+            opciones: components["schemas"]["PapeletaOpcionDto"][];
+            ya_voto: boolean;
+            comprobante: components["schemas"]["PapeletaComprobanteDto"] | null;
         };
     };
     responses: never;
@@ -4292,6 +4330,49 @@ export interface operations {
             };
             /** @description Candidato no encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VotosController_papeleta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                derechoVotoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Papeleta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PapeletaDto"];
+                };
+            };
+            /** @description derechoVotoId no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Derecho ajeno o inexistente */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
