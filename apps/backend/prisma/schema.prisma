@@ -227,16 +227,18 @@ model ProcesoElectoral {
 }
 
 model Lista {
-  id               String              @id @default(uuid()) @db.Uuid
-  proceso_id       String              @db.Uuid
-  nombre           String
-  numero           Int
-  simbolo          String?
-  lema             String?
-  propuesta        String?
-  plan_trabajo_url String?
-  estado           EstadoParticipacion @default(activo)
-  baja_en          DateTime?           @db.Timestamptz(3)
+  id                   String              @id @default(uuid()) @db.Uuid
+  proceso_id           String              @db.Uuid
+  nombre               String
+  numero               Int
+  simbolo              String?
+  lema                 String?
+  propuesta            String?
+  plan_trabajo         Bytes?
+  plan_trabajo_mime    String?
+  plan_trabajo_nombre  String?
+  estado               EstadoParticipacion @default(activo)
+  baja_en              DateTime?           @db.Timestamptz(3)
 
   proceso    ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Cascade)
   candidatos Candidato[]
@@ -253,6 +255,8 @@ model Candidato {
   grado      String?
   aula       String?
   cargo      String?
+  foto       Bytes?
+  foto_mime  String?
   estado     EstadoParticipacion @default(activo)
   baja_en    DateTime?           @db.Timestamptz(3)
 

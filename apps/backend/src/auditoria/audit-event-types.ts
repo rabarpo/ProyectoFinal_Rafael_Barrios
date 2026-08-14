@@ -37,6 +37,14 @@
 // `representante_aula` sigue emitiendo un único `PROCESO_CREADO` con el conteo `aulas: N` en el
 // payload. Ninguna de las tres toca un `Voto`, así que tampoco activan la obligación versionada de
 // ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4].
+// candidatos-listas-opciones-consulta, PR1 (design.md D9, tarea 2.1): catorce claves aditivas para
+// `Lista`/`Candidato`/`OpcionConsulta`. La foto de `Candidato` viaja en el mismo `PATCH` que el
+// resto de campos (D4), por lo que se reporta como `CANDIDATO_ACTUALIZADO` sin clave propia; el
+// plan de trabajo de `Lista` tiene endpoint propio (`PUT /listas/:id/plan-trabajo`) y por eso sí
+// tiene su clave dedicada `LISTA_PLAN_TRABAJO_ACTUALIZADO`. `OpcionConsulta` no tiene
+// `estado`/`baja_en` en el schema, así que no tiene claves de baja/reactivación. Ninguna de las
+// catorce toca un `Voto`, así que tampoco activan la obligación versionada de ADR-0016 — ver
+// test/schema/auditoria.spec.ts, caso [TM4].
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
@@ -81,6 +89,20 @@ export const AUDIT_EVENT_TYPES = {
   PROCESO_CREADO: 'PROCESO_CREADO',
   PROCESO_EDITADO: 'PROCESO_EDITADO',
   PROCESO_ELIMINADO: 'PROCESO_ELIMINADO',
+  LISTA_CREADA: 'LISTA_CREADA',
+  LISTA_ACTUALIZADA: 'LISTA_ACTUALIZADA',
+  LISTA_ELIMINADA: 'LISTA_ELIMINADA',
+  LISTA_DADA_DE_BAJA: 'LISTA_DADA_DE_BAJA',
+  LISTA_REACTIVADA: 'LISTA_REACTIVADA',
+  LISTA_PLAN_TRABAJO_ACTUALIZADO: 'LISTA_PLAN_TRABAJO_ACTUALIZADO',
+  CANDIDATO_CREADO: 'CANDIDATO_CREADO',
+  CANDIDATO_ACTUALIZADO: 'CANDIDATO_ACTUALIZADO',
+  CANDIDATO_ELIMINADO: 'CANDIDATO_ELIMINADO',
+  CANDIDATO_DADO_DE_BAJA: 'CANDIDATO_DADO_DE_BAJA',
+  CANDIDATO_REACTIVADO: 'CANDIDATO_REACTIVADO',
+  OPCION_CONSULTA_CREADA: 'OPCION_CONSULTA_CREADA',
+  OPCION_CONSULTA_ACTUALIZADA: 'OPCION_CONSULTA_ACTUALIZADA',
+  OPCION_CONSULTA_ELIMINADA: 'OPCION_CONSULTA_ELIMINADA',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];
