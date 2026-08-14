@@ -119,7 +119,7 @@ Guards de clase en los tres controladores: `AuthGuard` + `RolesGuard` + `@Roles(
 | `apps/frontend/src/app/rutas.ts` | Create | D10: unión `Ruta`, `parsearRuta(pathname)`, `rutaAPath(ruta)` |
 | `apps/frontend/src/app/useRuta.ts` | Create | D10: `useSyncExternalStore` + `navegar(ruta)` |
 | `apps/frontend/src/app/Enrutador.tsx` | Create | D11: `switch` sobre `Ruta`; variante `no-encontrada` |
-| `apps/frontend/src/app/App.tsx` | Modify | `<AppShell><Enrutador /></AppShell>` |
+| `apps/frontend/src/app/App.tsx` | Modify | `<AppShell><Enrutador /></AppShell>` dentro de `AuthGuard` |
 | `apps/frontend/src/procesos/ProcesosIndexPage.tsx` | Create | D12: tabla de procesos con enlace a candidatos |
 | `apps/frontend/src/procesos/ProcesoWizardPage.tsx` | Modify | D12: enlace "Gestionar candidatos" en el panel de éxito |
 | `apps/frontend/src/candidatos/candidatos-api.ts` | Create | Wrappers tipados; multipart vía `bodySerializer` |
@@ -238,6 +238,6 @@ PR5 pantallas de gestión y registro.
 - [ ] `GET /candidatos/:id/foto` queda tras `AuthGuard`: correcto para la pantalla de
       administración, pero la boleta de votación (#14) también deberá mostrarla — confirmar que el
       votante autenticado tiene rol suficiente o abrir una ruta de lectura para votantes.
-- [ ] Acoplamiento `TipoProceso` ↔ `Lista`/`Candidato`/`OpcionConsulta` sigue sin validarse (fuera
-      de alcance por la propuesta): hoy nada impide crear una `OpcionConsulta` en un proceso
+- [ ] Acoplamiento `TipoProceso` ↔ `Lista`/`Candidato`/`OpciónConsulta` sigue sin validarse (fuera
+      de alcance por la propuesta): hoy nada impide crear una `OpciónConsulta` en un proceso
       `municipio`.

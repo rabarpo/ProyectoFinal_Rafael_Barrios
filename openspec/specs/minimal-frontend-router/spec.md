@@ -35,7 +35,7 @@ candidatos.
 ### Requirement: Alcance mínimo sin rutas anidadas ni guards
 El sistema MUST NOT introducir rutas anidadas, guards de autorización por ruta, ni ninguna librería
 de routing en este change; cualquier necesidad de esas capacidades queda diferida a un change
-futuro que las requiera explícitamente.
+futuro que la requiera explícitamente.
 
 #### Scenario: Ninguna dependencia de routing se agrega al `package.json`
 - GIVEN el `package.json` de `apps/frontend` tras aplicar este change

@@ -2,7 +2,7 @@
 
 ## Intent
 
-El modelo de datos (`Lista`, `Candidato`, `OpcionConsulta`, `EstadoParticipacion` + `baja_en`)
+El modelo de datos (`Lista`, `Candidato`, `OpciónConsulta`, `EstadoParticipacion` + `baja_en`)
 existe desde `#2` y `Voto` ya depende de sus FKs, pero no hay capa de aplicación
 (`apps/backend/src/candidatos/` no existe) ni pantalla de administración
 (`ProcesoWizardPage` línea 20 difiere explícitamente "cargos y candidatos" a este change). Sin
@@ -12,7 +12,7 @@ esto, un proceso no puede recibir postulantes reales ni consultas con opciones A
 ## Scope
 
 ### In Scope
-- CRUD de `Lista`/`Candidato`/`OpcionConsulta` (backend + UI admin) agrupados por cargo.
+- CRUD de `Lista`/`Candidato`/`OpciónConsulta` (backend + UI admin) agrupados por cargo.
 - Foto y plan de trabajo en PDF como `Bytes` en Postgres, patrón `Configuracion.logo`.
 - Baja de candidato (`EstadoParticipacion=baja` + `baja_en`) distinta de borrado físico.
 - Borrado físico bloqueado si hay `Voto` referenciándolo (`ENTIDAD_CON_DEPENDIENTES`).
@@ -28,7 +28,7 @@ esto, un proceso no puede recibir postulantes reales ni consultas con opciones A
 ## Capabilities
 
 ### New Capabilities
-- `candidatos-listas-management`: CRUD de `Lista`/`Candidato`/`OpcionConsulta`, subida/entrega de
+- `candidatos-listas-management`: CRUD de `Lista`/`Candidato`/`OpciónConsulta`, subida/entrega de
   foto y PDF, baja/reactivación, borrado físico guardado.
 - `minimal-frontend-router`: enrutador mínimo hand-rolled (sin librería nueva) para alternar entre
   vistas admin; base reutilizable para `#7`/`#8`/`#10`.
@@ -90,12 +90,12 @@ seguro; el router se retira volviendo `App.tsx` a montar `ProcesoWizardPage` dir
 
 ## Dependencies
 
-- `#2` (`base-schema`, archivado): `Lista`/`Candidato`/`OpcionConsulta`/`Voto`.
+- `#2` (`base-schema`, archivado): `Lista`/`Candidato`/`OpciónConsulta`/`Voto`.
 - `#11` (`administracion-procesos-electorales`, archivado): `ProcesoElectoral` a poblar.
 
 ## Success Criteria
 
-- [ ] CRUD completo de `Lista`/`Candidato`/`OpcionConsulta` con foto y PDF operable end-to-end.
+- [ ] CRUD completo de `Lista`/`Candidato`/`OpciónConsulta` con foto y PDF operable end-to-end.
 - [ ] Baja de candidato distinta de borrado físico; borrado bloqueado si hay `Voto`.
 - [ ] Toda escritura auditada en la misma transacción.
 - [ ] Router mínimo permite navegar entre lista y alta/edición sin recargar.
