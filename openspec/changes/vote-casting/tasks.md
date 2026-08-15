@@ -77,61 +77,61 @@ jobcorreo-diferido.md` (D16) ya fue creado en la fase de diseño — no es una t
 ## PR 2 — Transacción núcleo de `VotosService.emitir()` (base = PR 1 branch)
 
 ### Phase 5: DTOs de entrada (D9)
-- [ ] 5.1 Crear `apps/backend/src/votos/dto/emitir-voto.dto.ts`: `{ derecho_voto_id, lista_id?,
+- [x] 5.1 Crear `apps/backend/src/votos/dto/emitir-voto.dto.ts`: `{ derecho_voto_id, lista_id?,
       opcion_id?, candidato_id?, blanco?, clave_idempotencia }` con `@ApiProperty`
 
 ### Phase 6: Sentencia única de lock+validación+idempotencia (D4)
-- [ ] 6.1 RED unit: elección no-exactamente-una (0 o 2+ de `{lista_id, opcion_id, candidato_id,
+- [x] 6.1 RED unit: elección no-exactamente-una (0 o 2+ de `{lista_id, opcion_id, candidato_id,
       blanco}`) → `400 CAMPO_INVALIDO`, sin abrir transacción [threat matrix: Integridad de la
       elección]
-- [ ] 6.2 RED unit: `derecho_voto_id` no pertenece al usuario autenticado (`dv.usuario_id !==
+- [x] 6.2 RED unit: `derecho_voto_id` no pertenece al usuario autenticado (`dv.usuario_id !==
       sesion.userId`) o 0 filas → `403`, sin evento `RECHAZO` [spec: Validación del derecho —
       causa 1; threat matrix: IDOR/enumeración]
-- [ ] 6.3 RED unit: `comprobante_por_clave` no nulo (misma `clave_idempotencia`) → responde con el
+- [x] 6.3 RED unit: `comprobante_por_clave` no nulo (misma `clave_idempotencia`) → responde con el
       comprobante existente, sin `INSERT` [spec: Reintento con misma clave]
-- [ ] 6.4 RED unit: `aula_valida = false` (D8) → `RechazoVoto(SIN_DERECHO, motivo:
+- [x] 6.4 RED unit: `aula_valida = false` (D8) → `RechazoVoto(SIN_DERECHO, motivo:
       'aula_no_corresponde')` [threat matrix: TOCTOU/defensa en profundidad]
-- [ ] 6.5 RED unit: `cerrado_por_hora` o `aun_no_abierto` → `RechazoVoto(VOTACION_CERRADA)` [spec:
+- [x] 6.5 RED unit: `cerrado_por_hora` o `aun_no_abierto` → `RechazoVoto(VOTACION_CERRADA)` [spec:
       Proceso cerrado]
-- [ ] 6.6 RED unit: `voto_id` ya existe para el derecho (clave distinta) →
+- [x] 6.6 RED unit: `voto_id` ya existe para el derecho (clave distinta) →
       `RechazoVoto(DERECHO_YA_EJERCIDO, comprobante)` [spec: Derecho ya ejercido]
-- [ ] 6.7 GREEN: implementar el `tx.$queryRaw` de D4 (`FOR UPDATE OF dv`, banderas calculadas en
+- [x] 6.7 GREEN: implementar el `tx.$queryRaw` de D4 (`FOR UPDATE OF dv`, banderas calculadas en
       SQL) — pasa 6.1-6.6
 
 ### Phase 7: Inserción, auditoría y punto de extensión (D2, D11, D16)
-- [ ] 7.1 RED unit: camino feliz — `tx.voto.create()` con `id` generado en Node,
+- [x] 7.1 RED unit: camino feliz — `tx.voto.create()` con `id` generado en Node,
       `codigo_comprobante` derivado, elección validada contra el proceso; `DerechoVoto` queda
       `ejercido` **por la existencia de la fila**, sin columna nueva (D2) [spec: Camino feliz]
-- [ ] 7.2 RED unit: voto en blanco marcado → `Voto` con `blanco = true` y el resto de columnas de
+- [x] 7.2 RED unit: voto en blanco marcado → `Voto` con `blanco = true` y el resto de columnas de
       elección en `null` [spec: Voto en blanco explícito]
-- [ ] 7.3 RED unit: elección referencia una lista/candidato/opción de otro proceso o dada de baja →
+- [x] 7.3 RED unit: elección referencia una lista/candidato/opción de otro proceso o dada de baja →
       `409 ELECCION_INVALIDA`, cero filas `Voto` [threat matrix: Integridad de la elección]
-- [ ] 7.4 RED unit: tras el `INSERT`, se invoca `auditoria.log(tx, 'VOTO', usuarioId, 'Voto',
+- [x] 7.4 RED unit: tras el `INSERT`, se invoca `auditoria.log(tx, 'VOTO', usuarioId, 'Voto',
       voto.id, { proceso_id, derecho_voto_id, codigo_comprobante, hora_servidor })` — sin
       `candidato_id`/`lista_id`/`opcion_id`/`blanco`/`eleccion` [spec: Payload sin elección; D11]
-- [ ] 7.5 RED unit: existe el comentario marcador `// [#15] Punto de extensión JobCorreo`
+- [x] 7.5 RED unit: existe el comentario marcador `// [#15] Punto de extensión JobCorreo`
       inmediatamente después del `auditoria.log` y antes del retorno del callback (D16)
-- [ ] 7.6 GREEN: completar el callback de `emitir()` — pasa 7.1-7.5
+- [x] 7.6 GREEN: completar el callback de `emitir()` — pasa 7.1-7.5
 
 ### Phase 8: Colisión `23505` y `RECHAZO` en transacción separada (D5, D10)
-- [ ] 8.1 RED unit: el `catch` vive **fuera** del callback de `$transaction`; ante `P2002` sobre
+- [x] 8.1 RED unit: el `catch` vive **fuera** del callback de `$transaction`; ante `P2002` sobre
       `Voto_proceso_id_derecho_voto_id_key` o `Voto_proceso_id_clave_idempotencia_key`, se
       reconsulta el `Voto` existente en una transacción/conexión nueva y se responde con su
       comprobante [spec: Segundo voto genuino con clave distinta; D5]
-- [ ] 8.2 RED unit: un `P2002` con `meta.target` distinto a las dos restricciones de voto no se
+- [x] 8.2 RED unit: un `P2002` con `meta.target` distinto a las dos restricciones de voto no se
       confunde con una colisión de voto (burbujea o se maneja aparte)
-- [ ] 8.3 RED unit: `RechazoVoto` capturado fuera del callback dispara `prisma.$transaction((tx) =>
+- [x] 8.3 RED unit: `RechazoVoto` capturado fuera del callback dispara `prisma.$transaction((tx) =>
       auditoria.log(tx, 'RECHAZO', ...))` en una transacción nueva y exitosa, **antes** de lanzar
       la excepción HTTP — el evento sobrevive aunque el voto no [spec: Proceso cerrado; Derecho ya
       ejercido; D10]
-- [ ] 8.4 RED unit: el payload de `RECHAZO` contiene únicamente `{ proceso_id, derecho_voto_id,
+- [x] 8.4 RED unit: el payload de `RECHAZO` contiene únicamente `{ proceso_id, derecho_voto_id,
       motivo }` — nunca `candidato_id`/`lista_id`/`opcion_id`/`blanco`/`eleccion`, ni el estado del
       formulario [spec: Payload sin elección; threat matrix: Secreto del voto en auditoría]
-- [ ] 8.5 GREEN: envolver `emitir()` con el `try/catch` de D5/D10 — pasa 8.1-8.4
+- [x] 8.5 GREEN: envolver `emitir()` con el `try/catch` de D5/D10 — pasa 8.1-8.4
 
 ### Phase 9: Regresión PR2
-- [ ] 9.1 `pnpm --filter @seei/backend test -- votos.service` verde (suite unit completa)
-- [ ] 9.2 `pnpm typecheck` verde en los 4 paquetes
+- [x] 9.1 `pnpm --filter @seei/backend test -- votos.service` verde (suite unit completa)
+- [x] 9.2 `pnpm typecheck` verde en los 4 paquetes
 
 ## PR 3 — Controller, DTOs de salida y suite e2e principal (base = PR 2 branch)
 

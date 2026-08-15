@@ -1,6 +1,7 @@
 import type { MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { Module } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { PapeletaService } from './papeleta.service';
@@ -10,9 +11,11 @@ import { VotosService } from './votos.service';
 /**
  * vote-casting, PR1 (design.md "Enfoque técnico"/"Cambios de archivos", tarea 1.1). Primer módulo
  * orientado al VOTANTE: `imports: [AuthModule]` resuelve `AuthGuard`/`SessionService` — sin
- * `RolesGuard` (D1, ver `VotosController`). `AuditoriaModule` no se importa todavía: ni
- * `VotosService` (stub vacío en PR1) ni `PapeletaService` auditan nada — PR2 lo agrega cuando
- * `VotosService.emitir()` necesite `AuditoriaService`.
+ * `RolesGuard` (D1, ver `VotosController`).
+ *
+ * PR2 (Phase 6-9): `AuditoriaModule` se agrega acá porque `VotosService.emitir()` ya no es un stub
+ * vacío — necesita `AuditoriaService` para los eventos `VOTO`/`RECHAZO` (D11). `PapeletaService`
+ * sigue sin auditar nada (D13, no es la validación).
  *
  * `cookie-parser` como middleware del propio módulo, mismo criterio que `ProcesosModule`/
  * `AcademicoModule`/`AuthModule`. Ningún provider abre conexión al instanciarse, así que
@@ -20,7 +23,7 @@ import { VotosService } from './votos.service';
  * en `AppModule` (tarea 4.1).
  */
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, AuditoriaModule],
   controllers: [VotosController],
   providers: [PrismaService, VotosService, PapeletaService],
 })
