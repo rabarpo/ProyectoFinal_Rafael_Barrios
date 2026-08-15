@@ -2,8 +2,11 @@
 
 ## Estado
 
-Aceptado — **temporal y acotado**: queda derogado por la implementación del backlog #15, sin
-necesidad de un ADR posterior que lo revierta (ver "Condición de cierre").
+Superado por #15 (outbox-correo-comprobante-autenticado). Condición de cierre cumplida: `Voto` y
+`JobCorreo` nacen en la misma transacción de `VotosService.emitir()` (D3/D4 de
+`openspec/changes/outbox-correo-comprobante-autenticado/design.md`), probado por
+`apps/backend/test/votos/outbox-atomicidad.e2e-spec.ts` — 3/3 verde contra Postgres real
+(commit conjunto, rollback conjunto, idempotencia de `#14` preservada), re-verificado en PR5/5.
 
 ## Contexto
 

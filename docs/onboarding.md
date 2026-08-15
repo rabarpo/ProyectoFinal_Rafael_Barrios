@@ -46,6 +46,16 @@ Turborepo, roles de Postgres, topología de Docker Compose) ver
    | `LOGIN_INTENTOS_VENTANA_SEGUNDOS` | TTL fijo (no deslizante) del contador de intentos fallidos en Redis (por defecto `900`) |
    | `LOGIN_BLOQUEO_SEGUNDOS` | Duración del bloqueo automático antes de la expiración perezosa (por defecto `900`) |
 
+   El outbox de correo y comprobante autenticado (backlog #15, `adrs/0018-ventana-temporal-
+   jobcorreo-diferido.md`, ya superado) agrega estas variables al servicio `worker`:
+
+   | Variable | Uso |
+   |---|---|
+   | `DATABASE_URL` | Misma cadena `seei_app` que usa `backend` — el worker lee/escribe `JobCorreo` con su propio `PrismaClient`, generado del **mismo** schema (`design.md` D10, sin segundo `schema.prisma`) |
+   | `SMTP_USER` / `SMTP_PASSWORD` | Credenciales SMTP que el worker compone junto con `Configuracion.smtp_host`/`smtp_puerto`/`smtp_remitente` (leídos de la base, no de variables de entorno) para armar `SmtpEmailSender`; sin `Configuracion.smtp_host` cae a `ConsoleEmailSender` (`design.md` D9) |
+   | `OUTBOX_POLL_MS` | Intervalo del despachador de *polling* sobre `JobCorreo` (por defecto `5000`) |
+   | `OUTBOX_BATCH` | Tamaño de lote que el despachador encola por cada ciclo (por defecto `20`) |
+
 3. **Levantar el stack completo** (Caddy + frontend + backend + worker + Postgres + Redis, con el
    override de desarrollo — bind mounts, puertos de DB/Redis publicados solo en `127.0.0.1`):
 

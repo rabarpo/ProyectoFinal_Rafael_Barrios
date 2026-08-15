@@ -90,3 +90,29 @@ Pruebas del worker:
 ```bash
 pnpm --filter @seei/worker test
 ```
+
+## Worker — outbox de correo (`correo.comprobante`)
+
+Backlog #15 (`openspec/changes/outbox-correo-comprobante-autenticado/design.md`) agrega una
+segunda cola BullMQ, `correo`, escuchada por un `Worker` separado del de `system.ping` — la cola
+`system` queda intacta. A diferencia de `system-ping.processor.ts`, este processor
+(`apps/worker/src/processors/outbox-correo.processor.ts`) **sí** habla con PostgreSQL: la tabla
+`JobCorreo` es la fuente de verdad del outbox ([ADR-0012]), BullMQ sólo ejecuta el envío y
+gestiona los reintentos (`attempts`/`backoff` exponencial).
+
+Un despachador (`apps/worker/src/outbox/outbox-dispatcher.ts`) hace *polling* de
+`JobCorreo` (`estado='pendiente'`) cada `OUTBOX_POLL_MS` y encola por lotes de `OUTBOX_BATCH`
+filas con `jobId` determinista (`jobcorreo:<id>`), para que una reentrega de BullMQ nunca duplique
+el envío. El worker requiere `DATABASE_URL` (mismo rol `seei_app` que `backend`, mismo esquema
+Prisma — sin segundo `schema.prisma`) y, si `Configuracion.smtp_host` está definido, `SMTP_USER`/
+`SMTP_PASSWORD` para componer `SmtpEmailSender` (ver la tabla de variables en
+`docs/onboarding.md`).
+
+El [ADR-0018](adrs/0018-ventana-temporal-jobcorreo-diferido.md) — la ventana temporal en la que
+`#14` emitía votos sin insertar su `JobCorreo` — queda **superado** por este backlog: la fila nace
+en la misma transacción del voto (`VotosService.emitir()`), verificado por
+`apps/backend/test/votos/outbox-atomicidad.e2e-spec.ts`. `apps/backend/scripts/
+reconciliar-outbox.ts` es una utilidad de diagnóstico de **sólo lectura** (`pnpm --filter
+@seei/backend exec tsx scripts/reconciliar-outbox.ts`): identifica votos sin `JobCorreo`
+asociado; nunca inserta filas — insertar ahí reconstruiría el despachador desacoplado que el
+ADR-0018 veta de forma permanente.

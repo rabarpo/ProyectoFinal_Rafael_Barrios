@@ -6,7 +6,7 @@ const config: Config = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
   },
-  testRegex: 'src/.*\\.spec\\.ts$',
+  testRegex: '(src|scripts)/.*\\.spec\\.ts$',
   moduleFileExtensions: ['js', 'json', 'ts'],
 };
 

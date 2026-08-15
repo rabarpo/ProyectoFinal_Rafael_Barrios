@@ -201,29 +201,29 @@ que la suite e2e de atomicidad de PR1 siga verde.
 ## PR 5 — Reconciliación, documentación y cierre del ADR-0018 (base = PR 4 branch)
 
 ### Phase 16: Script de reconciliación (D13)
-- [ ] 16.1 Crear `apps/backend/scripts/reconciliar-outbox.ts` (tsx): `SELECT` de sólo lectura con
+- [x] 16.1 Crear `apps/backend/scripts/reconciliar-outbox.ts` (tsx): `SELECT` de sólo lectura con
       `LEFT JOIN "JobCorreo" jc ON jc.voto_id = v.id WHERE jc.id IS NULL`; imprime filas y sale
       con código ≠ 0 si hay coincidencias; sin ninguna sentencia de escritura [spec: Mecanismo de
       reconciliación disponible sin ejecución contra datos reales; threat: Pérdida silenciosa del
       job]
-- [ ] 16.2 Verificación manual: correr contra la base local (greenfield, sin votos reales) ⇒ 0
+- [x] 16.2 Verificación manual: correr contra la base local (greenfield, sin votos reales) ⇒ 0
       filas, código de salida 0
 
 ### Phase 17: Documentación de variables nuevas
-- [ ] 17.1 Modificar `docs/onboarding.md`: documentar `DATABASE_URL`, `SMTP_USER`,
+- [x] 17.1 Modificar `docs/onboarding.md`: documentar `DATABASE_URL`, `SMTP_USER`,
       `SMTP_PASSWORD`, `OUTBOX_POLL_MS`, `OUTBOX_BATCH` del worker
-- [ ] 17.2 Modificar `README.md`: mismas variables, sección de despliegue del worker
+- [x] 17.2 Modificar `README.md`: mismas variables, sección de despliegue del worker
 
 ### Phase 18: Cierre del ADR-0018 (D14 — última tarea del change)
-- [ ] 18.1 Confirmar que `outbox-atomicidad.e2e-spec.ts` (PR1) sigue verde en el estado final del
+- [x] 18.1 Confirmar que `outbox-atomicidad.e2e-spec.ts` (PR1) sigue verde en el estado final del
       change (condición literal de cierre del ADR-0018)
-- [ ] 18.2 Modificar `adrs/0018-ventana-temporal-jobcorreo-diferido.md`: campo "Estado" ⇒
+- [x] 18.2 Modificar `adrs/0018-ventana-temporal-jobcorreo-diferido.md`: campo "Estado" ⇒
       "Superado por #15 (outbox-correo-comprobante-autenticado)" + una línea citando la suite
       verde que lo habilita; Contexto/Decisión/Alternativas/Consecuencias intactos [spec: Cierre
       de ADR-0018 condicionado a prueba verde]
 
 ### Phase 19: Regresión final del change
-- [ ] 19.1 `pnpm --filter @seei/backend test` y `test:e2e` completos verdes contra Postgres real
-- [ ] 19.2 `pnpm --filter @seei/worker test` verde
-- [ ] 19.3 `pnpm --filter @seei/frontend test` verde
-- [ ] 19.4 `pnpm typecheck` verde en los 4 paquetes
+- [x] 19.1 `pnpm --filter @seei/backend test` y `test:e2e` completos verdes contra Postgres real
+- [x] 19.2 `pnpm --filter @seei/worker test` verde
+- [x] 19.3 `pnpm --filter @seei/frontend test` verde
+- [x] 19.4 `pnpm typecheck` verde en los 4 paquetes
