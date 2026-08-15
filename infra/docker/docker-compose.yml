@@ -61,6 +61,10 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
+      # outbox-correo-comprobante-autenticado (#15, PR2; design.md D2, "Contenido del correo"):
+      # base del enlace autenticado que viaja en el cuerpo del correo. Ausente ⇒ el correo se
+      # inserta igual, sin enlace (nunca aborta el voto).
+      APP_BASE_URL: ${APP_BASE_URL}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1))"]
       interval: 5s
@@ -82,10 +86,21 @@ services:
     networks: [seei]
     environment:
       REDIS_URL: ${REDIS_URL}
+      # outbox-correo-comprobante-autenticado (#15, PR2; design.md D10): mismo rol de aplicación
+      # que el backend (`seei_app`), NUNCA `MIGRATION_DATABASE_URL` — el worker no ejecuta DDL.
+      DATABASE_URL: ${DATABASE_URL}
+      # D9: credenciales de transporte SMTP; `Configuracion.smtp_host/puerto/remitente` vienen de
+      # Postgres, la contraseña NUNCA de esa tabla (misma regla que `ConfiguracionEmailSender`).
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
     # Sin healthcheck: el worker no expone superficie HTTP (design.md, "Preguntas abiertas" —
     # omisión aceptada para el andamiaje, a revisar cuando llegue el despachador del outbox).
     depends_on:
       redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      postgres:
         condition: service_healthy
 
   migrate:

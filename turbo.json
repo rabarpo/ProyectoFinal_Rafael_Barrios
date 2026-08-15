@@ -28,7 +28,9 @@
         "APP_BASE_URL",
         "LOGIN_INTENTOS_MAX",
         "LOGIN_INTENTOS_VENTANA_SEGUNDOS",
-        "LOGIN_BLOQUEO_SEGUNDOS"
+        "LOGIN_BLOQUEO_SEGUNDOS",
+        "OUTBOX_POLL_MS",
+        "OUTBOX_BATCH"
       ]
     },
     "test:schema": {

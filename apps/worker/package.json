@@ -7,14 +7,19 @@
     "start": "tsx src/main.ts",
     "test": "vitest run",
     "lint": "echo \"@seei/worker: nothing to lint yet\"",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "generate": "prisma generate --schema ../backend/prisma/schema.prisma"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@seei/backend": "workspace:*",
     "bullmq": "^5.34.5",
-    "ioredis": "^5.4.1"
+    "ioredis": "^5.4.1",
+    "nodemailer": "^9.0.4"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
+    "prisma": "^5.22.0",
     "tsx": "^4.23.6",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"

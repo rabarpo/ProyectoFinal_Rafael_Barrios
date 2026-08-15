@@ -95,45 +95,45 @@ que la suite e2e de atomicidad de PR1 siga verde.
 ## PR 2 — Worker de outbox (base = PR 1 branch)
 
 ### Phase 6: Puertos y processor puro (D6/D8)
-- [ ] 6.1 RED vitest: `estado='enviado'` ⇒ `'no-op'` sin invocar `sender.send` [spec: Reintento de
+- [x] 6.1 RED vitest: `estado='enviado'` ⇒ `'no-op'` sin invocar `sender.send` [spec: Reintento de
       un job ya enviado es no-op]
-- [ ] 6.2 RED vitest: `repo.reclamar()` devuelve `false` ⇒ `'no-op'` sin `send` (CAS perdido)
+- [x] 6.2 RED vitest: `repo.reclamar()` devuelve `false` ⇒ `'no-op'` sin `send` (CAS perdido)
       [threat: Entrega duplicada/reentrega]
-- [ ] 6.3 RED vitest: camino feliz ⇒ `send` con `asunto`/`cuerpo` verbatim y `repo.marcarEnviado`
+- [x] 6.3 RED vitest: camino feliz ⇒ `send` con `asunto`/`cuerpo` verbatim y `repo.marcarEnviado`
       [spec: Envío exitoso marca el job como enviado]
-- [ ] 6.4 RED vitest: `send` que lanza ⇒ el error propaga y **no** se marca `fallido` (BullMQ
+- [x] 6.4 RED vitest: `send` que lanza ⇒ el error propaga y **no** se marca `fallido` (BullMQ
       reintenta, D7) [spec: Fallo transitorio agota reintentos y marca `fallido`]
-- [ ] 6.5 GREEN: crear `apps/worker/src/processors/outbox-correo.processor.ts` (función pura sobre
+- [x] 6.5 GREEN: crear `apps/worker/src/processors/outbox-correo.processor.ts` (función pura sobre
       `OutboxCorreoRepo`/`EmailSender`, sin `PrismaClient`) — pasa 6.1-6.4 [spec: Worker de outbox
       MUST NOT basarse en `system-ping.processor.ts` ni importar `PrismaClient`]
 
 ### Phase 7: Adaptador Prisma y despachador (D5/D9/D10)
-- [ ] 7.1 RED vitest: el despachador respeta `LIMIT` y genera `jobId` determinista
+- [x] 7.1 RED vitest: el despachador respeta `LIMIT` y genera `jobId` determinista
       `jobcorreo:<id>`
-- [ ] 7.2 GREEN: crear `apps/worker/src/outbox/outbox-dispatcher.ts` (polling `estado='pendiente'
+- [x] 7.2 GREEN: crear `apps/worker/src/outbox/outbox-dispatcher.ts` (polling `estado='pendiente'
       ORDER BY creado_en LIMIT` + `queue.addBulk`) — pasa 7.1
-- [ ] 7.3 Crear `apps/worker/src/outbox/outbox-correo.repo.ts`: adaptador Prisma de
+- [x] 7.3 Crear `apps/worker/src/outbox/outbox-correo.repo.ts`: adaptador Prisma de
       `OutboxCorreoRepo` (`leer`/`reclamar` vía `updateMany` CAS/`marcarEnviado`/`marcarFallido`/
       `pendientes`)
-- [ ] 7.4 Crear `apps/worker/src/outbox/email-sender.factory.ts`: compone `SmtpEmailSender`/
+- [x] 7.4 Crear `apps/worker/src/outbox/email-sender.factory.ts`: compone `SmtpEmailSender`/
       `ConsoleEmailSender` leyendo `Configuracion` + `SMTP_USER`/`SMTP_PASSWORD`
 
 ### Phase 8: Wiring `main.ts` y empaquetado (D5/D7/D9/D10)
-- [ ] 8.1 Modificar `apps/worker/src/main.ts`: `PrismaClient`, cola `correo`, segundo `Worker`,
+- [x] 8.1 Modificar `apps/worker/src/main.ts`: `PrismaClient`, cola `correo`, segundo `Worker`,
       listener `on('failed')` marca `fallido` sólo si `attemptsMade >= attempts`, arranque del
       despachador — cola `system` intacta
-- [ ] 8.2 Modificar `apps/worker/package.json`: `+@seei/backend` (workspace), `+@prisma/client`,
+- [x] 8.2 Modificar `apps/worker/package.json`: `+@seei/backend` (workspace), `+@prisma/client`,
       `+nodemailer`; dev `+prisma`; script `generate`
-- [ ] 8.3 Modificar `infra/docker/worker.Dockerfile`: compilar `@seei/backend` y generar el
+- [x] 8.3 Modificar `infra/docker/worker.Dockerfile`: compilar `@seei/backend` y generar el
       cliente Prisma antes del `pnpm deploy`
-- [ ] 8.4 Modificar `infra/docker/docker-compose.yml`: `worker` `+DATABASE_URL`/`+SMTP_USER`/
+- [x] 8.4 Modificar `infra/docker/docker-compose.yml`: `worker` `+DATABASE_URL`/`+SMTP_USER`/
       `+SMTP_PASSWORD`, `depends_on: migrate, postgres`; `backend` `+APP_BASE_URL`
-- [ ] 8.5 Modificar `turbo.json`: `test:e2e.env` `+= OUTBOX_POLL_MS`, `OUTBOX_BATCH`
+- [x] 8.5 Modificar `turbo.json`: `test:e2e.env` `+= OUTBOX_POLL_MS`, `OUTBOX_BATCH`
 
 ### Phase 9: Regresión PR2
-- [ ] 9.1 `pnpm --filter @seei/worker test` verde
-- [ ] 9.2 `pnpm typecheck` verde en los 4 paquetes
-- [ ] 9.3 Verificar (D10, pregunta abierta): `pnpm --filter @seei/worker deploy --legacy` conserva
+- [x] 9.1 `pnpm --filter @seei/worker test` verde
+- [x] 9.2 `pnpm typecheck` verde en los 4 paquetes
+- [x] 9.3 Verificar (D10, pregunta abierta): `pnpm --filter @seei/worker deploy --legacy` conserva
       el cliente Prisma generado; si falla, aplicar la contingencia de D10 (copiar
       `apps/backend/prisma/` a la imagen y `prisma generate` en la etapa de deploy)
 
