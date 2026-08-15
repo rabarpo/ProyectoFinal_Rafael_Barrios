@@ -27,7 +27,7 @@ export class CrearProcesoDto extends SegmentacionDto {
   fecha_cierre_prevista!: string;
 
   @ApiPropertyOptional({
-    description: 'Pre-marcado por el asistente (D7); si se omite, persiste el default del schema (false)',
+    description: 'Pre-marcado por el asistente (D7); si se omite, persiste el default del schema (true, ADR-0008: "activa por defecto")',
     type: Boolean,
   })
   ocultar_resultados?: boolean;

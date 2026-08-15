@@ -154,6 +154,29 @@ describe('ProcesosService.crear() — lote de representante_aula (D3, tarea 17.1
     expect(respuesta.aulas).toEqual(['au1', 'au2']);
     expect(auditoria.log).toHaveBeenCalledTimes(1);
   });
+
+  // ADR-0008: "ocultar resultados hasta el cierre" es activa por defecto, como recomienda el
+  // PRD. Omitir el campo en la creación NO debe publicar resultados en vivo.
+  it('ocultar_resultados omitido en el DTO persiste true (ADR-0008, activa por defecto)', async () => {
+    const prisma = construirPrisma({
+      aulaFindMany: jest.fn().mockResolvedValue([
+        { id: 'au1', anio_escolar_id: 'anio-1' },
+        { id: 'au2', anio_escolar_id: 'anio-1' },
+      ]),
+      matriculaGroupBy: jest.fn().mockResolvedValue([
+        { aula_id: 'au1', _count: { _all: 3 } },
+        { aula_id: 'au2', _count: { _all: 2 } },
+      ]),
+    });
+    const { servicio } = construirServicio(prisma, 'anio-1');
+
+    const respuesta = await servicio.crear(BASE_DTO, 'actor-1');
+
+    expect(respuesta.ocultar_resultados).toBe(true);
+    expect(prisma.procesoElectoral.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ ocultar_resultados: true }) }),
+    );
+  });
 });
 
 // 17.2: aula sin matrícula activa queda excluida del lote, el resto sí se crea.

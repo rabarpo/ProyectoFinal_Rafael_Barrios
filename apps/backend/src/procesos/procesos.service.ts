@@ -337,7 +337,7 @@ export class ProcesosService {
           tipo: dto.tipo,
           fecha_apertura_prevista: apertura,
           fecha_cierre_prevista: cierre,
-          ocultar_resultados: dto.ocultar_resultados ?? false,
+          ocultar_resultados: dto.ocultar_resultados ?? true,
           publico_objetivo: dto.publico_objetivo,
           alcance: dto.alcance,
           nivel_id_snapshot: nivelIdSnapshot,

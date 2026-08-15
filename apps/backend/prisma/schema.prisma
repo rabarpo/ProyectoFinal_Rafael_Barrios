@@ -210,7 +210,7 @@ model ProcesoElectoral {
   fecha_cierre_prevista   DateTime            @db.Timestamptz(3)
   apertura_real           DateTime?           @db.Timestamptz(3)
   cierre_real             DateTime?           @db.Timestamptz(3)
-  ocultar_resultados      Boolean             @default(false)
+  ocultar_resultados      Boolean             @default(true)
   creado_en               DateTime            @default(now()) @db.Timestamptz(3)
   publico_objetivo        PublicoObjetivo
   alcance                 AlcanceSegmentacion
