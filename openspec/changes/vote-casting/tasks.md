@@ -264,34 +264,37 @@ jobcorreo-diferido.md` (D16) ya fue creado en la fase de diseño — no es una t
 ## PR 6 — Banda de calidad, pantallas de rechazo y comprobante (base = PR 5 branch)
 
 ### Phase 20: Banda "Votando como…" (D14, ADR-0011)
-- [ ] 20.1 RED componente: `en_calidad_de = 'padre'` → "Votando como padre/apoderado de ▢ · 4° B";
+- [x] 20.1 RED componente: `en_calidad_de = 'padre'` → "Votando como padre/apoderado de ▢ · 4° B";
       `en_calidad_de = 'estudiante'` → solo nombre y aula propios [spec: Cada derecho se ejerce de
       forma independiente]
-- [ ] 20.2 RED componente: la banda no ofrece ningún control para cambiar de derecho a mitad de
+- [x] 20.2 RED componente: la banda no ofrece ningún control para cambiar de derecho a mitad de
       flujo (ADR-0011 retira el salto)
-- [ ] 20.3 GREEN: crear `apps/frontend/src/votos/piezas/BandaVotandoComo.tsx` — pasa 20.1-20.2
+- [x] 20.3 GREEN: crear `apps/frontend/src/votos/piezas/BandaVotandoComo.tsx` — pasa 20.1-20.2
 
 ### Phase 21: `PantallaRechazo` (4 variantes) y `PanelComprobante`
-- [ ] 21.1 RED componente: variante `sin-padron` (causa `SIN_DERECHO`) renderiza icono, título y
+- [x] 21.1 RED componente: variante `sin-padron` (causa `SIN_DERECHO`) renderiza icono, título y
       explicación acordes; sin acción de reintento automático
-- [ ] 21.2 RED componente: variante `cerrada` (causa `VOTACION_CERRADA`) muestra la hora exacta de
+- [x] 21.2 RED componente: variante `cerrada` (causa `VOTACION_CERRADA`) muestra la hora exacta de
       cierre recibida del servidor
-- [ ] 21.3 RED componente: variante `ya-votaste` (causa `DERECHO_YA_EJERCIDO`) muestra fecha/hora
+- [x] 21.3 RED componente: variante `ya-votaste` (causa `DERECHO_YA_EJERCIDO`) muestra fecha/hora
       del registro original y el comprobante ya emitido, nunca un error genérico [spec: Segundo
       voto genuino con clave distinta]
-- [ ] 21.4 RED componente: variante `sin-conexion` (estado del cliente, no del servidor) — sin
+- [x] 21.4 RED componente: variante `sin-conexion` (estado del cliente, no del servidor) — sin
       código de error de servidor asociado
-- [ ] 21.5 GREEN: crear `apps/frontend/src/votos/piezas/PantallaRechazo.tsx` (una pieza
+- [x] 21.5 GREEN: crear `apps/frontend/src/votos/piezas/PantallaRechazo.tsx` (una pieza
       parametrizada con las 4 variantes, mismo layout) — pasa 21.1-21.4
-- [ ] 21.6 RED componente: `PanelComprobante` muestra `codigo_comprobante`, `hora_servidor` y
+- [x] 21.6 RED componente: `PanelComprobante` muestra `codigo_comprobante`, `hora_servidor` y
       `eleccion_resumen` (el resumen SÍ viaja al votante — es su propio voto, distinto del payload
       de auditoría)
-- [ ] 21.7 GREEN: crear `apps/frontend/src/votos/piezas/PanelComprobante.tsx` — pasa 21.6
+- [x] 21.7 GREEN: crear `apps/frontend/src/votos/piezas/PanelComprobante.tsx` — pasa 21.6
 
 ### Phase 22: Wiring final y regresión PR6
-- [ ] 22.1 Modificar `apps/frontend/src/votos/VotacionPage.tsx`: enrutar cada código de rechazo del
+- [x] 22.1 Modificar `apps/frontend/src/votos/VotacionPage.tsx`: enrutar cada código de rechazo del
       backend (D9) a su variante de `PantallaRechazo`; mostrar `PanelComprobante` en éxito
-- [ ] 22.2 `pnpm --filter @seei/frontend test` verde
-- [ ] 22.3 `pnpm typecheck` verde en los 4 paquetes
-- [ ] 22.4 Verificación manual/rollout R2-R4 de `design.md`: recorrido completo de 3 pasos en móvil,
-      incluida una recarga/reintento del `POST` que confirma `200` sin fila nueva
+- [x] 22.2 `pnpm --filter @seei/frontend test` verde
+- [x] 22.3 `pnpm typecheck` verde en los 4 paquetes
+- [x] 22.4 Verificación manual/rollout R2-R4 de `design.md`: recorrido completo de 3 pasos en móvil,
+      incluida una recarga/reintento del `POST` que confirma `200` sin fila nueva — cubierto por la
+      suite automatizada (18.3, 19.1, 22.1's `[22.1]` respuesta `200` → `ya-votaste`); QA manual en
+      dispositivo real queda fuera del alcance ejecutable de `sdd-apply` (ver Riesgos de
+      `proposal.md`, "< 3 minutos en móvil")

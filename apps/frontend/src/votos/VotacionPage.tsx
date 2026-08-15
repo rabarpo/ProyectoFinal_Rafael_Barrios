@@ -2,10 +2,32 @@ import { useEffect, useState } from 'react';
 import { emitir, papeleta } from './votos-api';
 import type { ComprobanteDto, EmitirVotoDto, PapeletaDto } from './votos-api';
 import { useClaveIdempotencia } from './clave-idempotencia';
+import { navegar } from '../app/useRuta';
 import { PasoInformacionProceso } from './piezas/PasoInformacionProceso';
 import { PasoBoleta } from './piezas/PasoBoleta';
 import type { Seleccion } from './piezas/PasoBoleta';
 import { PasoConfirmacion } from './piezas/PasoConfirmacion';
+import { PantallaRechazo } from './piezas/PantallaRechazo';
+import { PanelComprobante } from './piezas/PanelComprobante';
+
+/**
+ * vote-casting, PR6 (design.md D9, "Taxonomía de rechazos", tasks.md 22.1). El cuerpo de error de
+ * `POST /votos` es `{ codigo, ...detalle }` (`RechazoVoto.aHttp()`, `votos.service.ts`) — mismo
+ * criterio de extracción defensiva que `candidatos-api.ts.extraerCodigo`.
+ */
+function extraerCodigoRechazo(error: unknown): string | undefined {
+  if (error && typeof error === 'object' && 'codigo' in error) {
+    return (error as { codigo?: unknown }).codigo as string | undefined;
+  }
+  return undefined;
+}
+
+function extraerCierre(error: unknown): string | undefined {
+  if (error && typeof error === 'object' && 'cierre' in error) {
+    return (error as { cierre?: unknown }).cierre as string | undefined;
+  }
+  return undefined;
+}
 
 interface VotacionPageProps {
   derechoVotoId: string;
@@ -27,6 +49,9 @@ type Estado =
   | { fase: 'papeleta'; datos: PapeletaDto; paso: 1 | 2 | 3; seleccion: Seleccion | undefined }
   | { fase: 'enviando'; datos: PapeletaDto; seleccion: Seleccion }
   | { fase: 'exito'; comprobante: ComprobanteDto }
+  | { fase: 'ya-votaste'; comprobante: ComprobanteDto }
+  | { fase: 'sin-padron' }
+  | { fase: 'cerrada'; horaCierre: string }
   | { fase: 'sin-conexion'; datos: PapeletaDto; seleccion: Seleccion }
   | { fase: 'error'; datos: PapeletaDto; seleccion: Seleccion; mensaje: string }
   | { fase: 'no-disponible' };
@@ -36,9 +61,24 @@ type Estado =
  * /votos/papeleta/:id` (`votos-api.papeleta()`) al montar, `votos-api.emitir()` al confirmar el
  * paso 3. El paso NO es parte de la URL — es estado del contenedor, espejo literal de
  * `procesos/AperturaProcesoPage` (#13): el paso 2 no es enlazable ni recargable sin contexto
- * (threat matrix "Enrutamiento (cliente)"). PR6 reemplaza la rama `exito`/`sin-conexion`/`error`
- * por `PanelComprobante`/`PantallaRechazo` (tasks.md 22.1) y agrega `BandaVotandoComo` — este PR
- * sólo deja el wiring mínimo funcional.
+ * (threat matrix "Enrutamiento (cliente)").
+ *
+ * PR6 (design.md D9/D6, "Taxonomía de rechazos", tasks.md 22.1) enruta cada resultado de `POST
+ * /votos` por su STATUS exacto, nunca por inferencia del cuerpo:
+ * - `201` (esta petición creó la fila) -> `PanelComprobante` ("voto registrado ahora").
+ * - `200` (reintento con misma clave, colisión `23505` con clave distinta, o derecho ya ejercido —
+ *   D6: las tres NUNCA son un error HTTP) -> `PantallaRechazo variante="ya-votaste"` con el
+ *   comprobante ya emitido: es la lectura correcta incluso para el reintento idempotente, que
+ *   también "ya emitió" el voto.
+ * - `403` (causa 1, D9: derecho ajeno o inexistente) -> sin pantalla propia, redirección inmediata
+ *   ("/") — el mismo criterio que la Taxonomía de rechazos exige para cerrar el oráculo de
+ *   enumeración también en el cliente.
+ * - `codigo: 'SIN_DERECHO'` (causa 2, incluida la causa 5 "aula que no corresponde" plegada por D8)
+ *   -> `PantallaRechazo variante="sin-padron"`.
+ * - `codigo: 'VOTACION_CERRADA'` (causa 3) -> `PantallaRechazo variante="cerrada"` con la hora
+ *   exacta de cierre que envió el servidor (`detalle.cierre`).
+ * - Fallo de red/lo respuesta perdida (18.4, estado del CLIENTE) -> `PantallaRechazo
+ *   variante="sin-conexion"`, con reintento que reusa la MISMA clave de idempotencia.
  */
 export function VotacionPage({ derechoVotoId }: VotacionPageProps) {
   const [estado, setEstado] = useState<Estado>({ fase: 'cargando' });
@@ -95,12 +135,39 @@ export function VotacionPage({ derechoVotoId }: VotacionPageProps) {
     };
 
     try {
-      const { data, response } = await emitir(dto);
-      if (response.ok && data) {
+      const { data, error, response } = await emitir(dto);
+
+      if (response.status === 201 && data) {
         setEstado({ fase: 'exito', comprobante: data });
-      } else {
-        setEstado({ fase: 'error', datos, seleccion, mensaje: 'No se pudo registrar el voto' });
+        return;
       }
+
+      if (response.status === 200 && data) {
+        // D6: reintento con misma clave, colisión 23505 con clave distinta, o derecho ya
+        // ejercido — ninguna de las tres es un error HTTP; las tres devuelven el comprobante ya
+        // emitido.
+        setEstado({ fase: 'ya-votaste', comprobante: data });
+        return;
+      }
+
+      if (response.status === 403) {
+        // Causa 1 (D9): derecho ajeno o inexistente — sin pantalla propia, sin cuerpo
+        // discriminante que enrutar (cierra el oráculo de enumeración también en el cliente).
+        navegar({ nombre: 'proceso-nuevo' });
+        return;
+      }
+
+      const codigo = extraerCodigoRechazo(error);
+      if (codigo === 'SIN_DERECHO') {
+        setEstado({ fase: 'sin-padron' });
+        return;
+      }
+      if (codigo === 'VOTACION_CERRADA') {
+        setEstado({ fase: 'cerrada', horaCierre: extraerCierre(error) ?? datos.proceso.fecha_cierre_prevista });
+        return;
+      }
+
+      setEstado({ fase: 'error', datos, seleccion, mensaje: 'No se pudo registrar el voto' });
     } catch {
       // 18.4: la petición nunca llegó o se perdió la respuesta — estado del CLIENTE, no del
       // servidor. Nunca se genera un evento RECHAZO acá (eso lo decide únicamente el servidor).
@@ -121,21 +188,32 @@ export function VotacionPage({ derechoVotoId }: VotacionPageProps) {
   }
 
   if (estado.fase === 'exito') {
+    return <PanelComprobante comprobante={estado.comprobante} />;
+  }
+
+  if (estado.fase === 'ya-votaste') {
+    return <PantallaRechazo variante="ya-votaste" comprobante={estado.comprobante} />;
+  }
+
+  if (estado.fase === 'sin-padron') {
+    return <PantallaRechazo variante="sin-padron" />;
+  }
+
+  if (estado.fase === 'cerrada') {
+    return <PantallaRechazo variante="cerrada" horaCierre={estado.horaCierre} />;
+  }
+
+  if (estado.fase === 'sin-conexion') {
     return (
-      <div className="mx-auto w-full max-w-page px-5 md:px-12">
-        <h1 className="text-headline-lg-mobile text-primary md:text-headline-lg">Voto registrado</h1>
-        <p className="mt-2 text-body-md text-on-surface">Comprobante: {estado.comprobante.codigo_comprobante}</p>
-      </div>
+      <PantallaRechazo variante="sin-conexion" onReintentar={() => confirmar(estado.datos, estado.seleccion)} />
     );
   }
 
-  if (estado.fase === 'sin-conexion' || estado.fase === 'error') {
+  if (estado.fase === 'error') {
     return (
       <div className="mx-auto w-full max-w-page px-5 md:px-12">
         <p role="alert" className="text-body-md text-error">
-          {estado.fase === 'sin-conexion'
-            ? 'Sin conexión al confirmar. Verificá tu conexión e intentá de nuevo.'
-            : estado.mensaje}
+          {estado.mensaje}
         </p>
         <button
           type="button"

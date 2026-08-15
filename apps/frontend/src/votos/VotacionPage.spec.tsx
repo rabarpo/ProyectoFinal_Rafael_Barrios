@@ -150,4 +150,63 @@ describe('VotacionPage', () => {
     const [primeraLlamada, segundaLlamada] = vi.mocked(votosApi.emitir).mock.calls;
     expect(primeraLlamada[0].clave_idempotencia).toBe(segundaLlamada[0].clave_idempotencia);
   });
+
+  // [design.md D9/D14, "Taxonomía de rechazos"; tasks.md 22.1] PR6: cada código de rechazo del
+  // backend se enruta a su variante dedicada de `PantallaRechazo`, y el éxito real (`201`) muestra
+  // `PanelComprobante`. `200` (D6: reintento/colisión/derecho ya ejercido, nunca un error HTTP)
+  // enruta a la variante `ya-votaste` con el comprobante ya emitido.
+  async function llegarAlPaso3() {
+    await screen.findByText(/alcaldía escolar 2026/i);
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    await screen.findByRole('radiogroup');
+    fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    await screen.findByRole('checkbox');
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+  }
+
+  it('[22.1] SIN_DERECHO enruta a la pantalla "No estás en el padrón"', async () => {
+    vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
+    vi.mocked(votosApi.emitir).mockResolvedValueOnce({
+      data: undefined,
+      error: { codigo: 'SIN_DERECHO' },
+      response: { ok: false, status: 409 } as Response,
+    } as never);
+
+    render(<VotacionPage derechoVotoId="dv1" />);
+    await llegarAlPaso3();
+
+    await screen.findByText(/no estás en el padrón/i);
+  });
+
+  it('[22.1] VOTACION_CERRADA enruta a la pantalla "Votación cerrada" con la hora exacta del servidor', async () => {
+    vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
+    vi.mocked(votosApi.emitir).mockResolvedValueOnce({
+      data: undefined,
+      error: { codigo: 'VOTACION_CERRADA', cierre: '2026-09-05T18:00:00.000Z' },
+      response: { ok: false, status: 409 } as Response,
+    } as never);
+
+    render(<VotacionPage derechoVotoId="dv1" />);
+    await llegarAlPaso3();
+
+    await screen.findByText(/votación cerrada/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(new Date('2026-09-05T18:00:00.000Z').toLocaleString());
+  });
+
+  it('[22.1] respuesta 200 (D6: reintento/colisión/derecho ya ejercido) enruta a "Ya emitiste tu voto" con el comprobante', async () => {
+    vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
+    vi.mocked(votosApi.emitir).mockResolvedValueOnce({
+      data: comprobanteMock().data,
+      error: undefined,
+      response: { ok: true, status: 200 } as Response,
+    } as never);
+
+    render(<VotacionPage derechoVotoId="dv1" />);
+    await llegarAlPaso3();
+
+    await screen.findByText(/ya emitiste tu voto/i);
+    expect(screen.getByRole('alert')).toHaveTextContent('K7QM-3XZ9-8HTB-P4WR');
+  });
 });
