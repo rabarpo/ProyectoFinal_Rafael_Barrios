@@ -24,6 +24,17 @@ export class PapeletaProcesoDto {
 
   @ApiProperty({ type: String })
   fecha_cierre_prevista!: string;
+
+  // PR5 (deviation encontrada al construir VotacionPage): `opciones` sólo trae `{id, etiqueta}`
+  // (D13) — sin `tipo` el cliente no puede saber bajo qué campo del `EmitirVotoDto` (`lista_id` /
+  // `opcion_id` / `candidato_id`) debe enviar el id elegido, porque los tres son espacios de UUID
+  // independientes. Adición aditiva y retrocompatible (no toca la transacción de PR2, sólo esta
+  // lectura de UX de PR1); no requiere migración.
+  @ApiProperty({
+    description: 'Tipo de proceso electoral — determina el campo de elección del voto',
+    enum: ['municipio', 'representante_aula', 'padres', 'consulta'],
+  })
+  tipo!: 'municipio' | 'representante_aula' | 'padres' | 'consulta';
 }
 
 export class PapeletaOpcionDto {

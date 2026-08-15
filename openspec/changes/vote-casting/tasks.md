@@ -221,45 +221,45 @@ jobcorreo-diferido.md` (D16) ya fue creado en la fase de diseño — no es una t
 ## PR 5 — Ruta, `VotacionPage` y los 3 pasos (base = PR 4 branch)
 
 ### Phase 16: Ruta, API cliente y clave de idempotencia (D14, D15)
-- [ ] 16.1 Modificar `apps/frontend/src/app/rutas.ts`: variante `{ nombre: 'votacion';
+- [x] 16.1 Modificar `apps/frontend/src/app/rutas.ts`: variante `{ nombre: 'votacion';
       derechoVotoId }` en la unión `Ruta`; `parsearRuta`/`rutaAPath` para `/votar/:derechoVotoId`
-- [ ] 16.2 RED unit: `parsearRuta('/votar/<id>')` ida y vuelta
-- [ ] 16.3 GREEN: implementación en `rutas.ts`/`rutas.spec.ts` — pasa 16.2
-- [ ] 16.4 Crear `apps/frontend/src/votos/votos-api.ts`: wrappers `emitir`/`papeleta` sobre
+- [x] 16.2 RED unit: `parsearRuta('/votar/<id>')` ida y vuelta
+- [x] 16.3 GREEN: implementación en `rutas.ts`/`rutas.spec.ts` — pasa 16.2
+- [x] 16.4 Crear `apps/frontend/src/votos/votos-api.ts`: wrappers `emitir`/`papeleta` sobre
       `createSeeiClient` (requiere `openapi.json` regenerado en PR3)
-- [ ] 16.5 RED unit: `crypto.randomUUID()` generado al entrar al paso 3, persistido en
+- [x] 16.5 RED unit: `crypto.randomUUID()` generado al entrar al paso 3, persistido en
       `sessionStorage` bajo `seei:voto:{procesoId}:{derechoVotoId}`, estable entre reintentos
       [spec: Reintento con misma clave]
-- [ ] 16.6 RED unit: sin `sessionStorage` disponible (modo privado) → fallback a `useRef` en
+- [x] 16.6 RED unit: sin `sessionStorage` disponible (modo privado) → fallback a `useRef` en
       memoria, sigue estable dentro de la misma sesión de render
-- [ ] 16.7 GREEN: crear `apps/frontend/src/votos/clave-idempotencia.ts` — pasa 16.5-16.6
+- [x] 16.7 GREEN: crear `apps/frontend/src/votos/clave-idempotencia.ts` — pasa 16.5-16.6
 
 ### Phase 17: Piezas presentacionales de los 3 pasos (D14)
-- [ ] 17.1 RED componente: `PasoBoleta` — "Continuar" deshabilitado sin selección, incluida la
+- [x] 17.1 RED componente: `PasoBoleta` — "Continuar" deshabilitado sin selección, incluida la
       opción de voto en blanco (borde discontinuo) [spec: Boleta mobile-first de 3 pasos]
-- [ ] 17.2 RED componente: el voto en blanco solo se registra por selección explícita, nunca por
+- [x] 17.2 RED componente: el voto en blanco solo se registra por selección explícita, nunca por
       ausencia de selección [spec: Voto en blanco explícito]
-- [ ] 17.3 RED componente: `PasoConfirmacion` — resumen + casilla de consentimiento, botón pasa a
+- [x] 17.3 RED componente: `PasoConfirmacion` — resumen + casilla de consentimiento, botón pasa a
       "Registrando…" al confirmar
-- [ ] 17.4 GREEN: crear `apps/frontend/src/votos/piezas/PasoInformacionProceso.tsx`,
+- [x] 17.4 GREEN: crear `apps/frontend/src/votos/piezas/PasoInformacionProceso.tsx`,
       `PasoBoleta.tsx`, `PasoConfirmacion.tsx` (presentacionales puros, sin efectos, tokens vigentes
       de `index.css`) — pasa 17.1-17.3
 
 ### Phase 18: `VotacionPage` y wiring (D14)
-- [ ] 18.1 Crear `apps/frontend/src/votos/VotacionPage.tsx`: contenedor con todos los efectos y el
+- [x] 18.1 Crear `apps/frontend/src/votos/VotacionPage.tsx`: contenedor con todos los efectos y el
       estado de paso (paso NO es parte de la URL — espejo de `AperturaProcesoPage`); llama
       `votos-api.papeleta()` en el paso 1, `votos-api.emitir()` en la confirmación del paso 3
-- [ ] 18.2 Modificar `apps/frontend/src/app/Enrutador.tsx`: caso `'votacion'` → `VotacionPage`
-- [ ] 18.3 RED componente: navegar entre pasos sin recargar; el paso 2 no es enlazable/recargable
+- [x] 18.2 Modificar `apps/frontend/src/app/Enrutador.tsx`: caso `'votacion'` → `VotacionPage`
+- [x] 18.3 RED componente: navegar entre pasos sin recargar; el paso 2 no es enlazable/recargable
       sin contexto (D14 — los pasos son estado del contenedor, no rutas)
-- [ ] 18.4 RED componente: "sin conexión al confirmar" (la petición nunca llega o se pierde la
+- [x] 18.4 RED componente: "sin conexión al confirmar" (la petición nunca llega o se pierde la
       respuesta) muestra el estado correspondiente sin generar `RECHAZO` [spec: derivado — no
       cubierto por el servidor]
-- [ ] 18.5 GREEN: wiring completo — pasa 18.3-18.4
+- [x] 18.5 GREEN: wiring completo — pasa 18.3-18.4
 
 ### Phase 19: Regresión PR5
-- [ ] 19.1 `pnpm --filter @seei/frontend test` verde
-- [ ] 19.2 `pnpm typecheck` verde en los 4 paquetes
+- [x] 19.1 `pnpm --filter @seei/frontend test` verde
+- [x] 19.2 `pnpm typecheck` verde en los 4 paquetes
 
 ## PR 6 — Banda de calidad, pantallas de rechazo y comprobante (base = PR 5 branch)
 

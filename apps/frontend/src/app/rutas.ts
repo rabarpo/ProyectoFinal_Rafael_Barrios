@@ -13,6 +13,7 @@ export type Ruta =
   | { nombre: 'candidato-nuevo'; procesoId: string }
   | { nombre: 'candidato-edicion'; procesoId: string; candidatoId: string }
   | { nombre: 'apertura'; procesoId: string }
+  | { nombre: 'votacion'; derechoVotoId: string }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -59,6 +60,12 @@ export function parsearRuta(pathname: string): Ruta {
     return { nombre: 'apertura', procesoId: partes[1] };
   }
 
+  // vote-casting, PR5 (design.md D14, tasks.md 16.1): ruta plana `/votar/:derechoVotoId`, fuera de
+  // `/procesos` — el votante no gestiona procesos, ejerce un derecho propio.
+  if (partes[0] === 'votar' && partes.length === 2) {
+    return { nombre: 'votacion', derechoVotoId: partes[1] };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -76,6 +83,8 @@ export function rutaAPath(ruta: Ruta): string {
       return `/procesos/${ruta.procesoId}/candidatos/${ruta.candidatoId}`;
     case 'apertura':
       return `/procesos/${ruta.procesoId}/abrir`;
+    case 'votacion':
+      return `/votar/${ruta.derechoVotoId}`;
     case 'no-encontrada':
       return ruta.pathname;
   }

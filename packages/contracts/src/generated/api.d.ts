@@ -1376,6 +1376,11 @@ export interface components {
             nombre: string;
             descripcion: string | null;
             fecha_cierre_prevista: string;
+            /**
+             * @description Tipo de proceso electoral — determina el campo de elección del voto
+             * @enum {string}
+             */
+            tipo: "municipio" | "representante_aula" | "padres" | "consulta";
         };
         PapeletaOpcionDto: {
             id: string;

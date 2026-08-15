@@ -4,6 +4,7 @@ import { ProcesosIndexPage } from '../procesos/ProcesosIndexPage';
 import { AperturaProcesoPage } from '../procesos/AperturaProcesoPage';
 import { RegistroCandidatoPage } from '../candidatos/RegistroCandidatoPage';
 import { GestionCandidatosPage } from '../candidatos/GestionCandidatosPage';
+import { VotacionPage } from '../votos/VotacionPage';
 
 /**
  * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
@@ -12,9 +13,10 @@ import { GestionCandidatosPage } from '../candidatos/GestionCandidatosPage';
  * `candidato-edicion` montan `RegistroCandidatoPage` real desde PR7
  * (tasks.md 21.5); `candidatos` (listado/gestión) monta `GestionCandidatosPage`
  * real desde PR8 (tasks.md 23.6); `apertura` monta `AperturaProcesoPage` real
- * desde `#13`/PR5 (design.md D13, tasks.md 18.2) — sin stubs restantes en el
- * alcance de este change. `no-encontrada` se renderiza dentro del shell,
- * nunca lanza ni deja `undefined`.
+ * desde `#13`/PR5 (design.md D13, tasks.md 18.2); `votacion` monta
+ * `VotacionPage` real desde `#14`/PR5 (design.md D14, tasks.md 18.2) — sin
+ * stubs restantes en el alcance de este change. `no-encontrada` se renderiza
+ * dentro del shell, nunca lanza ni deja `undefined`.
  */
 function VistaNoEncontrada() {
   return <p className="text-body-md text-on-surface">Página no encontrada.</p>;
@@ -36,6 +38,8 @@ export function Enrutador() {
       return <RegistroCandidatoPage procesoId={ruta.procesoId} candidatoId={ruta.candidatoId} />;
     case 'apertura':
       return <AperturaProcesoPage procesoId={ruta.procesoId} />;
+    case 'votacion':
+      return <VotacionPage derechoVotoId={ruta.derechoVotoId} />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }

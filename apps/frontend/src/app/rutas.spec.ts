@@ -14,6 +14,7 @@ describe('rutas', () => {
       { nombre: 'candidato-nuevo', procesoId: 'p1' },
       { nombre: 'candidato-edicion', procesoId: 'p1', candidatoId: 'c1' },
       { nombre: 'apertura', procesoId: 'p1' },
+      { nombre: 'votacion', derechoVotoId: 'dv1' },
     ];
 
     for (const ruta of casos) {

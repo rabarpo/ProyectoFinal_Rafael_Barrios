@@ -62,6 +62,7 @@ describe('PapeletaService.obtener() — derecho propio (D13, tarea 3.1)', () => 
       nombre: 'Alcaldía escolar 2026',
       descripcion: 'Elección del municipio escolar',
       fecha_cierre_prevista: '2026-09-05T18:00:00.000Z',
+      tipo: 'municipio',
     });
     expect(papeleta.en_calidad_de).toBe('estudiante');
     expect(papeleta.opciones).toEqual([

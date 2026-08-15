@@ -37,6 +37,7 @@ export class PapeletaService {
         nombre: dv.proceso.nombre,
         descripcion: dv.proceso.descripcion,
         fecha_cierre_prevista: dv.proceso.fecha_cierre_prevista.toISOString(),
+        tipo: dv.proceso.tipo,
       },
       en_calidad_de: dv.en_calidad_de,
       opciones,

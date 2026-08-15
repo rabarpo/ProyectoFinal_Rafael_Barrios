@@ -4134,13 +4134,24 @@
           },
           "fecha_cierre_prevista": {
             "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de proceso electoral — determina el campo de elección del voto",
+            "enum": [
+              "municipio",
+              "representante_aula",
+              "padres",
+              "consulta"
+            ]
           }
         },
         "required": [
           "id",
           "nombre",
           "descripcion",
-          "fecha_cierre_prevista"
+          "fecha_cierre_prevista",
+          "tipo"
         ]
       },
       "PapeletaOpcionDto": {
