@@ -1,3 +1,4 @@
+import type { ComprobanteService } from './comprobante.service';
 import type { PapeletaService } from './papeleta.service';
 import { VotosController } from './votos.controller';
 import type { VotosService } from './votos.service';
@@ -29,7 +30,8 @@ describe('VotosController — POST / (D6, tarea 10.3-10.4)', () => {
     const construirComprobante = jest.fn().mockResolvedValue(comprobante);
     const votosService = { emitir, construirComprobante } as unknown as VotosService;
     const papeletaService = {} as unknown as PapeletaService;
-    const controller = new VotosController(papeletaService, votosService);
+    const comprobanteService = {} as unknown as ComprobanteService;
+    const controller = new VotosController(papeletaService, votosService, comprobanteService);
     const res = { status: jest.fn() };
     return { controller, emitir, construirComprobante, res, comprobante };
   }

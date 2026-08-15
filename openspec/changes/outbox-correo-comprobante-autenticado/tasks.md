@@ -140,35 +140,35 @@ que la suite e2e de atomicidad de PR1 siga verde.
 ## PR 3 — Endpoint de comprobante autenticado (base = PR 2 branch)
 
 ### Phase 10: `ComprobanteService` y endpoint (D11)
-- [ ] 10.1 RED unit: voto propio ⇒ delega en `VotosService.construirComprobante()` y responde el
+- [x] 10.1 RED unit: voto propio ⇒ delega en `VotosService.construirComprobante()` y responde el
       `ComprobanteDto` [spec comprobante-autenticado: Usuario autenticado consulta su propio
       comprobante]
-- [ ] 10.2 RED unit: voto ajeno (`Voto → DerechoVoto.usuario_id !== sesion.userId`) ⇒ `403`
+- [x] 10.2 RED unit: voto ajeno (`Voto → DerechoVoto.usuario_id !== sesion.userId`) ⇒ `403`
       [spec: Comprobante de otro usuario es rechazado; threat: IDOR/enumeración]
-- [ ] 10.3 RED unit: `votoId` inexistente ⇒ `403` con el **mismo** cuerpo que el caso ajeno (sin
+- [x] 10.3 RED unit: `votoId` inexistente ⇒ `403` con el **mismo** cuerpo que el caso ajeno (sin
       `404` oráculo) [threat: IDOR/enumeración]
-- [ ] 10.4 GREEN: crear `apps/backend/src/votos/comprobante.service.ts` — pasa 10.1-10.3
-- [ ] 10.5 Modificar `apps/backend/src/votos/votos.controller.ts`: `GET
+- [x] 10.4 GREEN: crear `apps/backend/src/votos/comprobante.service.ts` — pasa 10.1-10.3
+- [x] 10.5 Modificar `apps/backend/src/votos/votos.controller.ts`: `GET
       /votos/comprobante/:votoId` con `@UseGuards(AuthGuard)`, `ParseUUIDPipe`, `@ApiResponse`
       para `200/400/401/403`
-- [ ] 10.6 Modificar `apps/backend/src/votos/votos.module.ts`: registrar `ComprobanteService`
+- [x] 10.6 Modificar `apps/backend/src/votos/votos.module.ts`: registrar `ComprobanteService`
 
 ### Phase 11: Suite e2e de comprobante autenticado
-- [ ] 11.1 RED e2e: voto propio ⇒ `200` con `eleccion_resumen` correcto (incluido "Voto en
+- [x] 11.1 RED e2e: voto propio ⇒ `200` con `eleccion_resumen` correcto (incluido "Voto en
       blanco") [spec: Usuario autenticado consulta su propio comprobante]
-- [ ] 11.2 RED e2e: voto de otro usuario ⇒ `403` con el mismo cuerpo que un `votoId` inexistente
+- [x] 11.2 RED e2e: voto de otro usuario ⇒ `403` con el mismo cuerpo que un `votoId` inexistente
       [spec: Comprobante de otro usuario es rechazado; threat: IDOR/enumeración]
-- [ ] 11.3 RED e2e: sin cookie ⇒ `401`, sin exponer datos del comprobante [spec: Petición sin
+- [x] 11.3 RED e2e: sin cookie ⇒ `401`, sin exponer datos del comprobante [spec: Petición sin
       autenticación es rechazada]
-- [ ] 11.4 RED e2e: `votoId` no-UUID ⇒ `400` [threat: Enrutamiento (cliente)]
-- [ ] 11.5 GREEN: crear `apps/backend/test/votos/comprobante-autenticado.e2e-spec.ts` — pasa
+- [x] 11.4 RED e2e: `votoId` no-UUID ⇒ `400` [threat: Enrutamiento (cliente)]
+- [x] 11.5 GREEN: crear `apps/backend/test/votos/comprobante-autenticado.e2e-spec.ts` — pasa
       11.1-11.4
 
 ### Phase 12: Contrato y regresión PR3
-- [ ] 12.1 `pnpm openapi:extract`: regenerar `packages/contracts/openapi.json` y
+- [x] 12.1 `pnpm openapi:extract`: regenerar `packages/contracts/openapi.json` y
       `src/generated/api.d.ts`; `GET /votos/comprobante/{votoId}` documentado con `200/400/401/403`
-- [ ] 12.2 `pnpm --filter @seei/backend test:e2e -- comprobante-autenticado` verde
-- [ ] 12.3 `pnpm typecheck` verde en los 4 paquetes
+- [x] 12.2 `pnpm --filter @seei/backend test:e2e -- comprobante-autenticado` verde
+- [x] 12.3 `pnpm typecheck` verde en los 4 paquetes
 
 ## PR 4 — Página de comprobante autenticado (base = PR 3 branch)
 

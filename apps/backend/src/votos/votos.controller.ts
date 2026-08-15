@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Get, Param, ParseUUIDPipe, Post,
 import { ApiBody, ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import type { SesionUsuario } from '../auth/sesion-usuario';
+import { ComprobanteService } from './comprobante.service';
 import { ComprobanteDto } from './dto/comprobante.dto';
 import { EmitirVotoDto } from './dto/emitir-voto.dto';
 import { PapeletaDto } from './dto/papeleta.dto';
@@ -40,6 +41,7 @@ export class VotosController {
   constructor(
     private readonly papeletaService: PapeletaService,
     private readonly votosService: VotosService,
+    private readonly comprobanteService: ComprobanteService,
   ) {}
 
   @Post()
@@ -77,5 +79,23 @@ export class VotosController {
     @Req() req: RequestConUsuario,
   ): Promise<PapeletaDto> {
     return this.papeletaService.obtener(derechoVotoId, req.usuario!);
+  }
+
+  // outbox-correo-comprobante-autenticado (#15, PR3; design.md D11, tarea 10.5). `votoId`, NO
+  // `codigo_comprobante`: el código está pensado para dictarse por teléfono/imprimirse (Crockford,
+  // `#14` D12) y en una URL se filtraría al historial del navegador, `Referer` y logs de acceso de
+  // Caddy. La autorización vive en `ComprobanteService` (pertenencia, no secreto de la URL).
+  @Get('comprobante/:votoId')
+  @ApiOperation({ summary: 'Comprobante completo (con eleccion_resumen) de un voto propio, tras autenticación (D11)' })
+  @ApiParam({ name: 'votoId', type: String })
+  @ApiResponse({ status: 200, description: 'Comprobante', type: ComprobanteDto })
+  @ApiResponse({ status: 400, description: 'votoId no-UUID' })
+  @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
+  @ApiResponse({ status: 403, description: 'Voto ajeno o inexistente' })
+  async comprobante(
+    @Param('votoId', ParseUUIDPipe) votoId: string,
+    @Req() req: RequestConUsuario,
+  ): Promise<ComprobanteDto> {
+    return this.comprobanteService.obtener(votoId, req.usuario!);
   }
 }

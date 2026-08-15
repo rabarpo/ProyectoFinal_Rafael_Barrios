@@ -2829,6 +2829,51 @@
           "votos"
         ]
       }
+    },
+    "/votos/comprobante/{votoId}": {
+      "get": {
+        "operationId": "VotosController_comprobante",
+        "parameters": [
+          {
+            "name": "votoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comprobante",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComprobanteDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "votoId no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Voto ajeno o inexistente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Comprobante completo (con eleccion_resumen) de un voto propio, tras autenticación (D11)",
+        "tags": [
+          "votos"
+        ]
+      }
     }
   },
   "info": {
