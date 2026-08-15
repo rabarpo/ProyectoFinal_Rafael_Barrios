@@ -50,6 +50,14 @@
 // idempotente ni por fila de `DerechoVoto` materializada), con conteos en el payload. No escribe ni
 // referencia un `Voto`, así que tampoco activa la obligación versionada de ADR-0016 — ver
 // test/schema/auditoria.spec.ts, caso [TM4].
+// vote-casting, PR2/PR3 (design.md D11, tareas 6.7/8.5): primer emisor real de `VOTO`/`RECHAZO`
+// (ambas claves ya existían desde append-only-audit-engine, cero claves nuevas aquí). `VOTO` se
+// registra una sola vez por transacción exitosa de `POST /votos`, dentro de la misma transacción
+// que inserta el `Voto`; `RECHAZO` se registra en su propia transacción independiente y exitosa
+// para las causas 2-4 de rechazo del derecho al voto (nunca dentro de la transacción fallida del
+// voto). Ninguno de los dos payloads incluye `candidato_id`/`lista_id`/`opcion_id`/`blanco`/
+// `eleccion` — sí activan la cláusula `WHEN` del trigger de ADR-0016 (`ambas` ya estaban cubiertas
+// desde su enmienda en #3) — ver test/schema/auditoria.spec.ts, caso [TM4].
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
