@@ -15,12 +15,21 @@ describe('rutas', () => {
       { nombre: 'candidato-edicion', procesoId: 'p1', candidatoId: 'c1' },
       { nombre: 'apertura', procesoId: 'p1' },
       { nombre: 'votacion', derechoVotoId: 'dv1' },
+      { nombre: 'comprobante', votoId: 'v1' },
     ];
 
     for (const ruta of casos) {
       const path = rutaAPath(ruta);
       expect(parsearRuta(path)).toEqual(ruta);
     }
+  });
+
+  // [design.md D12; tasks.md 13.1; threat: Enrutamiento (cliente)] `/comprobante` sin `votoId`
+  // no es una variante navegable: debe caer en 'no-encontrada', nunca lanzar ni tratarse como un
+  // listado agregado ("Mis votaciones" está explícitamente fuera de alcance de #15).
+  it("[13.1] '/comprobante' sin id resuelve a 'no-encontrada'", () => {
+    expect(() => parsearRuta('/comprobante')).not.toThrow();
+    expect(parsearRuta('/comprobante').nombre).toBe('no-encontrada');
   });
 
   it("path traversal ('/../../etc/passwd') resuelve a 'no-encontrada', nunca lanza", () => {

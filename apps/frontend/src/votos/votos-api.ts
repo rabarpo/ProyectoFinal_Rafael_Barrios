@@ -22,3 +22,9 @@ export async function papeleta(derechoVotoId: string) {
 export async function emitir(dto: EmitirVotoDto) {
   return client().POST('/votos', { body: dto });
 }
+
+// outbox-correo-comprobante-autenticado, PR4 (design.md D12, tasks.md 13.3): requiere el
+// contrato regenerado en PR3 (`GET /votos/comprobante/{votoId}`).
+export async function comprobante(votoId: string) {
+  return client().GET('/votos/comprobante/{votoId}', { params: { path: { votoId } } });
+}

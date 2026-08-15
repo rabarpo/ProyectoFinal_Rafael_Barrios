@@ -14,6 +14,7 @@ export type Ruta =
   | { nombre: 'candidato-edicion'; procesoId: string; candidatoId: string }
   | { nombre: 'apertura'; procesoId: string }
   | { nombre: 'votacion'; derechoVotoId: string }
+  | { nombre: 'comprobante'; votoId: string }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -66,6 +67,13 @@ export function parsearRuta(pathname: string): Ruta {
     return { nombre: 'votacion', derechoVotoId: partes[1] };
   }
 
+  // outbox-correo-comprobante-autenticado, PR4 (design.md D12, tasks.md 13.2): ruta plana
+  // `/comprobante/:votoId`, mismo criterio que `/votar/:derechoVotoId` (#14 D14) — el votante no
+  // gestiona, ejerce/relee. `/comprobante` sin id cae en 'no-encontrada' (sin listado agregado).
+  if (partes[0] === 'comprobante' && partes.length === 2) {
+    return { nombre: 'comprobante', votoId: partes[1] };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -85,6 +93,8 @@ export function rutaAPath(ruta: Ruta): string {
       return `/procesos/${ruta.procesoId}/abrir`;
     case 'votacion':
       return `/votar/${ruta.derechoVotoId}`;
+    case 'comprobante':
+      return `/comprobante/${ruta.votoId}`;
     case 'no-encontrada':
       return ruta.pathname;
   }

@@ -173,28 +173,28 @@ que la suite e2e de atomicidad de PR1 siga verde.
 ## PR 4 — Página de comprobante autenticado (base = PR 3 branch)
 
 ### Phase 13: Ruta y API cliente (D12)
-- [ ] 13.1 RED unit: `parsearRuta('/comprobante/<id>')` ida y vuelta y `rutaAPath` inversa;
+- [x] 13.1 RED unit: `parsearRuta('/comprobante/<id>')` ida y vuelta y `rutaAPath` inversa;
       `/comprobante` sin id ⇒ `no-encontrada` [threat: Enrutamiento (cliente)]
-- [ ] 13.2 GREEN: modificar `apps/frontend/src/app/rutas.ts`/`rutas.spec.ts`: variante `{ nombre:
+- [x] 13.2 GREEN: modificar `apps/frontend/src/app/rutas.ts`/`rutas.spec.ts`: variante `{ nombre:
       'comprobante'; votoId }` — pasa 13.1
-- [ ] 13.3 Modificar `apps/frontend/src/votos/votos-api.ts`: wrapper `comprobante(votoId)` sobre
+- [x] 13.3 Modificar `apps/frontend/src/votos/votos-api.ts`: wrapper `comprobante(votoId)` sobre
       `createSeeiClient` (requiere el contrato regenerado en PR3)
 
 ### Phase 14: `ComprobantePage` y ajuste de `PanelComprobante` (D12)
-- [ ] 14.1 RED componente: `ComprobantePage` en cargando/`403`/éxito con `eleccion_resumen` [spec:
+- [x] 14.1 RED componente: `ComprobantePage` en cargando/`403`/éxito con `eleccion_resumen` [spec:
       Acceso vía enlace del correo; Acceso vía URL directa equivalente]
-- [ ] 14.2 GREEN: crear `apps/frontend/src/votos/ComprobantePage.tsx` + `.spec.tsx` — pasa 14.1
-- [ ] 14.3 Modificar `apps/frontend/src/app/Enrutador.tsx`: caso `'comprobante'` ⇒
+- [x] 14.2 GREEN: crear `apps/frontend/src/votos/ComprobantePage.tsx` + `.spec.tsx` — pasa 14.1
+- [x] 14.3 Modificar `apps/frontend/src/app/Enrutador.tsx`: caso `'comprobante'` ⇒
       `ComprobantePage`
-- [ ] 14.4 RED componente: `PanelComprobante` ya no ofrece la casilla "Quiero recibir una
+- [x] 14.4 RED componente: `PanelComprobante` ya no ofrece la casilla "Quiero recibir una
       copia…"; muestra en su lugar la línea informativa de copia ya enviada
-- [ ] 14.5 GREEN: modificar `apps/frontend/src/votos/piezas/PanelComprobante.tsx` + `.spec.tsx` —
+- [x] 14.5 GREEN: modificar `apps/frontend/src/votos/piezas/PanelComprobante.tsx` + `.spec.tsx` —
       pasa 14.4
 
 ### Phase 15: Regresión PR4
-- [ ] 15.1 `pnpm --filter @seei/frontend test` verde
-- [ ] 15.2 `pnpm typecheck` verde en los 4 paquetes
-- [ ] 15.3 Verificación funcional: sin sesión, `/comprobante/:votoId` muestra `LoginPage`
+- [x] 15.1 `pnpm --filter @seei/frontend test` verde
+- [x] 15.2 `pnpm typecheck` verde en los 4 paquetes
+- [x] 15.3 Verificación funcional: sin sesión, `/comprobante/:votoId` muestra `LoginPage`
       conservando la URL (`#12` D11); tras autenticar, renderiza la misma ruta [threat:
       Enrutamiento (cliente)]
 

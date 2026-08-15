@@ -1,5 +1,3 @@
-import { useId, useState } from 'react';
-
 interface ComprobanteResumen {
   codigo_comprobante: string;
   hora_servidor: string;
@@ -13,17 +11,17 @@ interface PanelComprobanteProps {
 /**
  * Presentacional puro (design.md D14, "Contratos HTTP", tasks.md 21.6-21.7). Muestra
  * `codigo_comprobante`, `hora_servidor` y `eleccion_resumen` — el resumen SÍ viaja al votante
- * ([ADR-0006] §2, distinto del payload de auditoría de D11, que nunca lo lleva). La casilla de
- * "copia por correo" (proposal.md, paso 3: "resumen + casilla de consentimiento de copia por
- * correo") es un gesto explícito del cliente sin campo asociado en `EmitirVotoDto` ni efecto en el
- * outbox real: ese envío es #15, íntegramente fuera de alcance de #14 (proposal.md, "Fuera de
- * alcance"). Marcarla solo confirma la intención en pantalla, nunca se infiere de la ausencia de
- * selección — mismo criterio de gesto explícito que `PasoConfirmacion`/`PanelConfirmacionApertura`.
+ * ([ADR-0006] §2, distinto del payload de auditoría de D11, que nunca lo lleva).
+ *
+ * outbox-correo-comprobante-autenticado, PR4 (design.md D12, tasks.md 14.4-14.5): la casilla de
+ * "copia por correo" (proposal.md #14, paso 3) era un gesto explícito del cliente sin efecto en
+ * el outbox real — ese envío es #15. Con #15 el `JobCorreo` se inserta de forma incondicional en
+ * la misma transacción del voto (D3): ofrecer una casilla que el sistema ya no respeta sería
+ * engañoso, así que se reemplaza por una línea informativa de copia ya enviada. Esta pieza es
+ * además reutilizada tal cual por `votos/ComprobantePage.tsx` (D12) para la relectura autenticada
+ * del comprobante vía el enlace del correo.
  */
 export function PanelComprobante({ comprobante }: PanelComprobanteProps) {
-  const [copiaPorCorreo, setCopiaPorCorreo] = useState(false);
-  const idCopia = useId();
-
   return (
     <div className="mx-auto w-full max-w-page rounded-card border border-border-gray bg-surface-white p-6 shadow-elevation">
       <h2 className="text-headline-lg-mobile text-primary md:text-headline-lg">Voto registrado</h2>
@@ -43,22 +41,9 @@ export function PanelComprobante({ comprobante }: PanelComprobanteProps) {
         </div>
       </dl>
 
-      <label htmlFor={idCopia} className="mt-6 flex items-start gap-2 text-body-md text-on-surface">
-        <input
-          id={idCopia}
-          type="checkbox"
-          checked={copiaPorCorreo}
-          onChange={(evento) => setCopiaPorCorreo(evento.target.checked)}
-          className="mt-1 focus-visible:outline-2 focus-visible:outline-primary"
-        />
-        Quiero recibir una copia de este comprobante por correo
-      </label>
-
-      {copiaPorCorreo && (
-        <p role="status" className="mt-2 text-label-md text-on-surface-variant">
-          Se enviará una copia a tu correo cuando esté disponible.
-        </p>
-      )}
+      <p role="status" className="mt-6 text-label-md text-on-surface-variant">
+        Se envió una copia de este comprobante a tu correo institucional.
+      </p>
     </div>
   );
 }

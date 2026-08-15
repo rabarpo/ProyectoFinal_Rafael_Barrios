@@ -5,6 +5,7 @@ import { AperturaProcesoPage } from '../procesos/AperturaProcesoPage';
 import { RegistroCandidatoPage } from '../candidatos/RegistroCandidatoPage';
 import { GestionCandidatosPage } from '../candidatos/GestionCandidatosPage';
 import { VotacionPage } from '../votos/VotacionPage';
+import { ComprobantePage } from '../votos/ComprobantePage';
 
 /**
  * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
@@ -14,7 +15,8 @@ import { VotacionPage } from '../votos/VotacionPage';
  * (tasks.md 21.5); `candidatos` (listado/gestión) monta `GestionCandidatosPage`
  * real desde PR8 (tasks.md 23.6); `apertura` monta `AperturaProcesoPage` real
  * desde `#13`/PR5 (design.md D13, tasks.md 18.2); `votacion` monta
- * `VotacionPage` real desde `#14`/PR5 (design.md D14, tasks.md 18.2) — sin
+ * `VotacionPage` real desde `#14`/PR5 (design.md D14, tasks.md 18.2); `comprobante` monta
+ * `ComprobantePage` real desde `#15`/PR4 (design.md D12, tasks.md 14.3) — sin
  * stubs restantes en el alcance de este change. `no-encontrada` se renderiza
  * dentro del shell, nunca lanza ni deja `undefined`.
  */
@@ -40,6 +42,8 @@ export function Enrutador() {
       return <AperturaProcesoPage procesoId={ruta.procesoId} />;
     case 'votacion':
       return <VotacionPage derechoVotoId={ruta.derechoVotoId} />;
+    case 'comprobante':
+      return <ComprobantePage votoId={ruta.votoId} />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }
