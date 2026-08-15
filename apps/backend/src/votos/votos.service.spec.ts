@@ -25,6 +25,7 @@ function filaValidacionBase(overrides: Partial<Record<string, unknown>> = {}) {
     id: 'dv-1',
     usuario_id: 'usuario-1',
     proceso_id: 'proceso-1',
+    proceso_nombre: 'Proceso E2E de prueba',
     tipo: 'municipio',
     fecha_cierre_prevista: new Date('2026-09-05T18:00:00.000Z'),
     cerrado_por_hora: false,
@@ -46,6 +47,7 @@ function construirPrisma(overrides: {
   listaFindUnique?: jest.Mock;
   opcionConsultaFindUnique?: jest.Mock;
   candidatoFindUnique?: jest.Mock;
+  jobCorreoCreate?: jest.Mock;
   transactionImpl?: jest.Mock;
 }) {
   const queryRaw = overrides.queryRaw ?? jest.fn().mockResolvedValue([filaValidacionBase()]);
@@ -63,6 +65,7 @@ function construirPrisma(overrides: {
     jest.fn().mockResolvedValue({ id: 'lista-1', proceso_id: 'proceso-1', estado: 'activo' });
   const opcionConsultaFindUnique = overrides.opcionConsultaFindUnique ?? jest.fn().mockResolvedValue(null);
   const candidatoFindUnique = overrides.candidatoFindUnique ?? jest.fn().mockResolvedValue(null);
+  const jobCorreoCreate = overrides.jobCorreoCreate ?? jest.fn().mockResolvedValue(undefined);
 
   const tx = {
     $queryRaw: queryRaw,
@@ -70,6 +73,7 @@ function construirPrisma(overrides: {
     lista: { findUnique: listaFindUnique },
     opcionConsulta: { findUnique: opcionConsultaFindUnique },
     candidato: { findUnique: candidatoFindUnique },
+    jobCorreo: { create: jobCorreoCreate },
   };
 
   const prisma = {
@@ -77,7 +81,17 @@ function construirPrisma(overrides: {
     $transaction: overrides.transactionImpl ?? jest.fn((cb: (tx: unknown) => Promise<unknown>) => cb(tx)),
   };
 
-  return { prisma, tx, queryRaw, votoCreate, votoFindFirst, listaFindUnique, opcionConsultaFindUnique, candidatoFindUnique };
+  return {
+    prisma,
+    tx,
+    queryRaw,
+    votoCreate,
+    votoFindFirst,
+    listaFindUnique,
+    opcionConsultaFindUnique,
+    candidatoFindUnique,
+    jobCorreoCreate,
+  };
 }
 
 function construirServicio(prisma: unknown) {
@@ -401,5 +415,53 @@ describe('VotosService.emitir() — RechazoVoto en transacción separada (D10, t
 
     const payload = auditoria.log.mock.calls[0][5];
     expect(Object.keys(payload).sort()).toEqual(['derecho_voto_id', 'motivo', 'proceso_id']);
+  });
+});
+
+// outbox-correo-comprobante-autenticado (#15, PR1; design.md D2/D3/D4, tareas 3.1-3.3).
+describe('VotosService.emitir() — insert de JobCorreo en el marcador [#15] (D2/D3/D4)', () => {
+  // 3.1: la proyección del $queryRaw agrega p.nombre, sin otro cambio a la sentencia de #14 D4.
+  it('[3.1] la proyección del $queryRaw incluye "p.nombre" (proceso_nombre)', async () => {
+    const { prisma, queryRaw } = construirPrisma({});
+    const { servicio } = construirServicio(prisma);
+
+    await servicio.emitir(DTO_BASE, SESION);
+
+    const sentencia = queryRaw.mock.calls[0][0].join('');
+    expect(sentencia).toContain('p.nombre');
+  });
+
+  // 3.2: tras auditoria.log, tx.jobCorreo.create se invoca UNA vez con usuario_id de
+  // fila.usuario_id (no sesion.userId — idénticos por la causa 1 de D9, línea 258: la
+  // autorización ya exige `filas[0].usuario_id === sesion.userId`), voto_id, proceso_id,
+  // codigo_comprobante, asunto/cuerpo ya materializados.
+  it('[3.2] invoca tx.jobCorreo.create() una vez con los campos estructurados del voto recién creado, leyendo usuario_id de la fila bloqueada', async () => {
+    const { prisma, jobCorreoCreate } = construirPrisma({
+      queryRaw: jest.fn().mockResolvedValue([filaValidacionBase({ usuario_id: 'usuario-1' })]),
+    });
+    const { servicio } = construirServicio(prisma);
+
+    await servicio.emitir(DTO_BASE, SESION);
+
+    expect(jobCorreoCreate).toHaveBeenCalledTimes(1);
+    const { data } = jobCorreoCreate.mock.calls[0][0];
+    expect(data.usuario_id).toBe('usuario-1'); // fila.usuario_id (fuente real; ver comentario arriba)
+    expect(data.voto_id).toEqual(expect.any(String));
+    expect(data.proceso_id).toBe('proceso-1');
+    expect(typeof data.codigo_comprobante).toBe('string');
+    expect(typeof data.asunto).toBe('string');
+    expect(typeof data.cuerpo).toBe('string');
+  });
+
+  // 3.3: no existe try/catch alrededor del insert de JobCorreo — un fallo ahí burbujea igual que
+  // cualquier otro paso de la transacción (D4).
+  it('[3.3] un fallo en tx.jobCorreo.create burbujea sin ser capturado (D4)', async () => {
+    const errorInsert = new Error('fallo simulado en jobCorreo.create');
+    const { prisma } = construirPrisma({
+      jobCorreoCreate: jest.fn().mockRejectedValue(errorInsert),
+    });
+    const { servicio } = construirServicio(prisma);
+
+    await expect(servicio.emitir(DTO_BASE, SESION)).rejects.toBe(errorInsert);
   });
 });

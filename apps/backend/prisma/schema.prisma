@@ -224,6 +224,9 @@ model ProcesoElectoral {
   derechoVotos DerechoVoto[]
   votos        Voto[]
   actas        Acta[]
+  // outbox-correo-comprobante-autenticado (#15, PR1; design.md D1): relación inversa 1:N,
+  // sólo schema (sin SQL) — abre la puerta a #19 (notificaciones sin voto) sin migración adicional.
+  jobsCorreo   JobCorreo[]
 }
 
 model Lista {
@@ -332,6 +335,9 @@ model Voto {
   lista       Lista?           @relation(fields: [lista_id], references: [id], onDelete: Restrict)
   opcion      OpcionConsulta?  @relation(fields: [opcion_id], references: [id], onDelete: Restrict)
   candidato   Candidato?       @relation(fields: [candidato_id], references: [id], onDelete: Restrict)
+  // outbox-correo-comprobante-autenticado (#15, PR1; design.md D1): relación inversa 1:1 opcional,
+  // sólo schema (sin SQL) — el UNIQUE vive del lado de JobCorreo.voto_id.
+  jobCorreo   JobCorreo?
 
   @@unique([proceso_id, derecho_voto_id])
   @@unique([proceso_id, clave_idempotencia])
@@ -365,16 +371,27 @@ enum EstadoActa {
 }
 
 model JobCorreo {
-  id         String          @id @default(uuid()) @db.Uuid
-  usuario_id String          @db.Uuid
-  asunto     String
-  cuerpo     String
-  estado     EstadoJobCorreo @default(pendiente)
-  intentos   Int             @default(0)
-  creado_en  DateTime        @default(now()) @db.Timestamptz(3)
+  id                 String          @id @default(uuid()) @db.Uuid
+  usuario_id         String          @db.Uuid
+  asunto             String
+  cuerpo             String
+  estado             EstadoJobCorreo @default(pendiente)
+  intentos           Int             @default(0)
+  creado_en          DateTime        @default(now()) @db.Timestamptz(3)
+  // outbox-correo-comprobante-autenticado (#15, PR1; design.md D1): columnas aditivas nullable —
+  // convierten la tabla en un outbox consultable con un JOIN (ADR-0012), en vez de texto libre.
+  // `voto_id` lleva FK real y UNIQUE: "cada voto confirmado genera exactamente un job" pasa de ser
+  // una promesa del código a una restricción del motor.
+  voto_id            String?         @unique @db.Uuid
+  proceso_id         String?         @db.Uuid
+  codigo_comprobante String?
 
-  usuario        Usuario        @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  usuario        Usuario           @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  voto           Voto?             @relation(fields: [voto_id], references: [id], onDelete: Restrict)
+  proceso        ProcesoElectoral? @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
   notificaciones Notificacion[]
+
+  @@index([estado, creado_en])
 }
 
 model Notificacion {

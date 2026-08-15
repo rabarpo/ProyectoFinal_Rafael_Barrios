@@ -6,6 +6,7 @@ import { AuditoriaService } from '../auditoria/auditoria.service';
 import type { SesionUsuario } from '../auth/sesion-usuario';
 import { PrismaService } from '../prisma/prisma.service';
 import { derivarComprobante } from './comprobante';
+import { construirCorreoComprobante } from './correo-comprobante';
 import type { ComprobanteDto } from './dto/comprobante.dto';
 import type { EmitirVotoDto } from './dto/emitir-voto.dto';
 import { VOTOS_ERROR_CODES, type VotosErrorCode } from './votos.errors';
@@ -51,6 +52,7 @@ interface FilaValidacion {
   id: string;
   usuario_id: string;
   proceso_id: string;
+  proceso_nombre: string;
   tipo: string;
   fecha_cierre_prevista: Date;
   cerrado_por_hora: boolean;
@@ -233,7 +235,7 @@ export class VotosService {
         // D4: una sola sentencia — bloqueo (`FOR UPDATE OF dv`), validación de ventana horaria y
         // aula (D8), e idempotencia por clave (D7), todo en el mismo snapshot/`now()` transaccional.
         const filas = await tx.$queryRaw<FilaValidacion[]>`
-          SELECT dv.id, dv.usuario_id, dv.proceso_id, p.tipo,
+          SELECT dv.id, dv.usuario_id, dv.proceso_id, p.nombre AS proceso_nombre, p.tipo,
                  p.fecha_cierre_prevista,
                  (now() >= p.fecha_cierre_prevista) AS cerrado_por_hora,
                  (p.apertura_real IS NULL OR now() < p.apertura_real) AS aun_no_abierto,
@@ -324,7 +326,28 @@ export class VotosService {
           hora_servidor: voto.hora_servidor.toISOString(),
         } as Prisma.InputJsonValue);
 
-        // [#15] Punto de extensión JobCorreo
+        // outbox-correo-comprobante-autenticado (#15, PR1; design.md D2/D3/D4): `asunto`/`cuerpo`
+        // ya materializados por el renderizador puro (D2) -- el worker de #15/PR2 los envía tal
+        // cual, sin recomponerlos. `usuario_id` sale de la fila bloqueada (`fila.usuario_id`), no
+        // de `sesion.userId` (D3). Sin try/catch: un fallo acá burbujea igual que cualquier otro
+        // paso de la transacción (D4) -- "si el voto existe, su job existe".
+        const { asunto, cuerpo } = construirCorreoComprobante({
+          codigo_comprobante: voto.codigo_comprobante,
+          hora_servidor: voto.hora_servidor,
+          proceso_nombre: fila.proceso_nombre,
+          voto_id: voto.id,
+          app_base_url: process.env.APP_BASE_URL,
+        });
+        await tx.jobCorreo.create({
+          data: {
+            usuario_id: fila.usuario_id,
+            voto_id: voto.id,
+            proceso_id: voto.proceso_id,
+            codigo_comprobante: voto.codigo_comprobante,
+            asunto,
+            cuerpo,
+          },
+        });
 
         return construirResultado(true, voto.proceso_id, voto.derecho_voto_id, voto.codigo_comprobante, voto.hora_servidor);
       });
