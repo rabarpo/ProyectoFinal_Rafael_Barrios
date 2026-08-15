@@ -186,37 +186,37 @@ jobcorreo-diferido.md` (D16) ya fue creado en la fase de diseño — no es una t
 ## PR 4 — Concurrencia determinista y frontera de cierre (base = PR 3 branch)
 
 ### Phase 13: Arnés de concurrencia (núcleo del change, aislado para revisión enfocada)
-- [ ] 13.1 RED e2e (a): `pg` crudo abre `BEGIN` + `INSERT "Voto"` **sin commit** sobre un derecho
+- [x] 13.1 RED e2e (a): `pg` crudo abre `BEGIN` + `INSERT "Voto"` **sin commit** sobre un derecho
       pendiente; se dispara el `POST /votos` real (bloquea en `FOR UPDATE OF dv`); se commitea el
       crudo ⇒ el endpoint recibe `23505` real, lo captura (D5) y responde `200` con el comprobante
       del crudo [spec: Concurrencia real de dos conexiones — prueba fuerte, ejercita el `catch`
       real del servicio]
-- [ ] 13.2 RED e2e (b): dos `createPgClient()` coordinados manualmente por pasos — ambos ejecutan
+- [x] 13.2 RED e2e (b): dos `createPgClient()` coordinados manualmente por pasos — ambos ejecutan
       `SELECT ... FOR UPDATE OF dv` (el segundo se bloquea hasta que el primero libere), ambos
       intentan `INSERT`; exactamente una fila `Voto` sobrevive, la otra recibe `23505` sobre
       `Voto_proceso_id_derecho_voto_id_key` [spec: Concurrencia real de dos conexiones]
-- [ ] 13.3 RED e2e (c): red de seguridad probabilística — 8 `POST /votos` reales con `Promise.all`
+- [x] 13.3 RED e2e (c): red de seguridad probabilística — 8 `POST /votos` reales con `Promise.all`
       sobre el mismo derecho, distintas claves de idempotencia; exactamente 1 fila `Voto`, 0
       respuestas `5xx`
-- [ ] 13.4 GREEN: confirmar 13.1-13.3 verdes contra Postgres real; documentar en comentario si
+- [x] 13.4 GREEN: confirmar 13.1-13.3 verdes contra Postgres real; documentar en comentario si
       `FOR UPDATE OF dv` por sí solo resolvió la carrera antes de que `23505` tuviera que activarse
       (mismo criterio de verificación que `#13` Phase 13)
-- [ ] 13.5 Crear `apps/backend/test/votos/votos-concurrencia.e2e-spec.ts` con 13.1-13.3 (reutiliza
+- [x] 13.5 Crear `apps/backend/test/votos/votos-concurrencia.e2e-spec.ts` con 13.1-13.3 (reutiliza
       `test/schema/helpers/pg-client.ts` ya existente — sin crear el helper de nuevo)
 
 ### Phase 14: Frontera de cierre exacta (D3)
-- [ ] 14.1 RED schema: dentro de una misma transacción `pg` cruda, `UPDATE ... SET
+- [x] 14.1 RED schema: dentro de una misma transacción `pg` cruda, `UPDATE ... SET
       fecha_cierre_prevista = now()` y evaluar `now() >= fecha_cierre_prevista` → `true` (frontera
       exacta, cierre cerrado por arriba) [spec: Hora de cierre y de comprobante coinciden]
-- [ ] 14.2 RED schema: mismo patrón con `now() + interval '1 second'` → `false` (aceptado a
+- [x] 14.2 RED schema: mismo patrón con `now() + interval '1 second'` → `false` (aceptado a
       `cierre − 1s`)
-- [ ] 14.3 GREEN: crear `apps/backend/test/schema/votos-frontera-cierre.spec.ts` — pasa 14.1-14.2
-- [ ] 14.4 RED e2e: proceso que cierra entre la lectura de la papeleta (PR1) y la confirmación del
+- [x] 14.3 GREEN: crear `apps/backend/test/schema/votos-frontera-cierre.spec.ts` — pasa 14.1-14.2
+- [x] 14.4 RED e2e: proceso que cierra entre la lectura de la papeleta (PR1) y la confirmación del
       paso 3 → `POST /votos` rechaza con `VOTACION_CERRADA` [threat matrix: TOCTOU/concurrencia]
 
 ### Phase 15: Regresión final PR4
-- [ ] 15.1 `pnpm --filter @seei/backend test:e2e` completo verde contra Postgres real (Docker)
-- [ ] 15.2 `pnpm typecheck` verde en los 4 paquetes
+- [x] 15.1 `pnpm --filter @seei/backend test:e2e` completo verde contra Postgres real (Docker)
+- [x] 15.2 `pnpm typecheck` verde en los 4 paquetes
 
 ## PR 5 — Ruta, `VotacionPage` y los 3 pasos (base = PR 4 branch)
 

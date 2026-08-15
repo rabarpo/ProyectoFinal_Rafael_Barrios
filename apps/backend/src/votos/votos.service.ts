@@ -22,6 +22,23 @@ const RESTRICCIONES_DE_VOTO = [
   'Voto_proceso_id_clave_idempotencia_key',
 ] as const;
 
+/**
+ * vote-casting, PR4 (tarea 13.1, hallazgo del arnés de concurrencia REAL contra Postgres). Prisma
+ * 5.x, en este entorno, no siempre reporta `error.meta.target` como el nombre de la restricción:
+ * cuando el motor recibe el 23505 de Postgres tras un `INSERT` bloqueado por una transacción
+ * concurrente (exactamente el camino que el arnés de concurrencia ejercita), `target` llega como el
+ * arreglo de NOMBRES DE COLUMNA (`['proceso_id', 'derecho_voto_id']`), no como el string del nombre
+ * de la restricción -- a diferencia de lo que las pruebas unitarias con `$queryRaw` mockeado de PR2
+ * asumían. Sin este segundo criterio, un 23505 real quedaba sin reconocer como colisión de voto y
+ * burbujeaba como `500`, exactamente lo que D5 prohíbe. Se conservan AMBOS conjuntos de columnas
+ * (no solo sus nombres) para no aceptar por error un P2002 de una restricción distinta que
+ * coincidiera parcialmente en columnas.
+ */
+const COLUMNAS_DE_VOTO: readonly (readonly string[])[] = [
+  ['proceso_id', 'derecho_voto_id'],
+  ['proceso_id', 'clave_idempotencia'],
+];
+
 export interface ResultadoEmision {
   creado: boolean;
   codigo_comprobante: string;
@@ -84,7 +101,17 @@ function esColisionDeVoto(error: unknown): boolean {
     return (RESTRICCIONES_DE_VOTO as readonly string[]).includes(target);
   }
   if (Array.isArray(target)) {
-    return target.some((t) => (RESTRICCIONES_DE_VOTO as readonly string[]).includes(String(t)));
+    const columnas = target.map(String);
+    // Caso 1: `target` es el nombre de la restricción, reportado como arreglo de un elemento.
+    if (columnas.some((t) => (RESTRICCIONES_DE_VOTO as readonly string[]).includes(t))) {
+      return true;
+    }
+    // Caso 2 (real bajo concurrencia, tarea 13.1): `target` es el conjunto de columnas de la
+    // restricción, en cualquier orden.
+    return COLUMNAS_DE_VOTO.some(
+      (columnasEsperadas) =>
+        columnasEsperadas.length === columnas.length && columnasEsperadas.every((c) => columnas.includes(c)),
+    );
   }
   return false;
 }
