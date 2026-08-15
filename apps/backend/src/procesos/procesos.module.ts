@@ -5,9 +5,12 @@ import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { AuthModule } from '../auth/auth.module';
 import { ConfiguracionLecturaModule } from '../configuracion/configuracion-lectura.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { redisProvider } from '../redis/redis.provider';
 import { PadronService } from './padron.service';
 import { ProcesosController } from './procesos.controller';
 import { ProcesosService } from './procesos.service';
+import { ResultadosController } from './resultados.controller';
+import { ResultadosService } from './resultados.service';
 
 /**
  * administracion-procesos-electorales, PR5 (design.md "Enfoque técnico"/"Cambios de archivos",
@@ -22,14 +25,21 @@ import { ProcesosService } from './procesos.service';
  *
  * Ningún provider abre conexión al instanciarse, así que `pnpm openapi:extract` sigue corriendo
  * sin Postgres ni Redis vivos tras registrar este módulo en `AppModule` (tarea 12.4).
+ *
+ * resultados-en-vivo (#16, PR1; design.md D1, tarea 4.2). `ResultadosController` va **primero**
+ * en `controllers: []` (rutas estáticas primero, mismo criterio ya documentado en
+ * `procesos.controller.ts`): `/procesos/:id/resultados` (3 segmentos) nunca choca con
+ * `/procesos/:id` (2 segmentos), pero el orden se mantiene por consistencia. `redisProvider` se
+ * suma porque `ResultadosService` es el primer consumidor de `REDIS_CLIENT` de este módulo
+ * (`lazyConnect: true`, no abre conexión al instanciarse).
  */
 @Module({
   imports: [AuthModule, AuditoriaModule, ConfiguracionLecturaModule],
-  controllers: [ProcesosController],
-  providers: [PrismaService, PadronService, ProcesosService],
+  controllers: [ResultadosController, ProcesosController],
+  providers: [PrismaService, redisProvider, PadronService, ProcesosService, ResultadosService],
 })
 export class ProcesosModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(cookieParser()).forRoutes(ProcesosController);
+    consumer.apply(cookieParser()).forRoutes(ProcesosController, ResultadosController);
   }
 }
