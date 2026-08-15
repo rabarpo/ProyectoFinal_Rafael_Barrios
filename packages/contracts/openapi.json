@@ -2726,6 +2726,65 @@
         ]
       }
     },
+    "/votos": {
+      "post": {
+        "operationId": "VotosController_emitir",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmitirVotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Comprobante existente (reintento o colisión, D6)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComprobanteDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Voto creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComprobanteDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido (elección, o derecho_voto_id no-UUID)"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Derecho ajeno o inexistente"
+          },
+          "409": {
+            "description": "SIN_DERECHO / VOTACION_CERRADA / ELECCION_INVALIDA"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Emite el voto del derecho propio, con idempotencia y colisión UNIQUE (D5/D6/D7)",
+        "tags": [
+          "votos"
+        ]
+      }
+    },
     "/votos/papeleta/{derechoVotoId}": {
       "get": {
         "operationId": "VotosController_papeleta",
@@ -3989,6 +4048,75 @@
           "nombres",
           "foto_presente",
           "estado"
+        ]
+      },
+      "EmitirVotoDto": {
+        "type": "object",
+        "properties": {
+          "derecho_voto_id": {
+            "type": "string"
+          },
+          "lista_id": {
+            "type": "string"
+          },
+          "opcion_id": {
+            "type": "string"
+          },
+          "candidato_id": {
+            "type": "string"
+          },
+          "blanco": {
+            "type": "boolean"
+          },
+          "clave_idempotencia": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "derecho_voto_id",
+          "clave_idempotencia"
+        ]
+      },
+      "ComprobanteProcesoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre"
+        ]
+      },
+      "ComprobanteDto": {
+        "type": "object",
+        "properties": {
+          "codigo_comprobante": {
+            "type": "string"
+          },
+          "hora_servidor": {
+            "type": "string"
+          },
+          "proceso": {
+            "$ref": "#/components/schemas/ComprobanteProcesoDto"
+          },
+          "en_calidad_de": {
+            "type": "string"
+          },
+          "eleccion_resumen": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "codigo_comprobante",
+          "hora_servidor",
+          "proceso",
+          "en_calidad_de",
+          "eleccion_resumen"
         ]
       },
       "PapeletaProcesoDto": {

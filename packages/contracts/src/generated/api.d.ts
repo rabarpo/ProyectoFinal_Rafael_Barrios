@@ -838,6 +838,23 @@ export interface paths {
         patch: operations["CandidatosController_cambiarEstado"];
         trace?: never;
     };
+    "/votos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Emite el voto del derecho propio, con idempotencia y colisión UNIQUE (D5/D6/D7) */
+        post: operations["VotosController_emitir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/votos/papeleta/{derechoVotoId}": {
         parameters: {
             query?: never;
@@ -1334,6 +1351,25 @@ export interface components {
             estado: "activo" | "baja";
             /** @description Fecha/hora de la baja (ISO 8601), ausente si está activo */
             baja_en?: string;
+        };
+        EmitirVotoDto: {
+            derecho_voto_id: string;
+            lista_id?: string;
+            opcion_id?: string;
+            candidato_id?: string;
+            blanco?: boolean;
+            clave_idempotencia: string;
+        };
+        ComprobanteProcesoDto: {
+            id: string;
+            nombre: string;
+        };
+        ComprobanteDto: {
+            codigo_comprobante: string;
+            hora_servidor: string;
+            proceso: components["schemas"]["ComprobanteProcesoDto"];
+            en_calidad_de: string;
+            eleccion_resumen: string;
         };
         PapeletaProcesoDto: {
             id: string;
@@ -4330,6 +4366,67 @@ export interface operations {
             };
             /** @description Candidato no encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VotosController_emitir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmitirVotoDto"];
+            };
+        };
+        responses: {
+            /** @description Comprobante existente (reintento o colisión, D6) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteDto"];
+                };
+            };
+            /** @description Voto creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteDto"];
+                };
+            };
+            /** @description Campo inválido (elección, o derecho_voto_id no-UUID) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Derecho ajeno o inexistente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description SIN_DERECHO / VOTACION_CERRADA / ELECCION_INVALIDA */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -6,6 +6,7 @@ import { AuditoriaService } from '../auditoria/auditoria.service';
 import type { SesionUsuario } from '../auth/sesion-usuario';
 import { PrismaService } from '../prisma/prisma.service';
 import { derivarComprobante } from './comprobante';
+import type { ComprobanteDto } from './dto/comprobante.dto';
 import type { EmitirVotoDto } from './dto/emitir-voto.dto';
 import { VOTOS_ERROR_CODES, type VotosErrorCode } from './votos.errors';
 
@@ -102,6 +103,35 @@ function construirResultado(
     proceso_id: procesoId,
     derecho_voto_id: derechoVotoId,
   };
+}
+
+/**
+ * vote-casting, PR3 (design.md "Contratos HTTP", tarea 10.1). Resuelve la etiqueta legible de la
+ * elección para `ComprobanteDto.eleccion_resumen` — el resumen SÍ viaja al votante ([ADR-0006] §2),
+ * a diferencia del payload de auditoría (D11), que nunca lleva la elección. Lectura puramente de
+ * presentación, fuera de la transacción crítica de `emitir()`: no participa de ninguna decisión de
+ * D4/D5/D10, así que no reabre la garantía indivisible de PR2.
+ */
+async function resolverEleccionResumen(
+  cliente: Pick<PrismaService, 'lista' | 'opcionConsulta' | 'candidato'>,
+  eleccion: { lista_id: string | null; opcion_id: string | null; candidato_id: string | null; blanco: boolean },
+): Promise<string> {
+  if (eleccion.blanco) {
+    return 'Voto en blanco';
+  }
+  if (eleccion.lista_id) {
+    const lista = await cliente.lista.findUnique({ where: { id: eleccion.lista_id } });
+    return lista?.nombre ?? '';
+  }
+  if (eleccion.opcion_id) {
+    const opcion = await cliente.opcionConsulta.findUnique({ where: { id: eleccion.opcion_id } });
+    return opcion?.etiqueta ?? '';
+  }
+  if (eleccion.candidato_id) {
+    const candidato = await cliente.candidato.findUnique({ where: { id: eleccion.candidato_id } });
+    return candidato?.nombres ?? '';
+  }
+  return '';
 }
 
 /**
@@ -299,6 +329,38 @@ export class VotosService {
 
       throw e;
     }
+  }
+
+  /**
+   * vote-casting, PR3 (design.md D6/D13, "Contratos HTTP", tarea 10.1). Enriquece el
+   * `ResultadoEmision` interno (PR2) con lo que el controlador necesita para `ComprobanteDto`:
+   * nombre del proceso, calidad del votante y resumen de la elección. Se invoca DESPUÉS de que
+   * `emitir()` ya resolvió (creó o encontró) el `Voto` — lectura de presentación, no participa de
+   * la transacción atómica.
+   */
+  async construirComprobante(resultado: ResultadoEmision): Promise<ComprobanteDto> {
+    const [derecho, proceso, voto] = await Promise.all([
+      this.prisma.derechoVoto.findUniqueOrThrow({
+        where: { id: resultado.derecho_voto_id },
+        select: { en_calidad_de: true },
+      }),
+      this.prisma.procesoElectoral.findUniqueOrThrow({
+        where: { id: resultado.proceso_id },
+        select: { nombre: true },
+      }),
+      this.prisma.voto.findFirstOrThrow({
+        where: { proceso_id: resultado.proceso_id, derecho_voto_id: resultado.derecho_voto_id },
+        select: { lista_id: true, opcion_id: true, candidato_id: true, blanco: true },
+      }),
+    ]);
+
+    return {
+      codigo_comprobante: resultado.codigo_comprobante,
+      hora_servidor: resultado.hora_servidor,
+      proceso: { id: resultado.proceso_id, nombre: proceso.nombre },
+      en_calidad_de: derecho.en_calidad_de,
+      eleccion_resumen: await resolverEleccionResumen(this.prisma, voto),
+    };
   }
 
   private async comprobanteExistente(dto: EmitirVotoDto): Promise<ResultadoEmision> {

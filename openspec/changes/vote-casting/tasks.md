@@ -136,52 +136,52 @@ jobcorreo-diferido.md` (D16) ya fue creado en la fase de diseño — no es una t
 ## PR 3 — Controller, DTOs de salida y suite e2e principal (base = PR 2 branch)
 
 ### Phase 10: Endpoint `POST /votos` y status codes (D6)
-- [ ] 10.1 Crear `apps/backend/src/votos/dto/comprobante.dto.ts`: `{ codigo_comprobante,
+- [x] 10.1 Crear `apps/backend/src/votos/dto/comprobante.dto.ts`: `{ codigo_comprobante,
       hora_servidor, proceso: { id, nombre }, en_calidad_de, eleccion_resumen }`
-- [ ] 10.2 Modificar `apps/backend/src/votos/votos.controller.ts`: `POST /votos` con
+- [x] 10.2 Modificar `apps/backend/src/votos/votos.controller.ts`: `POST /votos` con
       `@Res({passthrough:true})`; `res.status(201)` cuando esta petición creó la fila, `res.status
       (200)` cuando devuelve un comprobante preexistente (reintento o colisión), mismo cuerpo en
       ambos casos, sin bandera `ya_registrado` (D6)
-- [ ] 10.3 RED unit (controller): camino de creación → `201`; camino de reintento/colisión → `200`
+- [x] 10.3 RED unit (controller): camino de creación → `201`; camino de reintento/colisión → `200`
       [spec: Reintento con misma clave; Segundo voto genuino con clave distinta]
-- [ ] 10.4 GREEN: crear `apps/backend/src/votos/votos.controller.spec.ts` — pasa 10.3
+- [x] 10.4 GREEN: crear `apps/backend/src/votos/votos.controller.spec.ts` — pasa 10.3
 
 ### Phase 11: Suite e2e principal
-- [ ] 11.1 Crear `apps/backend/test/votos/votos-emitir.e2e-spec.ts` (patrón de
+- [x] 11.1 Crear `apps/backend/test/votos/votos-emitir.e2e-spec.ts` (patrón de
       `procesos-abrir.e2e-spec.ts`: fetch contra el servidor real + `PrismaClient` para asertar
       filas)
-- [ ] 11.2 RED e2e: camino feliz → `201`, comprobante, una fila `Voto`, `DerechoVoto` `ejercido`
+- [x] 11.2 RED e2e: camino feliz → `201`, comprobante, una fila `Voto`, `DerechoVoto` `ejercido`
       (derivado), evento `VOTO` sin elección [spec: Camino feliz]
-- [ ] 11.3 RED e2e: fallo intermedio (payload de auditoría malformado forzado) → rollback completo,
+- [x] 11.3 RED e2e: fallo intermedio (payload de auditoría malformado forzado) → rollback completo,
       cero filas `Voto`, `DerechoVoto` sigue `pendiente`, sin evento `VOTO` [spec: Fallo intermedio
       revierte todo]
-- [ ] 11.4 RED e2e: reintento con la misma `clave_idempotencia` → `200`, mismo comprobante, sigue
+- [x] 11.4 RED e2e: reintento con la misma `clave_idempotencia` → `200`, mismo comprobante, sigue
       exactamente una fila `Voto` [spec: Reintento con misma clave]
-- [ ] 11.5 RED e2e: segundo intento con clave distinta sobre el mismo derecho ya ejercido → `200`
+- [x] 11.5 RED e2e: segundo intento con clave distinta sobre el mismo derecho ya ejercido → `200`
       con el comprobante existente, nunca `500`/`409` genérico [spec: Segundo voto genuino con
       clave distinta]
-- [ ] 11.6 RED e2e: cada una de las causas de rechazo (sin derecho, proceso cerrado, derecho ya
+- [x] 11.6 RED e2e: cada una de las causas de rechazo (sin derecho, proceso cerrado, derecho ya
       ejercido) → código/HTTP esperado por la Taxonomía de rechazos, evento `RECHAZO` propio, cero
       filas `Voto` nuevas [spec: Proceso cerrado; Derecho ya ejercido]
-- [ ] 11.7 RED e2e: derecho ajeno o inexistente → `403` idéntico en ambos casos, sin evento
+- [x] 11.7 RED e2e: derecho ajeno o inexistente → `403` idéntico en ambos casos, sin evento
       `RECHAZO` [threat matrix: IDOR/enumeración]
-- [ ] 11.8 RED e2e: voto en blanco → `Voto.blanco = true`, resto de columnas de elección `null`
+- [x] 11.8 RED e2e: voto en blanco → `Voto.blanco = true`, resto de columnas de elección `null`
       [spec: Voto en blanco explícito]
-- [ ] 11.9 RED e2e: doble derecho ADR-0011 (`estudiante`+`padre`) — ejercer uno no afecta el estado
+- [x] 11.9 RED e2e: doble derecho ADR-0011 (`estudiante`+`padre`) — ejercer uno no afecta el estado
       `pendiente` del otro [spec: Cada derecho se ejerce de forma independiente]
-- [ ] 11.10 RED e2e: `hora_servidor` del comprobante cae entre dos `clock_timestamp()` de la propia
+- [x] 11.10 RED e2e: `hora_servidor` del comprobante cae entre dos `clock_timestamp()` de la propia
       base tomados antes/después de la petición, nunca comparado contra `Date.now()` de Node [spec:
       Hora de cierre y de comprobante coinciden]
-- [ ] 11.11 RED e2e: ningún payload `VOTO`/`RECHAZO` capturado contiene `candidato_id`, `lista_id`,
+- [x] 11.11 RED e2e: ningún payload `VOTO`/`RECHAZO` capturado contiene `candidato_id`, `lista_id`,
       `opcion_id`, `blanco` ni `eleccion` [spec: Payload sin elección]
-- [ ] 11.12 RED e2e: `derecho_voto_id` no-UUID o payload con literal de inyección → `400`, cero
+- [x] 11.12 RED e2e: `derecho_voto_id` no-UUID o payload con literal de inyección → `400`, cero
       filas afectadas [threat matrix: SQL crudo parametrizado]
-- [ ] 11.13 GREEN: confirmar 11.2-11.12 verdes contra Postgres real (Docker)
+- [x] 11.13 GREEN: confirmar 11.2-11.12 verdes contra Postgres real (Docker) — 14/14 verdes
 
 ### Phase 12: Contrato y regresión PR3
-- [ ] 12.1 `pnpm generate:contracts` + `pnpm openapi:extract`: `POST /votos` documentado con `201`
+- [x] 12.1 `pnpm generate:contracts` + `pnpm openapi:extract`: `POST /votos` documentado con `201`
       **y** `200`; `GET /votos/papeleta/:id` documentado
-- [ ] 12.2 `pnpm typecheck` verde en los 4 paquetes
+- [x] 12.2 `pnpm typecheck` verde en los 4 paquetes
 
 ## PR 4 — Concurrencia determinista y frontera de cierre (base = PR 3 branch)
 
