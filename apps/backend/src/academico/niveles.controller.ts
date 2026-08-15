@@ -40,6 +40,7 @@ export class NivelesController {
   }
 
   @Get()
+  @Roles('administrador', 'director', 'comite')
   @ApiOperation({ summary: 'Lista niveles' })
   @ApiResponse({ status: 200, description: 'Listado de niveles', type: [NivelRespuestaDto] })
   async listar(): Promise<NivelRespuestaDto[]> {
@@ -47,6 +48,7 @@ export class NivelesController {
   }
 
   @Get(':id')
+  @Roles('administrador', 'director', 'comite')
   @ApiOperation({ summary: 'Consulta un Nivel por id' })
   @ApiResponse({ status: 200, description: 'Nivel encontrado', type: NivelRespuestaDto })
   @ApiResponse({ status: 400, description: 'id malformado' })

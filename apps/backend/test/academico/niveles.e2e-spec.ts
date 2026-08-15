@@ -170,14 +170,16 @@ describe('Niveles e2e — CRUD de Nivel [AT1]', () => {
     expect(await segunda.json()).toMatchObject({ codigo: 'RESTRICCION_UNICA' });
   });
 
-  // 13.3 [AT7]: rol no autorizado se rechaza en las 5 rutas de /niveles.
-  it('[AT7] rol comite recibe 403 en las rutas de Nivel', async () => {
+  // 13.3 [AT7]: rol no autorizado se rechaza en las rutas de escritura de /niveles; lectura
+  // (GET) se abre a 'comite' para que el asistente de creación de procesos (#11) pueda listar
+  // el árbol académico al segmentar el público objetivo.
+  it('[AT7] rol comite recibe 403 al escribir en /niveles, pero puede leer', async () => {
     const { codigo } = await crearUsuarioDirecto({ rol: 'comite' });
     const cookie = await loginYObtenerCookie(codigo);
     const nombre = nombreUnico();
 
     expect((await postNivel({ nombre }, cookie)).status).toBe(403);
-    expect((await getNiveles(cookie)).status).toBe(403);
+    expect((await getNiveles(cookie)).status).toBe(200);
     const fila = await prisma.nivel.findFirst({ where: { nombre } });
     expect(fila).toBeNull();
   });

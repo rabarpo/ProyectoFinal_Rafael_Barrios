@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -43,7 +43,9 @@ export class AniosEscolaresController {
   }
 
   @Get()
+  @Roles('administrador', 'director', 'comite')
   @ApiOperation({ summary: 'Lista años escolares, con filtro opcional por activo' })
+  @ApiQuery({ name: 'activo', required: false, description: "'true'/'false'", type: String })
   @ApiResponse({ status: 200, description: 'Listado de años escolares', type: [AnioEscolarRespuestaDto] })
   @ApiResponse({ status: 400, description: 'Filtro activo desconocido' })
   async listar(@Query() query: ListarAniosEscolaresQuery): Promise<AnioEscolarRespuestaDto[]> {
@@ -51,6 +53,7 @@ export class AniosEscolaresController {
   }
 
   @Get(':id')
+  @Roles('administrador', 'director', 'comite')
   @ApiOperation({ summary: 'Consulta un AnioEscolar por id' })
   @ApiResponse({ status: 200, description: 'AnioEscolar encontrado', type: AnioEscolarRespuestaDto })
   @ApiResponse({ status: 400, description: 'id malformado' })

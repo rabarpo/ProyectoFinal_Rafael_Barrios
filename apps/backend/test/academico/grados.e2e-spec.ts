@@ -268,14 +268,16 @@ describe('Grados e2e — CRUD de Grado acotado a Nivel [AT2]', () => {
   });
 
   // 13.3-equivalente [AT7]: rol no autorizado se rechaza en las 5 rutas de /grados.
-  it('[AT7] rol comite recibe 403 en las rutas de Grado', async () => {
+  // Lectura (GET) se abre a 'comite' para que el asistente de creación de procesos (#11) pueda
+  // listar el árbol académico al segmentar el público objetivo; escritura sigue restringida.
+  it('[AT7] rol comite recibe 403 al escribir en /grados, pero puede leer', async () => {
     const { codigo } = await crearUsuarioDirecto({ rol: 'comite' });
     const cookie = await loginYObtenerCookie(codigo);
     const nivel = await prisma.nivel.create({ data: { nombre: nombreUnico() } });
     const nombre = nombreUnico();
 
     expect((await postGrado({ nombre, nivel_id: nivel.id }, cookie)).status).toBe(403);
-    expect((await getGrados('', cookie)).status).toBe(403);
+    expect((await getGrados('', cookie)).status).toBe(200);
     expect(await prisma.grado.findFirst({ where: { nombre } })).toBeNull();
   });
 

@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -41,7 +41,12 @@ export class AulasController {
   }
 
   @Get()
+  @Roles('administrador', 'director', 'comite')
   @ApiOperation({ summary: 'Lista aulas, con filtro opcional por grado_id, seccion_id, anio_escolar_id y turno' })
+  @ApiQuery({ name: 'grado_id', required: false, type: String })
+  @ApiQuery({ name: 'seccion_id', required: false, type: String })
+  @ApiQuery({ name: 'anio_escolar_id', required: false, type: String })
+  @ApiQuery({ name: 'turno', required: false, enum: ['manana', 'tarde'] })
   @ApiResponse({ status: 200, description: 'Listado de aulas', type: [AulaRespuestaDto] })
   @ApiResponse({ status: 400, description: 'Filtro malformado' })
   async listar(@Query() query: ListarAulasQuery): Promise<AulaRespuestaDto[]> {
@@ -49,6 +54,7 @@ export class AulasController {
   }
 
   @Get(':id')
+  @Roles('administrador', 'director', 'comite')
   @ApiOperation({ summary: 'Consulta un Aula por id' })
   @ApiResponse({ status: 200, description: 'Aula encontrada', type: AulaRespuestaDto })
   @ApiResponse({ status: 400, description: 'id malformado' })

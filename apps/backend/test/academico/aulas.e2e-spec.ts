@@ -401,8 +401,10 @@ describe('Aulas e2e — CRUD de Aula acotada a Grado/Seccion/AnioEscolar + coher
     expect(await prisma.aula.findUnique({ where: { id: aula.id } })).not.toBeNull();
   });
 
-  // [AT7]: rol no autorizado se rechaza en las 5 rutas de /aulas.
-  it('[AT7] rol comite recibe 403 en las rutas de Aula', async () => {
+  // [AT7]: rol no autorizado se rechaza en las rutas de escritura de /aulas. Lectura (GET) se
+  // abre a 'comite' para que el asistente de creación de procesos (#11) pueda listar el árbol
+  // académico al segmentar el público objetivo.
+  it('[AT7] rol comite recibe 403 al escribir en /aulas, pero puede leer', async () => {
     const { codigo } = await crearUsuarioDirecto({ rol: 'comite' });
     const cookie = await loginYObtenerCookie(codigo);
     const { grado, seccion, anioEscolar } = await crearArbolCoherente();
@@ -415,7 +417,7 @@ describe('Aulas e2e — CRUD de Aula acotada a Grado/Seccion/AnioEscolar + coher
         )
       ).status,
     ).toBe(403);
-    expect((await getAulas('', cookie)).status).toBe(403);
+    expect((await getAulas('', cookie)).status).toBe(200);
     expect(await prisma.aula.findFirst({ where: { seccion_id: seccion.id } })).toBeNull();
   });
 

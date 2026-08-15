@@ -193,13 +193,15 @@ describe('AniosEscolares e2e — CRUD de AnioEscolar [SY1, SY3, SY4]', () => {
   });
 
   // 7.3 [SY1]: rol no autorizado se rechaza en las 6 rutas de AnioEscolar sin ejecutar el handler.
-  it('[SY1] rol comite recibe 403 en las rutas de AnioEscolar', async () => {
+  // Lectura (GET) se abre a 'comite' para que el asistente de creación de procesos (#11) pueda
+  // resolver el año escolar activo al segmentar por aula; escritura sigue restringida.
+  it('[SY1] rol comite recibe 403 al escribir en /anios-escolares, pero puede leer', async () => {
     const { codigo } = await crearUsuarioDirecto({ rol: 'comite' });
     const cookie = await loginYObtenerCookie(codigo);
     const nombre = nombreUnico();
 
     expect((await postAniosEscolares({ nombre }, cookie)).status).toBe(403);
-    expect((await getAniosEscolares('', cookie)).status).toBe(403);
+    expect((await getAniosEscolares('', cookie)).status).toBe(200);
     const fila = await prisma.anioEscolar.findFirst({ where: { nombre } });
     expect(fila).toBeNull();
   });

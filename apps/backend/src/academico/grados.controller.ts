@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -40,7 +40,9 @@ export class GradosController {
   }
 
   @Get()
+  @Roles('administrador', 'director', 'comite')
   @ApiOperation({ summary: 'Lista grados, con filtro opcional por nivel_id' })
+  @ApiQuery({ name: 'nivel_id', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Listado de grados', type: [GradoRespuestaDto] })
   @ApiResponse({ status: 400, description: 'nivel_id malformado' })
   async listar(@Query() query: ListarGradosQuery): Promise<GradoRespuestaDto[]> {
@@ -48,6 +50,7 @@ export class GradosController {
   }
 
   @Get(':id')
+  @Roles('administrador', 'director', 'comite')
   @ApiOperation({ summary: 'Consulta un Grado por id' })
   @ApiResponse({ status: 200, description: 'Grado encontrado', type: GradoRespuestaDto })
   @ApiResponse({ status: 400, description: 'id malformado' })
