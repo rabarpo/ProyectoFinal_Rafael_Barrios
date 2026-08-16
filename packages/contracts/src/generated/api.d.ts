@@ -586,6 +586,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/procesos/{id}/resultados": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Participación y (según ocultar_resultados) desglose en vivo de un proceso (D1/D2) */
+        get: operations["ResultadosController_resultados"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/procesos/padron": {
         parameters: {
             query?: never;
@@ -1082,6 +1099,43 @@ export interface components {
             /** @description Fecha/hora en que se persistió el logo (ISO 8601) */
             logo_actualizado_en: string;
         };
+        ResultadoOpcionDto: {
+            /** @description ID de Candidato/Lista/OpcionConsulta */
+            id: string;
+            /** @description Nombre/etiqueta a mostrar */
+            etiqueta: string;
+            /** @description Cantidad de votos recibidos */
+            votos: number;
+            /**
+             * @description activo | baja. OpcionConsulta siempre activo
+             * @enum {string}
+             */
+            estado: "activo" | "baja";
+        };
+        ResultadosRespuestaDto: {
+            /**
+             * @description visible | oculto, según ProcesoElectoral.ocultar_resultados
+             * @enum {string}
+             */
+            estado_visibilidad: "visible" | "oculto";
+            /** @description Idéntico para todos los roles; no es información sensible */
+            resultados_ocultos_por_configuracion: boolean;
+            /** @description count(Voto) del proceso */
+            votos_emitidos: number;
+            /** @description count(DerechoVoto) del proceso (padrón congelado, nunca Matricula/Usuario en vivo) */
+            padron_total: number;
+            /** @description Instante del cálculo (now() de Postgres dentro de la transacción), ISO */
+            hora_servidor: string;
+            /**
+             * @description Sólo en modo visible
+             * @enum {string}
+             */
+            dimension?: "lista" | "candidato" | "opcion";
+            /** @description Sólo en modo visible */
+            desglose?: components["schemas"]["ResultadoOpcionDto"][];
+            /** @description Sólo en modo visible: count(Voto WHERE blanco = true) */
+            blancos?: number;
+        };
         SegmentacionDto: {
             /**
              * @description Público objetivo del proceso
@@ -1159,7 +1213,7 @@ export interface components {
             fecha_apertura_prevista: string;
             /** @description Fecha/hora prevista de cierre (ISO-8601), MUST ser posterior a la apertura */
             fecha_cierre_prevista: string;
-            /** @description Pre-marcado por el asistente (D7); si se omite, persiste el default del schema (false) */
+            /** @description Pre-marcado por el asistente (D7); si se omite, persiste el default del schema (true, ADR-0008: "activa por defecto") */
             ocultar_resultados?: boolean;
         };
         ProcesoRespuestaDto: {
@@ -2021,7 +2075,10 @@ export interface operations {
     };
     AniosEscolaresController_listar: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 'true'/'false' */
+                activo?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2382,7 +2439,9 @@ export interface operations {
     };
     GradosController_listar: {
         parameters: {
-            query?: never;
+            query?: {
+                nivel_id?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2718,7 +2777,12 @@ export interface operations {
     };
     AulasController_listar: {
         parameters: {
-            query?: never;
+            query?: {
+                turno?: "manana" | "tarde";
+                anio_escolar_id?: string;
+                seccion_id?: string;
+                grado_id?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3282,6 +3346,49 @@ export interface operations {
                 content?: never;
             };
             /** @description Rol distinto de administrador/director */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ResultadosController_resultados: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resultados */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadosRespuestaDto"];
+                };
+            };
+            /** @description :id no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin DerechoVoto, proceso inexistente o en borrador (idéntico, D3) */
             403: {
                 headers: {
                     [name: string]: unknown;

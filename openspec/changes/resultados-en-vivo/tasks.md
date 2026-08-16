@@ -157,55 +157,55 @@ la prueba como equivalente observable del vencimiento del TTL.
 ## PR 2 — Contrato regenerado y andamiaje de frontend (base = PR 1 branch)
 
 ### Phase 8: Contrato HTTP regenerado
-- [ ] 8.1 Correr `pnpm openapi:extract`: `packages/contracts/openapi.json` y
+- [x] 8.1 Correr `pnpm openapi:extract`: `packages/contracts/openapi.json` y
       `src/generated/api.d.ts` exponen `GET /procesos/{id}/resultados` con `200/400/401/403` —
       commitear el contrato regenerado **antes** de tocar cualquier línea de frontend
       [design.md, paso R2 de Migración/Rollout]
 
 ### Phase 9: Dependencias y `QueryProvider` (D9/D13)
-- [ ] 9.1 Modificar `apps/frontend/package.json`: agregar `@tanstack/react-query@^5` y
+- [x] 9.1 Modificar `apps/frontend/package.json`: agregar `@tanstack/react-query@^5` y
       `recharts@^2`
-- [ ] 9.2 Verificar al instalar: `peerDependencies` de la última versión `2.x` de `recharts`
+- [x] 9.2 Verificar al instalar: `peerDependencies` de la última versión `2.x` de `recharts`
       acepta React `^18.3.1` (riesgo anotado en design.md, pregunta abierta) — si sólo hubiera
       línea `3.x` compatible, ajustar la versión en `package.json` sin cambio de diseño (`dimension`
       desacopla el contrato del backend de la librería de gráficos)
-- [ ] 9.3 Crear `apps/frontend/src/app/query-client.ts`: `crearQueryClient()` con `retry: 0`,
+- [x] 9.3 Crear `apps/frontend/src/app/query-client.ts`: `crearQueryClient()` con `retry: 0`,
       `refetchOnWindowFocus: false`, `staleTime: 0`
-- [ ] 9.4 RED componente: `QueryProvider` crea un `QueryClient` **nuevo** cada vez que se
+- [x] 9.4 RED componente: `QueryProvider` crea un `QueryClient` **nuevo** cada vez que se
       remonta (no reutiliza un singleton de módulo) [design.md D9]
-- [ ] 9.5 GREEN: crear `apps/frontend/src/app/QueryProvider.tsx` (+ `.spec.tsx`):
+- [x] 9.5 GREEN: crear `apps/frontend/src/app/QueryProvider.tsx` (+ `.spec.tsx`):
       `useState(crearQueryClient)` + `QueryClientProvider` — pasa 9.4
-- [ ] 9.6 Modificar `apps/frontend/src/app/App.tsx`: `QueryProvider` montado **dentro** de
+- [x] 9.6 Modificar `apps/frontend/src/app/App.tsx`: `QueryProvider` montado **dentro** de
       `AuthGuard`, envolviendo `AppShell` (`AuthProvider > AuthGuard > QueryProvider > AppShell >
       Enrutador`) — la caché de consultas muere con la sesión al desmontarse `AuthGuard`, sin
       `queryClient.clear()` manual
 
 ### Phase 10: Ruta `/resultados/:procesoId` (D11)
-- [ ] 10.1 RED unit: `parsearRuta('/resultados/<id>')` ida y vuelta y `rutaAPath` inversa;
+- [x] 10.1 RED unit: `parsearRuta('/resultados/<id>')` ida y vuelta y `rutaAPath` inversa;
       `/resultados` sin id ⇒ `no-encontrada` [threat: Enrutamiento (cliente)]
-- [ ] 10.2 GREEN: modificar `apps/frontend/src/app/rutas.ts` (+ `rutas.spec.ts`): variante
+- [x] 10.2 GREEN: modificar `apps/frontend/src/app/rutas.ts` (+ `rutas.spec.ts`): variante
       `{ nombre: 'resultados'; procesoId }` — pasa 10.1
-- [ ] 10.3 Modificar `apps/frontend/src/app/Enrutador.tsx` (+ `.spec.tsx`): caso `'resultados'`
+- [x] 10.3 Modificar `apps/frontend/src/app/Enrutador.tsx` (+ `.spec.tsx`): caso `'resultados'`
       queda registrado (componente placeholder o import diferido a Phase 13 según orden de
       compilación — el caso de enrutamiento se prueba aquí, la página se implementa en PR3)
 
 ### Phase 11: API cliente y hook de sondeo (D10)
-- [ ] 11.1 Crear `apps/frontend/src/resultados/resultados-api.ts`: wrapper tipado sobre
+- [x] 11.1 Crear `apps/frontend/src/resultados/resultados-api.ts`: wrapper tipado sobre
       `createSeeiClient` para `GET /procesos/:id/resultados` (idioma de `procesos-api.ts`)
-- [ ] 11.2 RED unit: `useResultadosEnVivo` con fetch doblado + `vi.useFakeTimers()` dentro de un
+- [x] 11.2 RED unit: `useResultadosEnVivo` con fetch doblado + `vi.useFakeTimers()` dentro de un
       `QueryClientProvider` de prueba ⇒ segunda petición a los 15 s exactos y **ninguna** antes
       [design.md D10]
-- [ ] 11.3 RED unit: `retry: 0` ⇒ un `403` simulado aflora al primer fallo, sin reintento
-- [ ] 11.4 GREEN: crear `apps/frontend/src/resultados/useResultadosEnVivo.ts` (+ `.spec.ts`):
-      `useQuery` con `queryKey: ['resultados', procesoId]`, `refetchInterval: 15_000`
-      (`INTERVALO_SONDEO_MS` exportado del módulo para que una vista futura lo sobrescriba),
-      `retry: 0` — pasa 11.2-11.3
+- [x] 11.3 RED unit: `retry: 0` ⇒ un `403` simulado aflora al primer fallo, sin reintento
+- [x] 11.4 GREEN: crear `apps/frontend/src/resultados/useResultadosEnVivo.ts` (+ `.spec.tsx`,
+      no `.spec.ts` — el wrapper de prueba usa JSX): `useQuery` con
+      `queryKey: ['resultados', procesoId]`, `refetchInterval: 15_000` (`INTERVALO_SONDEO_MS`
+      exportado del módulo para que una vista futura lo sobrescriba), `retry: 0` — pasa 11.2-11.3
 
 ### Phase 12: Regresión PR2
-- [ ] 12.1 `pnpm --filter @seei/frontend test -- rutas` verde
-- [ ] 12.2 `pnpm --filter @seei/frontend test -- useResultadosEnVivo` verde
-- [ ] 12.3 `pnpm --filter @seei/frontend test -- QueryProvider` verde
-- [ ] 12.4 `pnpm turbo run build typecheck test` verde con la app aún sin ninguna vista de
+- [x] 12.1 `pnpm --filter @seei/frontend test -- rutas` verde
+- [x] 12.2 `pnpm --filter @seei/frontend test -- useResultadosEnVivo` verde
+- [x] 12.3 `pnpm --filter @seei/frontend test -- QueryProvider` verde
+- [x] 12.4 `pnpm turbo run build typecheck test` verde con la app aún sin ninguna vista de
       resultados montada [design.md, paso R3 de Migración/Rollout]
 
 ## PR 3 — Vista de resultados: participación y aviso de ocultos (base = PR 2 branch)

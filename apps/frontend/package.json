@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@seei/contracts": "workspace:*",
+    "@tanstack/react-query": "^5.101.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.10",

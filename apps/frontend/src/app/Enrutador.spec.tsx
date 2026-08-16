@@ -55,4 +55,22 @@ describe('Enrutador', () => {
 
     expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
   });
+
+  // resultados-en-vivo, PR2 (#16; design.md D11, tasks.md 10.3). El caso de enrutamiento se
+  // prueba acá; la página real (`ResultadosPage`) llega en PR3 y reemplaza este placeholder.
+  it('con sesión válida, /resultados/:procesoId resuelve sin excepción (placeholder de PR2)', () => {
+    window.history.pushState(null, '', '/resultados/p1');
+
+    expect(() =>
+      render(
+        proveer({
+          estado: 'autenticado',
+          sesion: { userId: 'u1', rol: 'administrador', creadoEn: 1 },
+          ...acciones,
+        }),
+      ),
+    ).not.toThrow();
+
+    expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+  });
 });

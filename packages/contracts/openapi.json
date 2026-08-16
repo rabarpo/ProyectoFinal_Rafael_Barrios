@@ -578,7 +578,17 @@
       },
       "get": {
         "operationId": "AniosEscolaresController_listar",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "activo",
+            "required": false,
+            "in": "query",
+            "description": "'true'/'false'",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Listado de años escolares",
@@ -911,7 +921,16 @@
       },
       "get": {
         "operationId": "GradosController_listar",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "nivel_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Listado de grados",
@@ -1224,7 +1243,44 @@
       },
       "get": {
         "operationId": "AulasController_listar",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "turno",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "manana",
+                "tarde"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "anio_escolar_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seccion_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "grado_id",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Listado de aulas",
@@ -1699,6 +1755,51 @@
         "summary": "Descarga el logo institucional",
         "tags": [
           "configuracion"
+        ]
+      }
+    },
+    "/procesos/{id}/resultados": {
+      "get": {
+        "operationId": "ResultadosController_resultados",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadosRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ":id no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Sin DerechoVoto, proceso inexistente o en borrador (idéntico, D3)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Participación y (según ocultar_resultados) desglose en vivo de un proceso (D1/D2)",
+        "tags": [
+          "procesos"
         ]
       }
     },
@@ -3387,6 +3488,93 @@
           "logo_actualizado_en"
         ]
       },
+      "ResultadoOpcionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID de Candidato/Lista/OpcionConsulta"
+          },
+          "etiqueta": {
+            "type": "string",
+            "description": "Nombre/etiqueta a mostrar"
+          },
+          "votos": {
+            "type": "number",
+            "description": "Cantidad de votos recibidos"
+          },
+          "estado": {
+            "type": "string",
+            "description": "activo | baja. OpcionConsulta siempre activo",
+            "enum": [
+              "activo",
+              "baja"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "etiqueta",
+          "votos",
+          "estado"
+        ]
+      },
+      "ResultadosRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "estado_visibilidad": {
+            "type": "string",
+            "description": "visible | oculto, según ProcesoElectoral.ocultar_resultados",
+            "enum": [
+              "visible",
+              "oculto"
+            ]
+          },
+          "resultados_ocultos_por_configuracion": {
+            "type": "boolean",
+            "description": "Idéntico para todos los roles; no es información sensible"
+          },
+          "votos_emitidos": {
+            "type": "number",
+            "description": "count(Voto) del proceso"
+          },
+          "padron_total": {
+            "type": "number",
+            "description": "count(DerechoVoto) del proceso (padrón congelado, nunca Matricula/Usuario en vivo)"
+          },
+          "hora_servidor": {
+            "type": "string",
+            "description": "Instante del cálculo (now() de Postgres dentro de la transacción), ISO"
+          },
+          "dimension": {
+            "type": "string",
+            "description": "Sólo en modo visible",
+            "enum": [
+              "lista",
+              "candidato",
+              "opcion"
+            ]
+          },
+          "desglose": {
+            "description": "Sólo en modo visible",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResultadoOpcionDto"
+            }
+          },
+          "blancos": {
+            "type": "number",
+            "description": "Sólo en modo visible: count(Voto WHERE blanco = true)"
+          }
+        },
+        "required": [
+          "estado_visibilidad",
+          "resultados_ocultos_por_configuracion",
+          "votos_emitidos",
+          "padron_total",
+          "hora_servidor"
+        ]
+      },
       "SegmentacionDto": {
         "type": "object",
         "properties": {
@@ -3578,7 +3766,7 @@
           },
           "ocultar_resultados": {
             "type": "boolean",
-            "description": "Pre-marcado por el asistente (D7); si se omite, persiste el default del schema (false)"
+            "description": "Pre-marcado por el asistente (D7); si se omite, persiste el default del schema (true, ADR-0008: \"activa por defecto\")"
           }
         },
         "required": [

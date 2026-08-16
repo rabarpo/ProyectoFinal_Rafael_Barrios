@@ -24,6 +24,17 @@ function VistaNoEncontrada() {
   return <p className="text-body-md text-on-surface">Página no encontrada.</p>;
 }
 
+// resultados-en-vivo, PR2 (#16; design.md D11, tasks.md 10.3). Placeholder mínimo: la ruta ya
+// resuelve, pero `ResultadosPage` (participación, gráficos) se implementa recién en PR3/PR4 —
+// este PR es sólo andamiaje (dependencias, provider, ruta, hook de datos).
+function ResultadosPlaceholder({ procesoId }: { procesoId: string }) {
+  return (
+    <p className="text-body-md text-on-surface" data-proceso-id={procesoId}>
+      Resultados en vivo (pendiente de vista, PR3/PR4).
+    </p>
+  );
+}
+
 export function Enrutador() {
   const ruta = useRuta();
 
@@ -44,6 +55,8 @@ export function Enrutador() {
       return <VotacionPage derechoVotoId={ruta.derechoVotoId} />;
     case 'comprobante':
       return <ComprobantePage votoId={ruta.votoId} />;
+    case 'resultados':
+      return <ResultadosPlaceholder procesoId={ruta.procesoId} />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }

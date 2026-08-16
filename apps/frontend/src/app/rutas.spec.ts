@@ -16,6 +16,7 @@ describe('rutas', () => {
       { nombre: 'apertura', procesoId: 'p1' },
       { nombre: 'votacion', derechoVotoId: 'dv1' },
       { nombre: 'comprobante', votoId: 'v1' },
+      { nombre: 'resultados', procesoId: 'p1' },
     ];
 
     for (const ruta of casos) {
@@ -30,6 +31,13 @@ describe('rutas', () => {
   it("[13.1] '/comprobante' sin id resuelve a 'no-encontrada'", () => {
     expect(() => parsearRuta('/comprobante')).not.toThrow();
     expect(parsearRuta('/comprobante').nombre).toBe('no-encontrada');
+  });
+
+  // [design.md D11; tasks.md 10.1; threat: Enrutamiento (cliente)] `/resultados` sin id no es una
+  // variante navegable: debe caer en 'no-encontrada', mismo criterio que '/comprobante' (D12).
+  it("[10.1] '/resultados' sin id resuelve a 'no-encontrada'", () => {
+    expect(() => parsearRuta('/resultados')).not.toThrow();
+    expect(parsearRuta('/resultados').nombre).toBe('no-encontrada');
   });
 
   it("path traversal ('/../../etc/passwd') resuelve a 'no-encontrada', nunca lanza", () => {

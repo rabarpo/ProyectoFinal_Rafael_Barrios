@@ -15,6 +15,7 @@ export type Ruta =
   | { nombre: 'apertura'; procesoId: string }
   | { nombre: 'votacion'; derechoVotoId: string }
   | { nombre: 'comprobante'; votoId: string }
+  | { nombre: 'resultados'; procesoId: string }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -74,6 +75,14 @@ export function parsearRuta(pathname: string): Ruta {
     return { nombre: 'comprobante', votoId: partes[1] };
   }
 
+  // resultados-en-vivo, PR2 (#16; design.md D11, tasks.md 10.1-10.2): ruta plana
+  // `/resultados/:procesoId`, mismo criterio que `/votar/:derechoVotoId` (#14 D14) y
+  // `/comprobante/:votoId` (#15 D12) — el votante no gestiona el proceso, consulta un dato propio.
+  // `/resultados` sin id cae en 'no-encontrada' (sin listado agregado en este change).
+  if (partes[0] === 'resultados' && partes.length === 2) {
+    return { nombre: 'resultados', procesoId: partes[1] };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -95,6 +104,8 @@ export function rutaAPath(ruta: Ruta): string {
       return `/votar/${ruta.derechoVotoId}`;
     case 'comprobante':
       return `/comprobante/${ruta.votoId}`;
+    case 'resultados':
+      return `/resultados/${ruta.procesoId}`;
     case 'no-encontrada':
       return ruta.pathname;
   }
