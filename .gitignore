@@ -9,3 +9,4 @@ coverage/
 *.log
 .DS_Store
 caddy-local-root.crt
+.claude/skills/run-seei/.caddy-port
