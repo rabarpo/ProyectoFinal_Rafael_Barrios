@@ -30,7 +30,8 @@
         "LOGIN_INTENTOS_VENTANA_SEGUNDOS",
         "LOGIN_BLOQUEO_SEGUNDOS",
         "OUTBOX_POLL_MS",
-        "OUTBOX_BATCH"
+        "OUTBOX_BATCH",
+        "RESULTADOS_CACHE_TTL_SECONDS"
       ]
     },
     "test:schema": {

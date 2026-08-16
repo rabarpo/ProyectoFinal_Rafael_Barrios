@@ -65,6 +65,10 @@ services:
       # base del enlace autenticado que viaja en el cuerpo del correo. Ausente ⇒ el correo se
       # inserta igual, sin enlace (nunca aborta el voto).
       APP_BASE_URL: ${APP_BASE_URL}
+      # resultados-en-vivo (#16, PR4; design.md D7/D13): TTL en segundos de la caché Redis de
+      # `GET /procesos/:id/resultados`. Opcional — `resultados-cache.ts` cae a 8 (punto medio del
+      # rango 5-10 s de ADR-0005) si no está definida.
+      RESULTADOS_CACHE_TTL_SECONDS: ${RESULTADOS_CACHE_TTL_SECONDS:-8}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1))"]
       interval: 5s

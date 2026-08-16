@@ -10,3 +10,17 @@ import '@testing-library/jest-dom/vitest';
 afterEach(() => {
   cleanup();
 });
+
+// resultados-en-vivo (#16, PR4): primer consumidor de `recharts` bajo jsdom.
+// `ResponsiveContainer` usa `ResizeObserver`, ausente en jsdom (design.md, gotcha
+// documentado en "Estrategia de pruebas" — bajo jsdom mide 0×0 y no dibuja de
+// todas formas; el polyfill sólo evita el `ReferenceError` al montar el efecto).
+class ResizeObserverPolyfill {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = ResizeObserverPolyfill as unknown as typeof ResizeObserver;
+}

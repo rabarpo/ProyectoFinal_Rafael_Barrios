@@ -1,19 +1,19 @@
 import { useResultadosEnVivo } from './useResultadosEnVivo';
 import { PanelParticipacion } from './piezas/PanelParticipacion';
 import { AvisoResultadosOcultos } from './piezas/AvisoResultadosOcultos';
-import { DesgloseSimple } from './piezas/DesgloseSimple';
+import { GraficoDesglose } from './piezas/GraficoDesglose';
 
 interface ResultadosPageProps {
   procesoId: string;
 }
 
 /**
- * resultados-en-vivo (#16, PR3; design.md D11, tasks.md 13.1-13.6). Contenedor: único efecto de
- * este batch es el sondeo de `useResultadosEnVivo` (React Query, D10) — sin `useEffect` manual,
- * a diferencia de `ComprobantePage.tsx` (#15), porque acá el estado de servidor ya lo maneja el
- * hook. Participación (`PanelParticipacion`) se monta siempre; el desglose se delega a
- * `DesgloseSimple` en modo visible (reemplazado por `GraficoDesglose` en PR4, tasks.md 17.7) y a
- * `AvisoResultadosOcultos` en modo oculto, nunca ambos a la vez.
+ * resultados-en-vivo (#16, PR3/PR4; design.md D11/D12, tasks.md 13.1-13.6/17.7). Contenedor:
+ * único efecto de este batch es el sondeo de `useResultadosEnVivo` (React Query, D10) — sin
+ * `useEffect` manual, a diferencia de `ComprobantePage.tsx` (#15), porque acá el estado de
+ * servidor ya lo maneja el hook. Participación (`PanelParticipacion`) se monta siempre; el
+ * desglose se delega a `GraficoDesglose` (reemplaza a `DesgloseSimple`, interino de PR3) en modo
+ * visible y a `AvisoResultadosOcultos` en modo oculto, nunca ambos a la vez.
  */
 export function ResultadosPage({ procesoId }: ResultadosPageProps) {
   const { data, isLoading, isError } = useResultadosEnVivo(procesoId);
@@ -45,7 +45,11 @@ export function ResultadosPage({ procesoId }: ResultadosPageProps) {
       {data.estado_visibilidad === 'oculto' ? (
         <AvisoResultadosOcultos />
       ) : (
-        <DesgloseSimple desglose={data.desglose ?? []} blancos={data.blancos ?? 0} />
+        <GraficoDesglose
+          dimension={data.dimension ?? 'lista'}
+          desglose={data.desglose ?? []}
+          blancos={data.blancos ?? 0}
+        />
       )}
     </div>
   );

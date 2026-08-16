@@ -116,3 +116,15 @@ reconciliar-outbox.ts` es una utilidad de diagnóstico de **sólo lectura** (`pn
 @seei/backend exec tsx scripts/reconciliar-outbox.ts`): identifica votos sin `JobCorreo`
 asociado; nunca inserta filas — insertar ahí reconstruiría el despachador desacoplado que el
 ADR-0018 veta de forma permanente.
+
+## Backend — resultados en vivo (`GET /procesos/:id/resultados`)
+
+Backlog #16 (`openspec/changes/resultados-en-vivo/design.md`) agrega un endpoint autenticado
+(`AuthGuard` sin `@Roles()`, cualquier votante con `DerechoVoto` en el proceso) que expone
+participación y, si `ocultar_resultados = false`, el desglose por candidato/lista/opción. Las
+lecturas se sirven detrás de una caché corta en Redis (`SETEX resultados:{proceso_id}
+RESULTADOS_CACHE_TTL_SECONDS`, por defecto 8 s — ver la tabla de variables en
+`docs/onboarding.md`) para amortiguar la ráfaga de sondeo del frontend (`useResultadosEnVivo`,
+`refetchInterval` de 15 s). El frontend elige el tipo de gráfico (`recharts`) según el campo
+`dimension` que manda el servidor: pastel para `opcion`, barras horizontales para `lista`/
+`candidato` — nunca decidido en el cliente.

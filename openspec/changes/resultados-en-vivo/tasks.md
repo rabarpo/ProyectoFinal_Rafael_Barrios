@@ -257,37 +257,37 @@ la prueba como equivalente observable del vencimiento del TTL.
 ## PR 4 — Gráficos (`recharts`) y documentación (base = PR 3 branch)
 
 ### Phase 17: `GraficoDesglose` (D12)
-- [ ] 17.1 RED componente: `dimension: 'opcion'` ⇒ monta `PieChart`
-- [ ] 17.2 RED componente: `dimension: 'lista'` y `dimension: 'candidato'` ⇒ montan `BarChart`
+- [x] 17.1 RED componente: `dimension: 'opcion'` ⇒ monta `PieChart`
+- [x] 17.2 RED componente: `dimension: 'lista'` y `dimension: 'candidato'` ⇒ montan `BarChart`
       horizontal (`layout="vertical"`)
-- [ ] 17.3 RED componente: `blancos` se dibuja como categoría propia, con token de color
+- [x] 17.3 RED componente: `blancos` se dibuja como categoría propia, con token de color
       distinto, nunca mezclado con las filas de candidatos/listas/opciones
-- [ ] 17.4 RED componente: la **tabla espejo** (`<table>`) contiene las mismas etiquetas y
+- [x] 17.4 RED componente: la **tabla espejo** (`<table>`) contiene las mismas etiquetas y
       números exactos que el desglose recibido, incluidos los ítems con 0 votos y los marcados
       `baja` — las aserciones van sobre la tabla, no sobre el SVG, porque bajo jsdom
       `ResponsiveContainer` mide 0×0 y no dibuja [design.md, gotcha de `recharts` documentado en
       "Estrategia de pruebas"]
-- [ ] 17.5 RED componente: el orden de las filas de la tabla respeta el orden recibido del
+- [x] 17.5 RED componente: el orden de las filas de la tabla respeta el orden recibido del
       servidor (votos desc, etiqueta asc) — el componente no reordena por su cuenta
-- [ ] 17.6 GREEN: crear `apps/frontend/src/resultados/piezas/GraficoDesglose.tsx` (+
+- [x] 17.6 GREEN: crear `apps/frontend/src/resultados/piezas/GraficoDesglose.tsx` (+
       `.spec.tsx`) — pasa 17.1-17.5
-- [ ] 17.7 Modificar `apps/frontend/src/resultados/ResultadosPage.tsx`: reemplazar el mock de
+- [x] 17.7 Modificar `apps/frontend/src/resultados/ResultadosPage.tsx`: reemplazar el mock de
       `GraficoDesglose` de Phase 13 por el componente real
 
 ### Phase 18: Documentación de la variable de entorno (D13)
-- [ ] 18.1 Modificar `turbo.json`: `test:e2e.env` `+= RESULTADOS_CACHE_TTL_SECONDS`
-- [ ] 18.2 Modificar `infra/docker/docker-compose.yml`: documentar `RESULTADOS_CACHE_TTL_SECONDS`
+- [x] 18.1 Modificar `turbo.json`: `test:e2e.env` `+= RESULTADOS_CACHE_TTL_SECONDS`
+- [x] 18.2 Modificar `infra/docker/docker-compose.yml`: documentar `RESULTADOS_CACHE_TTL_SECONDS`
       (opcional, default 8) en el servicio `backend`
-- [ ] 18.3 Modificar `docs/onboarding.md`: documentar `RESULTADOS_CACHE_TTL_SECONDS`
-- [ ] 18.4 Modificar `README.md`: mismas variable, sección relevante
+- [x] 18.3 Modificar `docs/onboarding.md`: documentar `RESULTADOS_CACHE_TTL_SECONDS`
+- [x] 18.4 Modificar `README.md`: mismas variable, sección relevante
 
 ### Phase 19: Regresión final del change
-- [ ] 19.1 `pnpm --filter @seei/frontend test -- GraficoDesglose` verde
-- [ ] 19.2 `pnpm --filter @seei/backend test` y `test:e2e` completos verdes contra Postgres +
+- [x] 19.1 `pnpm --filter @seei/frontend test -- GraficoDesglose` verde
+- [x] 19.2 `pnpm --filter @seei/backend test` y `test:e2e` completos verdes contra Postgres +
       Redis reales
-- [ ] 19.3 `pnpm --filter @seei/frontend test` completo verde
-- [ ] 19.4 `pnpm typecheck` verde en los 4 paquetes
-- [ ] 19.5 `pnpm turbo run test:e2e` verifica que toma `RESULTADOS_CACHE_TTL_SECONDS` del entorno
+- [x] 19.3 `pnpm --filter @seei/frontend test` completo verde
+- [x] 19.4 `pnpm typecheck` verde en los 4 paquetes
+- [x] 19.5 `pnpm turbo run test:e2e` verifica que toma `RESULTADOS_CACHE_TTL_SECONDS` del entorno
       y que el default 8 funciona sin definirla
 
 ## Pendientes explícitamente fuera de este change (constancia para no inventarlos aquí)

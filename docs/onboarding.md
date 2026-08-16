@@ -56,6 +56,13 @@ Turborepo, roles de Postgres, topología de Docker Compose) ver
    | `OUTBOX_POLL_MS` | Intervalo del despachador de *polling* sobre `JobCorreo` (por defecto `5000`) |
    | `OUTBOX_BATCH` | Tamaño de lote que el despachador encola por cada ciclo (por defecto `20`) |
 
+   Resultados en vivo (backlog #16) agrega esta variable, opcional en desarrollo
+   (`resultados-cache.ts` cae a su valor por defecto sin ella):
+
+   | Variable | Uso |
+   |---|---|
+   | `RESULTADOS_CACHE_TTL_SECONDS` | TTL en segundos de la caché Redis de `GET /procesos/:id/resultados` (por defecto `8`) |
+
 3. **Levantar el stack completo** (Caddy + frontend + backend + worker + Postgres + Redis, con el
    override de desarrollo — bind mounts, puertos de DB/Redis publicados solo en `127.0.0.1`):
 
