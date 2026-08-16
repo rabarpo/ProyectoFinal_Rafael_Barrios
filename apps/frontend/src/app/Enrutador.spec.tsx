@@ -13,6 +13,14 @@ vi.mock('../auth/LoginPage', () => ({
   LoginPage: () => <p data-testid="login-page">LoginPage</p>,
 }));
 
+// resultados-en-vivo, PR3 (#16; design.md D11, tasks.md 13.6). Se dobla `ResultadosPage`
+// completa (usa React Query vía `useResultadosEnVivo`, sin `QueryProvider` en este árbol de
+// prueba) para mantener este archivo enfocado en la resolución de rutas, no en el contenido de
+// la página — su propio comportamiento se prueba en `resultados/ResultadosPage.spec.tsx`.
+vi.mock('../resultados/ResultadosPage', () => ({
+  ResultadosPage: () => <p data-testid="resultados-page">ResultadosPage</p>,
+}));
+
 const acciones = { login: vi.fn(), google: vi.fn(), logout: vi.fn(), alRecibir401: vi.fn() };
 
 function proveer(contexto: ContextoSesion) {
@@ -56,9 +64,9 @@ describe('Enrutador', () => {
     expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
   });
 
-  // resultados-en-vivo, PR2 (#16; design.md D11, tasks.md 10.3). El caso de enrutamiento se
-  // prueba acá; la página real (`ResultadosPage`) llega en PR3 y reemplaza este placeholder.
-  it('con sesión válida, /resultados/:procesoId resuelve sin excepción (placeholder de PR2)', () => {
+  // resultados-en-vivo, PR3 (#16; design.md D11, tasks.md 13.6). `ResultadosPage` real llega en
+  // PR3, doblada acá (ver mock arriba) para no depender de `QueryProvider` en este árbol.
+  it('con sesión válida, /resultados/:procesoId resuelve a ResultadosPage', () => {
     window.history.pushState(null, '', '/resultados/p1');
 
     expect(() =>
@@ -72,5 +80,6 @@ describe('Enrutador', () => {
     ).not.toThrow();
 
     expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+    expect(screen.getByTestId('resultados-page')).toBeInTheDocument();
   });
 });

@@ -211,42 +211,48 @@ la prueba como equivalente observable del vencimiento del TTL.
 ## PR 3 — Vista de resultados: participación y aviso de ocultos (base = PR 2 branch)
 
 ### Phase 13: `ResultadosPage` (contenedor)
-- [ ] 13.1 RED componente: `ResultadosPage` en estado cargando (antes de la primera respuesta)
-- [ ] 13.2 RED componente: `ResultadosPage` en estado error (`403`/`401` propagado por el hook)
-- [ ] 13.3 RED componente: `ResultadosPage` con `estado_visibilidad = 'oculto'` ⇒ renderiza
+- [x] 13.1 RED componente: `ResultadosPage` en estado cargando (antes de la primera respuesta)
+- [x] 13.2 RED componente: `ResultadosPage` en estado error (`403`/`401` propagado por el hook)
+- [x] 13.3 RED componente: `ResultadosPage` con `estado_visibilidad = 'oculto'` ⇒ renderiza
       `AvisoResultadosOcultos`, **sin** intentar montar ningún componente de gráfico [spec: Vista
       con resultados ocultos]
-- [ ] 13.4 RED componente: `ResultadosPage` con `estado_visibilidad = 'visible'` ⇒ renderiza
+- [x] 13.4 RED componente: `ResultadosPage` con `estado_visibilidad = 'visible'` ⇒ renderiza
       `PanelParticipacion` y delega el desglose a `GraficoDesglose` (mockeado en este PR, real en
-      PR4) [spec: Vista con resultados visibles]
-- [ ] 13.5 GREEN: crear `apps/frontend/src/resultados/ResultadosPage.tsx` (+ `.spec.tsx`) — pasa
+      PR4) [spec: Vista con resultados visibles] — DESVIACIÓN: el desglose se delega a
+      `piezas/DesgloseSimple.tsx` (lista cruda sin gráfico), no a un `GraficoDesglose.tsx` doblado
+      por test; `GraficoDesglose` se **crea** recién en Phase 17 (PR4) y reemplaza a
+      `DesgloseSimple` en `ResultadosPage` (tasks.md 17.7), evitando un import a un módulo
+      inexistente en este PR
+- [x] 13.5 GREEN: crear `apps/frontend/src/resultados/ResultadosPage.tsx` (+ `.spec.tsx`) — pasa
       13.1-13.4
-- [ ] 13.6 Modificar `apps/frontend/src/app/Enrutador.tsx`: caso `'resultados'` ⇒
+- [x] 13.6 Modificar `apps/frontend/src/app/Enrutador.tsx`: caso `'resultados'` ⇒
       `<ResultadosPage procesoId={...}/>` real (reemplaza el placeholder de Phase 10)
 
 ### Phase 14: `PanelParticipacion`
-- [ ] 14.1 RED componente: dado `votos_emitidos`/`padron_total`, muestra emitidos, padrón total,
+- [x] 14.1 RED componente: dado `votos_emitidos`/`padron_total`, muestra emitidos, padrón total,
       **porcentaje de participación y abstenciones derivados en el cliente** (no leídos del
       servidor) [spec: Sin categoría de nulos; abstención derivada — "MUST calcular abstención
       como `padron_total - votos_emitidos`"]
-- [ ] 14.2 RED componente: se renderiza siempre, tanto en modo visible como en modo oculto
-- [ ] 14.3 GREEN: crear `apps/frontend/src/resultados/piezas/PanelParticipacion.tsx` (+
+- [x] 14.2 RED componente: se renderiza siempre, tanto en modo visible como en modo oculto
+- [x] 14.3 GREEN: crear `apps/frontend/src/resultados/piezas/PanelParticipacion.tsx` (+
       `.spec.tsx`) — pasa 14.1-14.2
 
 ### Phase 15: `AvisoResultadosOcultos`
-- [ ] 15.1 RED componente: mensaje de "resultados ocultos hasta el cierre" visible; **ningún**
+- [x] 15.1 RED componente: mensaje de "resultados ocultos hasta el cierre" visible; **ningún**
       elemento de gráfico montado
-- [ ] 15.2 GREEN: crear `apps/frontend/src/resultados/piezas/AvisoResultadosOcultos.tsx` (+
+- [x] 15.2 GREEN: crear `apps/frontend/src/resultados/piezas/AvisoResultadosOcultos.tsx` (+
       `.spec.tsx`) — pasa 15.1
 
 ### Phase 16: Regresión PR3
-- [ ] 16.1 `pnpm --filter @seei/frontend test -- Resultados` verde
-- [ ] 16.2 `pnpm --filter @seei/frontend test -- PanelParticipacion` verde
-- [ ] 16.3 `pnpm --filter @seei/frontend test -- AvisoResultadosOcultos` verde
-- [ ] 16.4 Verificación funcional: sin sesión, `/resultados/:procesoId` muestra `LoginPage`
+- [x] 16.1 `pnpm --filter @seei/frontend test -- Resultados` verde
+- [x] 16.2 `pnpm --filter @seei/frontend test -- PanelParticipacion` verde
+- [x] 16.3 `pnpm --filter @seei/frontend test -- AvisoResultadosOcultos` verde
+- [x] 16.4 Verificación funcional: sin sesión, `/resultados/:procesoId` muestra `LoginPage`
       conservando la URL (`#12` D11); tras autenticar, renderiza la misma ruta [threat:
-      Enrutamiento (cliente)]
-- [ ] 16.5 `pnpm typecheck` verde en los 4 paquetes
+      Enrutamiento (cliente)] — cubierto por el caso genérico ya existente de
+      `Enrutador.spec.tsx` ("sin sesión, cualquier pathname renderiza LoginPage") más el nuevo
+      caso `/resultados/:procesoId` con sesión
+- [x] 16.5 `pnpm typecheck` verde en los 4 paquetes
 
 ## PR 4 — Gráficos (`recharts`) y documentación (base = PR 3 branch)
 

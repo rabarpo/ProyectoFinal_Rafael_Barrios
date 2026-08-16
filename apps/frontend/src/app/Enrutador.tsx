@@ -6,6 +6,7 @@ import { RegistroCandidatoPage } from '../candidatos/RegistroCandidatoPage';
 import { GestionCandidatosPage } from '../candidatos/GestionCandidatosPage';
 import { VotacionPage } from '../votos/VotacionPage';
 import { ComprobantePage } from '../votos/ComprobantePage';
+import { ResultadosPage } from '../resultados/ResultadosPage';
 
 /**
  * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
@@ -16,23 +17,13 @@ import { ComprobantePage } from '../votos/ComprobantePage';
  * real desde PR8 (tasks.md 23.6); `apertura` monta `AperturaProcesoPage` real
  * desde `#13`/PR5 (design.md D13, tasks.md 18.2); `votacion` monta
  * `VotacionPage` real desde `#14`/PR5 (design.md D14, tasks.md 18.2); `comprobante` monta
- * `ComprobantePage` real desde `#15`/PR4 (design.md D12, tasks.md 14.3) — sin
+ * `ComprobantePage` real desde `#15`/PR4 (design.md D12, tasks.md 14.3); `resultados` monta
+ * `ResultadosPage` real desde `#16`/PR3 (design.md D11, tasks.md 13.6) — sin
  * stubs restantes en el alcance de este change. `no-encontrada` se renderiza
  * dentro del shell, nunca lanza ni deja `undefined`.
  */
 function VistaNoEncontrada() {
   return <p className="text-body-md text-on-surface">Página no encontrada.</p>;
-}
-
-// resultados-en-vivo, PR2 (#16; design.md D11, tasks.md 10.3). Placeholder mínimo: la ruta ya
-// resuelve, pero `ResultadosPage` (participación, gráficos) se implementa recién en PR3/PR4 —
-// este PR es sólo andamiaje (dependencias, provider, ruta, hook de datos).
-function ResultadosPlaceholder({ procesoId }: { procesoId: string }) {
-  return (
-    <p className="text-body-md text-on-surface" data-proceso-id={procesoId}>
-      Resultados en vivo (pendiente de vista, PR3/PR4).
-    </p>
-  );
 }
 
 export function Enrutador() {
@@ -56,7 +47,7 @@ export function Enrutador() {
     case 'comprobante':
       return <ComprobantePage votoId={ruta.votoId} />;
     case 'resultados':
-      return <ResultadosPlaceholder procesoId={ruta.procesoId} />;
+      return <ResultadosPage procesoId={ruta.procesoId} />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }
