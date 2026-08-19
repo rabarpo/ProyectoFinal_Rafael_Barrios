@@ -33,8 +33,8 @@ describe('support_tables', () => {
 
       const result = await client.query(
         `INSERT INTO "Acta" (id, proceso_id, tipo, estado, contenido)
-         VALUES ($1, $2, 'apertura', 'borrador', 'contenido de prueba') RETURNING id`,
-        [randomUUID(), procesoId],
+         VALUES ($1, $2, 'apertura', 'borrador', $3::jsonb) RETURNING id`,
+        [randomUUID(), procesoId, JSON.stringify({ nota: 'contenido de prueba' })],
       );
 
       expect(result.rows[0].id).toBeDefined();
@@ -49,8 +49,8 @@ describe('support_tables', () => {
           () =>
             client.query(
               `INSERT INTO "Acta" (id, proceso_id, tipo, estado, contenido)
-               VALUES ($1, $2, 'apertura', 'borrador', 'contenido de prueba')`,
-              [randomUUID(), randomUUID()],
+               VALUES ($1, $2, 'apertura', 'borrador', $3::jsonb)`,
+              [randomUUID(), randomUUID(), JSON.stringify({ nota: 'contenido de prueba' })],
             ),
           { code: '23503', constraint: 'Acta_proceso_id_fkey' },
         ),

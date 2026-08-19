@@ -359,15 +359,23 @@ enum TipoNotificacion {
   correo
 }
 
+// cierre-escrutinio-actas (#17, PR1; design.md D2): `escrutinio`/`oficial` agregados; `resultados`
+// queda deprecado (Postgres no permite DROP VALUE) y su uso se prohíbe con un CHECK a nivel de
+// tabla (ver `Acta.acta_tipo_no_deprecado_chk` abajo), no reciclado por ningún código nuevo.
 enum TipoActa {
   apertura
   cierre
   resultados
+  escrutinio
+  oficial
 }
 
+// cierre-escrutinio-actas (#17, PR1; design.md D2/D7): `fallido` en paridad exacta con
+// `EstadoJobCorreo` — el worker lo escribe sólo tras agotar los reintentos nativos de BullMQ.
 enum EstadoActa {
   borrador
   emitida
+  fallido
 }
 
 model JobCorreo {
@@ -433,15 +441,24 @@ model Configuracion {
   anioEscolar AnioEscolar @relation(fields: [anio_escolar_id], references: [id], onDelete: Restrict)
 }
 
+// cierre-escrutinio-actas (#17, PR1; design.md D2/D3): `contenido` pasa de TEXT a JSONB (snapshot
+// estructurado del cierre, D6), +`pdf`/+`pdf_mime` (mismo patrón que `Lista.plan_trabajo`/
+// `Candidato.foto`), `@@unique([proceso_id, tipo])` (red final contra un doble cierre) y
+// `@@index([estado, creado_en])` (consulta caliente del dispatcher de actas, D10).
 model Acta {
   id         String     @id @default(uuid()) @db.Uuid
   proceso_id String     @db.Uuid
   tipo       TipoActa
   estado     EstadoActa @default(borrador)
-  contenido  String
+  contenido  Json       @db.JsonB
+  pdf        Bytes?
+  pdf_mime   String?
   creado_en  DateTime   @default(now()) @db.Timestamptz(3)
 
   proceso ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
+
+  @@unique([proceso_id, tipo])
+  @@index([estado, creado_en])
 }
 
 // Grupo 5 — Motor de auditoría append-only (append-only-audit-engine, PR1; design.md D1/D2/D3).
