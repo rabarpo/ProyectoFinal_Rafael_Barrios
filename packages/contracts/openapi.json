@@ -1803,6 +1803,86 @@
         ]
       }
     },
+    "/procesos/{id}/actas": {
+      "get": {
+        "operationId": "ActasController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de actas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActaResumenDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "404": {
+            "description": "ProcesoElectoral inexistente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Lista las actas de un ProcesoElectoral (metadatos, sin bytes ni contenido)",
+        "tags": [
+          "actas"
+        ]
+      }
+    },
+    "/procesos/{id}/actas/{tipo}/pdf": {
+      "get": {
+        "operationId": "ActasController_obtenerPdf",
+        "parameters": [
+          {
+            "name": "tipo",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "apertura",
+                "cierre",
+                "escrutinio",
+                "oficial"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF del acta"
+          },
+          "400": {
+            "description": "tipo fuera del enum"
+          },
+          "404": {
+            "description": "ProcesoElectoral inexistente"
+          },
+          "409": {
+            "description": "Acta aún no emitida"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Descarga el PDF de un acta emitida",
+        "tags": [
+          "actas"
+        ]
+      }
+    },
     "/procesos/padron": {
       "post": {
         "operationId": "ProcesosController_padron",
@@ -3634,6 +3714,49 @@
           "votos_emitidos",
           "padron_total",
           "hora_servidor"
+        ]
+      },
+      "ActaResumenDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del acta"
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de acta",
+            "enum": [
+              "apertura",
+              "cierre",
+              "escrutinio",
+              "oficial"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado de emisión del acta",
+            "enum": [
+              "borrador",
+              "emitida",
+              "fallido"
+            ]
+          },
+          "creado_en": {
+            "type": "string",
+            "description": "Momento de creación del acta en borrador (ISO-8601)"
+          },
+          "pdf_disponible": {
+            "type": "boolean",
+            "description": "true si el PDF ya fue persistido y puede descargarse"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "estado",
+          "creado_en",
+          "pdf_disponible"
         ]
       },
       "SegmentacionDto": {

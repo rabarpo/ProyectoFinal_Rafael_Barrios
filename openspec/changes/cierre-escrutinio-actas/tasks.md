@@ -170,30 +170,30 @@ El orquestador debe confirmar con el usuario antes de `sdd-apply`.
 ## PR 4 — Endpoints de lectura/descarga y contrato (D13)
 
 ### Phase 16: `ActasController`/`ActasService`
-- [ ] 16.1 Crear `apps/backend/src/procesos/dto/acta-resumen.dto.ts`
+- [x] 16.1 Crear `apps/backend/src/procesos/dto/acta-resumen.dto.ts`
       (`{id, tipo, estado, creado_en, pdf_disponible}`, nunca bytes ni `contenido`)
-- [ ] 16.2 RED e2e (`test/procesos/actas-descarga.e2e-spec.ts`): `403` con rol `estudiante` en
+- [x] 16.2 RED e2e (`test/procesos/actas-descarga.e2e-spec.ts`): `403` con rol `estudiante` en
       listado y descarga, **incluso con `DerechoVoto`** en ese proceso [threat: Fuga del gate
       `ocultar_resultados` por la puerta lateral del acta]
-- [ ] 16.3 RED e2e: `409 ACTA_NO_EMITIDA` con la acta en `borrador`
-- [ ] 16.4 RED e2e: acta marcada `emitida` con `pdf` ⇒ `200`, `content-type: application/pdf`,
+- [x] 16.3 RED e2e: `409 ACTA_NO_EMITIDA` con la acta en `borrador`
+- [x] 16.4 RED e2e: acta marcada `emitida` con `pdf` ⇒ `200`, `content-type: application/pdf`,
       `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, cuerpo que empieza en
       `%PDF-`
-- [ ] 16.5 RED e2e: `:tipo` fuera del enum ⇒ `400`; proceso inexistente ⇒ `404`
-- [ ] 16.6 GREEN: crear `apps/backend/src/procesos/actas.service.ts` y `actas.controller.ts`
+- [x] 16.5 RED e2e: `:tipo` fuera del enum ⇒ `400`; proceso inexistente ⇒ `404`
+- [x] 16.6 GREEN: crear `apps/backend/src/procesos/actas.service.ts` y `actas.controller.ts`
       (`@Controller('procesos')`, `AuthGuard`+`RolesGuard`,
       `@Roles('administrador','director','comite')`, `GET /:id/actas`,
       `GET /:id/actas/:tipo/pdf` con `StreamableFile` y las cabeceras defensivas de
       `listas.controller.ts`) — pasa 16.2-16.5
-- [ ] 16.7 Modificar `apps/backend/src/procesos/procesos.module.ts`: `+ActasController` (antes de
+- [x] 16.7 Modificar `apps/backend/src/procesos/procesos.module.ts`: `+ActasController` (antes de
       `ProcesosController`), `+ActasService`, `cookie-parser` en `forRoutes`
 
 ### Phase 17: Contrato y regresión PR4
-- [ ] 17.1 Correr `pnpm openapi:extract`: `packages/contracts/openapi.json` y
+- [x] 17.1 Correr `pnpm openapi:extract`: `packages/contracts/openapi.json` y
       `src/generated/api.d.ts` exponen las tres rutas nuevas con sus códigos; commitear el
       contrato regenerado
-- [ ] 17.2 `pnpm --filter @seei/backend test:e2e -- actas-descarga` verde
-- [ ] 17.3 `pnpm typecheck` verde
+- [x] 17.2 `pnpm --filter @seei/backend test:e2e -- actas-descarga` verde
+- [x] 17.3 `pnpm typecheck` verde
 
 ## PR 5 — Worker: dispatcher, processor, render, transición terminal (D10/D11/D12/D15)
 

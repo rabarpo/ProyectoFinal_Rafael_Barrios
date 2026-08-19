@@ -603,6 +603,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/procesos/{id}/actas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista las actas de un ProcesoElectoral (metadatos, sin bytes ni contenido) */
+        get: operations["ActasController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/procesos/{id}/actas/{tipo}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descarga el PDF de un acta emitida */
+        get: operations["ActasController_obtenerPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/procesos/padron": {
         parameters: {
             query?: never;
@@ -1152,6 +1186,24 @@ export interface components {
             desglose?: components["schemas"]["ResultadoOpcionDto"][];
             /** @description Sólo en modo visible: count(Voto WHERE blanco = true) */
             blancos?: number;
+        };
+        ActaResumenDto: {
+            /** @description ID del acta */
+            id: string;
+            /**
+             * @description Tipo de acta
+             * @enum {string}
+             */
+            tipo: "apertura" | "cierre" | "escrutinio" | "oficial";
+            /**
+             * @description Estado de emisión del acta
+             * @enum {string}
+             */
+            estado: "borrador" | "emitida" | "fallido";
+            /** @description Momento de creación del acta en borrador (ISO-8601) */
+            creado_en: string;
+            /** @description true si el PDF ya fue persistido y puede descargarse */
+            pdf_disponible: boolean;
         };
         SegmentacionDto: {
             /**
@@ -3432,6 +3484,81 @@ export interface operations {
             };
             /** @description Sin DerechoVoto, proceso inexistente o en borrador (idéntico, D3) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ActasController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado de actas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActaResumenDto"][];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ProcesoElectoral inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ActasController_obtenerPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tipo: "apertura" | "cierre" | "escrutinio" | "oficial";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF del acta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description tipo fuera del enum */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ProcesoElectoral inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Acta aún no emitida */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

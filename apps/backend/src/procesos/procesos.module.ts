@@ -6,6 +6,8 @@ import { AuthModule } from '../auth/auth.module';
 import { ConfiguracionLecturaModule } from '../configuracion/configuracion-lectura.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { redisProvider } from '../redis/redis.provider';
+import { ActasController } from './actas.controller';
+import { ActasService } from './actas.service';
 import { PadronService } from './padron.service';
 import { ProcesosController } from './procesos.controller';
 import { ProcesosService } from './procesos.service';
@@ -32,14 +34,19 @@ import { ResultadosService } from './resultados.service';
  * `/procesos/:id` (2 segmentos), pero el orden se mantiene por consistencia. `redisProvider` se
  * suma porque `ResultadosService` es el primer consumidor de `REDIS_CLIENT` de este módulo
  * (`lazyConnect: true`, no abre conexión al instanciarse).
+ *
+ * cierre-escrutinio-actas (#17, PR4; design.md D13, tarea 16.7). `ActasController` va antes de
+ * `ProcesosController` por el mismo criterio de rutas estáticas primero que `ResultadosController`:
+ * `/procesos/:id/actas(/:tipo/pdf)` (3-4 segmentos) nunca choca con `/procesos/:id` (2 segmentos),
+ * pero el orden se mantiene por consistencia con el resto del módulo.
  */
 @Module({
   imports: [AuthModule, AuditoriaModule, ConfiguracionLecturaModule],
-  controllers: [ResultadosController, ProcesosController],
-  providers: [PrismaService, redisProvider, PadronService, ProcesosService, ResultadosService],
+  controllers: [ResultadosController, ActasController, ProcesosController],
+  providers: [PrismaService, redisProvider, PadronService, ProcesosService, ResultadosService, ActasService],
 })
 export class ProcesosModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(cookieParser()).forRoutes(ProcesosController, ResultadosController);
+    consumer.apply(cookieParser()).forRoutes(ProcesosController, ResultadosController, ActasController);
   }
 }
