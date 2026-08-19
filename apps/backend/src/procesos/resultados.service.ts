@@ -5,27 +5,8 @@ import type { SesionUsuario } from '../auth/sesion-usuario';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.provider';
 import type { ResultadoOpcionDto, ResultadosRespuestaDto } from './dto/resultados-respuesta.dto';
+import { calcularEscrutinio, calcularParticipacion } from './escrutinio';
 import { claveResultados, deserializar, serializar, TTL_RESULTADOS_SEGUNDOS } from './resultados-cache';
-
-type Dimension = 'lista' | 'candidato' | 'opcion';
-type CampoVoto = 'lista_id' | 'candidato_id' | 'opcion_id';
-
-interface Catalogo {
-  dimension: Dimension;
-  campo: CampoVoto;
-}
-
-// design.md, flujo de datos: tipo del proceso -> dimensión/campo de Voto/catálogo/gráfico.
-function catalogoDe(tipo: string): Catalogo {
-  if (tipo === 'municipio') {
-    return { dimension: 'lista', campo: 'lista_id' };
-  }
-  if (tipo === 'consulta') {
-    return { dimension: 'opcion', campo: 'opcion_id' };
-  }
-  // representante_aula | padres
-  return { dimension: 'candidato', campo: 'candidato_id' };
-}
 
 /**
  * resultados-en-vivo (#16, PR1; design.md D2/D3/D4/D6/D7/D8, tareas 3.1-3.15). Orden de
@@ -33,6 +14,13 @@ function catalogoDe(tipo: string): Catalogo {
  * `ProcesoElectoral` no se lee antes de ella (no-oráculo, threat: IDOR/enumeración). Ningún guard
  * explícito de `estado = 'borrador'` (D3): `borrador` nunca tiene `DerechoVoto`, así que cae por
  * la misma comprobación de pertenencia, con el mismo `403` opaco.
+ *
+ * cierre-escrutinio-actas (#17, PR2; design.md D5). El cálculo de agregación se extrajo a
+ * `escrutinio.ts` (`calcularParticipacion`/`calcularEscrutinio`), compartido con el flujo de
+ * cierre de `#17`. El modo oculto llama SÓLO a `calcularParticipacion()` — nunca calcula el
+ * desglose, ni siquiera para descartarlo (Threat Matrix de `#16`). El mapeo a
+ * `ResultadosRespuestaDto` es explícito, campo por campo, sin `spread`: `baja_en` de
+ * `FilaEscrutinio` nunca llega al DTO público.
  */
 @Injectable()
 export class ResultadosService {
@@ -90,84 +78,38 @@ export class ResultadosService {
       throw new ForbiddenException();
     }
 
-    const [{ ahora }] = await tx.$queryRaw<{ ahora: Date }[]>`SELECT now() AS ahora`;
-    const padronTotal = await tx.derechoVoto.count({ where: { proceso_id: procesoId } });
-    const votosEmitidos = await tx.voto.count({ where: { proceso_id: procesoId } });
-
-    const base: ResultadosRespuestaDto = {
-      estado_visibilidad: proceso.ocultar_resultados ? 'oculto' : 'visible',
-      resultados_ocultos_por_configuracion: proceso.ocultar_resultados,
-      votos_emitidos: votosEmitidos,
-      padron_total: padronTotal,
-      hora_servidor: ahora.toISOString(),
-    };
-
     if (proceso.ocultar_resultados) {
-      return base;
+      // Modo oculto (D5/#17): SÓLO participación, jamás el desglose — ni siquiera para
+      // descartarlo (Threat Matrix de #16, "Fuga de resultados en modo oculto").
+      const participacion = await calcularParticipacion(tx, procesoId);
+      return {
+        estado_visibilidad: 'oculto',
+        resultados_ocultos_por_configuracion: true,
+        votos_emitidos: participacion.votos_emitidos,
+        padron_total: participacion.padron_total,
+        hora_servidor: participacion.ahora.toISOString(),
+      };
     }
 
-    const { dimension, campo } = catalogoDe(proceso.tipo);
-    const blancos = await tx.voto.count({ where: { proceso_id: procesoId, blanco: true } });
-
-    const grupos = await tx.voto.groupBy({
-      by: [campo],
-      where: { proceso_id: procesoId, [campo]: { not: null } },
-      _count: { _all: true },
-    });
-    const votosPorId = new Map<string, number>(
-      grupos
-        .map((fila) => {
-          const id = (fila as Record<CampoVoto, string | null>)[campo];
-          const cuenta = (fila as { _count: { _all: number } })._count._all;
-          return id ? ([id, cuenta] as const) : null;
-        })
-        .filter((par): par is [string, number] => par !== null),
-    );
-
-    // Catálogo completo, SIN filtrar estado: 'activo' (D4) — el resultado es "qué se eligió", no
-    // "qué se podía elegir".
-    const desglose: ResultadoOpcionDto[] = await this.catalogoCompleto(tx, dimension, procesoId, votosPorId);
-    desglose.sort((a, b) => b.votos - a.votos || a.etiqueta.localeCompare(b.etiqueta));
+    const escrutinio = await calcularEscrutinio(tx, procesoId, proceso.tipo);
+    // Mapeo explícito campo por campo, sin `spread` (D5): `baja_en` de `FilaEscrutinio` nunca
+    // llega al DTO público de #16.
+    const desglose: ResultadoOpcionDto[] = escrutinio.desglose.map((fila) => ({
+      id: fila.id,
+      etiqueta: fila.etiqueta,
+      votos: fila.votos,
+      estado: fila.estado,
+    }));
 
     return {
-      ...base,
-      dimension,
+      estado_visibilidad: 'visible',
+      resultados_ocultos_por_configuracion: false,
+      votos_emitidos: escrutinio.votos_emitidos,
+      padron_total: escrutinio.padron_total,
+      hora_servidor: escrutinio.ahora.toISOString(),
+      dimension: escrutinio.dimension,
       desglose,
-      blancos,
+      blancos: escrutinio.blancos,
     };
-  }
-
-  private async catalogoCompleto(
-    tx: Prisma.TransactionClient,
-    dimension: Dimension,
-    procesoId: string,
-    votosPorId: Map<string, number>,
-  ): Promise<ResultadoOpcionDto[]> {
-    if (dimension === 'lista') {
-      const listas = await tx.lista.findMany({ where: { proceso_id: procesoId } });
-      return listas.map((lista) => ({
-        id: lista.id,
-        etiqueta: lista.nombre,
-        votos: votosPorId.get(lista.id) ?? 0,
-        estado: lista.estado,
-      }));
-    }
-    if (dimension === 'candidato') {
-      const candidatos = await tx.candidato.findMany({ where: { proceso_id: procesoId } });
-      return candidatos.map((candidato) => ({
-        id: candidato.id,
-        etiqueta: candidato.nombres,
-        votos: votosPorId.get(candidato.id) ?? 0,
-        estado: candidato.estado,
-      }));
-    }
-    // dimension === 'opcion' — OpcionConsulta no tiene columna estado: siempre 'activo'.
-    const opciones = await tx.opcionConsulta.findMany({ where: { proceso_id: procesoId } });
-    return opciones.map((opcion) => ({
-      id: opcion.id,
-      etiqueta: opcion.etiqueta,
-      votos: votosPorId.get(opcion.id) ?? 0,
-      estado: 'activo' as const,
-    }));
   }
 }

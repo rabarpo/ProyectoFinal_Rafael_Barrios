@@ -67,29 +67,29 @@ El orquestador debe confirmar con el usuario antes de `sdd-apply`.
 ## PR 2 — Extracción de `escrutinio.ts` sin deriva (D5)
 
 ### Phase 5: RED — `procesos/escrutinio.spec.ts` (doble de `Prisma.TransactionClient`, sin Postgres)
-- [ ] 5.1 `catalogoDe(tipo)` correcto para las 4 dimensiones (`municipio`⇒`lista`,
+- [x] 5.1 `catalogoDe(tipo)` correcto para las 4 dimensiones (`municipio`⇒`lista`,
       `representante_aula`/`padres`⇒`candidato`, `consulta`⇒`opcion`)
-- [ ] 5.2 Opciones/candidatos/listas con 0 votos están presentes en el desglose
-- [ ] 5.3 Candidato/lista en `estado='baja'` presente con `estado` **y** `baja_en`
-- [ ] 5.4 Orden `votos` desc, `etiqueta` asc como desempate
-- [ ] 5.5 `Σ desglose.votos + blancos === votos_emitidos`
-- [ ] 5.6 `calcularParticipacion` **no** ejecuta `groupBy` ni el `findMany` del catálogo (spy sobre
+- [x] 5.2 Opciones/candidatos/listas con 0 votos están presentes en el desglose
+- [x] 5.3 Candidato/lista en `estado='baja'` presente con `estado` **y** `baja_en`
+- [x] 5.4 Orden `votos` desc, `etiqueta` asc como desempate
+- [x] 5.5 `Σ desglose.votos + blancos === votos_emitidos`
+- [x] 5.6 `calcularParticipacion` **no** ejecuta `groupBy` ni el `findMany` del catálogo (spy sobre
       el doble) [design.md D5 — el modo oculto de `#16` no debe calcular el desglose]
-- [ ] 5.7 GREEN: crear `apps/backend/src/procesos/escrutinio.ts` (`catalogoDe`,
+- [x] 5.7 GREEN: crear `apps/backend/src/procesos/escrutinio.ts` (`catalogoDe`,
       `calcularParticipacion`, `calcularEscrutinio`) — pasa 5.1-5.6
 
 ### Phase 6: Reescritura de `ResultadosService` sin cambio de contrato
-- [ ] 6.1 Modificar `apps/backend/src/procesos/resultados.service.ts`: delega en `escrutinio.ts`,
+- [x] 6.1 Modificar `apps/backend/src/procesos/resultados.service.ts`: delega en `escrutinio.ts`,
       mapeo explícito campo por campo al DTO (**sin** `spread`, `baja_en` nunca llega al DTO
       público)
-- [ ] 6.2 Verificar: `test/resultados/resultados.e2e-spec.ts`,
+- [x] 6.2 Verificar: `test/resultados/resultados.e2e-spec.ts`,
       `test/resultados/resultados-cache.e2e-spec.ts` y `resultados.service.spec.ts` (suite de `#16`)
       pasan **sin editar una línea** — cualquier edición es evidencia de deriva, no de refactor
 
 ### Phase 7: Regresión PR2
-- [ ] 7.1 `pnpm --filter @seei/backend test -- resultados escrutinio` verde
-- [ ] 7.2 `pnpm --filter @seei/backend test:e2e -- resultados` verde (sin editar los archivos)
-- [ ] 7.3 `pnpm typecheck` verde
+- [x] 7.1 `pnpm --filter @seei/backend test -- resultados escrutinio` verde
+- [x] 7.2 `pnpm --filter @seei/backend test:e2e -- resultados` verde (sin editar los archivos)
+- [x] 7.3 `pnpm typecheck` verde
 
 ## PR 3 — `cerrar()`, DTO, `actas-contenido.ts`, auditoría (base indivisible, D4/D6/D7/D8/D9/D14)
 
