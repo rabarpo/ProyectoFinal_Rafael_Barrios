@@ -94,78 +94,78 @@ El orquestador debe confirmar con el usuario antes de `sdd-apply`.
 ## PR 3 — `cerrar()`, DTO, `actas-contenido.ts`, auditoría (base indivisible, D4/D6/D7/D8/D9/D14)
 
 ### Phase 8: DTOs y errores
-- [ ] 8.1 Crear `apps/backend/src/procesos/dto/cerrar-proceso.dto.ts`
+- [x] 8.1 Crear `apps/backend/src/procesos/dto/cerrar-proceso.dto.ts`
       (`{ confirmar: boolean; firmantes: {nombre, cargo}[] }`) y `cierre-respuesta.dto.ts`
-- [ ] 8.2 Modificar `apps/backend/src/procesos/procesos.errors.ts`: `PROCESO_NO_CERRABLE`,
+- [x] 8.2 Modificar `apps/backend/src/procesos/procesos.errors.ts`: `PROCESO_NO_CERRABLE`,
       `ACTA_NO_EMITIDA` (aditivo)
 
 ### Phase 9: RED — validación de `CerrarProcesoDto` (D9, antes de la transacción)
-- [ ] 9.1 `confirmar !== true` ⇒ `400 CAMPO_INVALIDO {campo:'confirmar'}` **sin abrir transacción**
+- [x] 9.1 `confirmar !== true` ⇒ `400 CAMPO_INVALIDO {campo:'confirmar'}` **sin abrir transacción**
       (spy sobre `$transaction`)
-- [ ] 9.2 `firmantes` vacío, >10 elementos, o algún `nombre`/`cargo` vacío tras `trim()` o >120
+- [x] 9.2 `firmantes` vacío, >10 elementos, o algún `nombre`/`cargo` vacío tras `trim()` o >120
       caracteres ⇒ `400 CAMPO_INVALIDO {campo:'firmantes'}` [spec: Firmantes vacío]
-- [ ] 9.3 GREEN: validación a mano en `ProcesosService.cerrar()` (sin `class-validator`, idioma de
+- [x] 9.3 GREEN: validación a mano en `ProcesosService.cerrar()` (sin `class-validator`, idioma de
       `AbrirProcesoDto`) — pasa 9.1-9.2
 
 ### Phase 10: RED — `actas-contenido.ts` puro (D6/D7/D8, sin base)
-- [ ] 10.1 Empate con 2 y con 3 máximos ⇒ `empate:true` con los ids exactos [spec: Empate real]
-- [ ] 10.2 `max === 0` ⇒ `empate:false`, `sin_votos:true` [spec: Sin votos no es empate]
-- [ ] 10.3 `cuadra` verdadero en el caso feliz, falso con un desglose manipulado
-- [ ] 10.4 `padron_total === 0` ⇒ `porcentaje_participacion 0`, sin `NaN` ni excepción
-- [ ] 10.5 `nulos === 0` siempre, con la nota fija de ADR-0008
-- [ ] 10.6 Las 4 actas comparten la raíz común (D6); `oficial` embebe las tres secciones sin
+- [x] 10.1 Empate con 2 y con 3 máximos ⇒ `empate:true` con los ids exactos [spec: Empate real]
+- [x] 10.2 `max === 0` ⇒ `empate:false`, `sin_votos:true` [spec: Sin votos no es empate]
+- [x] 10.3 `cuadra` verdadero en el caso feliz, falso con un desglose manipulado
+- [x] 10.4 `padron_total === 0` ⇒ `porcentaje_participacion 0`, sin `NaN` ni excepción
+- [x] 10.5 `nulos === 0` siempre, con la nota fija de ADR-0008
+- [x] 10.6 Las 4 actas comparten la raíz común (D6); `oficial` embebe las tres secciones sin
       recalcular nada
-- [ ] 10.7 Los firmantes llegan `trim()`eados al snapshot
-- [ ] 10.8 GREEN: crear `apps/backend/src/procesos/actas-contenido.ts` (`armarActas()`) — pasa
+- [x] 10.7 Los firmantes llegan `trim()`eados al snapshot
+- [x] 10.8 GREEN: crear `apps/backend/src/procesos/actas-contenido.ts` (`armarActas()`) — pasa
       10.1-10.7
 
 ### Phase 11: RED — `ProcesosService.cerrar()` (D4, `PrismaService`+`AuditoriaService` mockeados)
-- [ ] 11.1 `P2034`/`40001` ⇒ relectura en transacción limpia ⇒ `200` no-op, sin propagar
-- [ ] 11.2 Payload de `PROCESO_CERRADO` **sin** `candidato_id`/`lista_id`/`opcion_id`/`blanco`/
+- [x] 11.1 `P2034`/`40001` ⇒ relectura en transacción limpia ⇒ `200` no-op, sin propagar
+- [x] 11.2 Payload de `PROCESO_CERRADO` **sin** `candidato_id`/`lista_id`/`opcion_id`/`blanco`/
       `eleccion`/`empatados` [threat: Secreto del voto en auditoría]
-- [ ] 11.3 GREEN: implementar `cerrar()` en `apps/backend/src/procesos/procesos.service.ts` —
+- [x] 11.3 GREEN: implementar `cerrar()` en `apps/backend/src/procesos/procesos.service.ts` —
       `prisma.$transaction(cb, {isolationLevel:'RepeatableRead'})`, `UPDATE … WHERE estado='abierto'
       RETURNING`, relectura (404/200 no-op/409), `calcularEscrutinio()`, `armarActas()`,
       `tx.acta.createMany(...)`, `auditoria.log('PROCESO_CERRADO', ...)`,
       `esConflictoDeSerializacion()` capturado fuera del callback — pasa 11.1-11.2
-- [ ] 11.4 Modificar `apps/backend/src/procesos/procesos.controller.ts`: `POST /:id/cerrar`
+- [x] 11.4 Modificar `apps/backend/src/procesos/procesos.controller.ts`: `POST /:id/cerrar`
       (`@HttpCode(200)`), idioma de `abrir()`
-- [ ] 11.5 Modificar `apps/backend/src/auditoria/audit-event-types.ts`: `PROCESO_CERRADO`,
+- [x] 11.5 Modificar `apps/backend/src/auditoria/audit-event-types.ts`: `PROCESO_CERRADO`,
       `ACTA_GENERADA` + entrada de bitácora
 
 ### Phase 12: RED e2e — cierre (Postgres real, `test/procesos/procesos-cerrar.e2e-spec.ts`)
-- [ ] 12.1 `abierto` ⇒ `200`, `estado='cerrado'`, `cierre_real` no nulo, **4** `Acta` en `borrador`
+- [x] 12.1 `abierto` ⇒ `200`, `estado='cerrado'`, `cierre_real` no nulo, **4** `Acta` en `borrador`
       con `contenido` JSON [spec: Cierre exitoso; Creación atómica de las 4 actas]
-- [ ] 12.2 Segunda llamada ⇒ `200` idéntico, siguen 4 actas [spec: Doble cierre es idempotente]
-- [ ] 12.3 `borrador` ⇒ `409 PROCESO_NO_CERRABLE`; UUID inexistente ⇒ `404`; rol `estudiante` ⇒ `403`
+- [x] 12.2 Segunda llamada ⇒ `200` idéntico, siguen 4 actas [spec: Doble cierre es idempotente]
+- [x] 12.3 `borrador` ⇒ `409 PROCESO_NO_CERRABLE`; UUID inexistente ⇒ `404`; rol `estudiante` ⇒ `403`
       [spec: Cierre de un proceso en borrador]
-- [ ] 12.4 Proceso con 0 votos ⇒ `200`, abstención total, `0%`, sin error [spec: Proceso con cero
+- [x] 12.4 Proceso con 0 votos ⇒ `200`, abstención total, `0%`, sin error [spec: Proceso con cero
       votos emitidos]
-- [ ] 12.5 Candidato/lista dado de baja aparece con `estado:'baja'` y `baja_en` en el acta de
+- [x] 12.5 Candidato/lista dado de baja aparece con `estado:'baja'` y `baja_en` en el acta de
       escrutinio [spec: Candidato/lista dado de baja]
-- [ ] 12.6 Proceso con `ocultar_resultados=true` ⇒ acta de escrutinio con desglose completo, sin
+- [x] 12.6 Proceso con `ocultar_resultados=true` ⇒ acta de escrutinio con desglose completo, sin
       ocultarlo [spec: Escrutinio con resultados ocultos]
-- [ ] 12.7 Reproducibilidad: `SELECT count(*) FROM "Voto"` coincide con `contenido->'cuadre'`
-- [ ] 12.8 GREEN: completar `procesos-cerrar.e2e-spec.ts` — pasa 12.1-12.7
+- [x] 12.7 Reproducibilidad: `SELECT count(*) FROM "Voto"` coincide con `contenido->'cuadre'`
+- [x] 12.8 GREEN: completar `procesos-cerrar.e2e-spec.ts` — pasa 12.1-12.7
 
 ### Phase 13: RED e2e — concurrencia del cierre (`test/schema/helpers/pg-client.ts`+`fetch`)
-- [ ] 13.1 `Promise.all` de dos `POST /cerrar` ⇒ exactamente **4** `Acta`, un solo
+- [x] 13.1 `Promise.all` de dos `POST /cerrar` ⇒ exactamente **4** `Acta`, un solo
       `PROCESO_CERRADO`, ningún `5xx`
-- [ ] 13.2 Arnés determinista con `pg` crudo: `BEGIN`+`UPDATE … estado='cerrado'` sin commit,
+- [x] 13.2 Arnés determinista con `pg` crudo: `BEGIN`+`UPDATE … estado='cerrado'` sin commit,
       disparar el endpoint, commitear el crudo ⇒ el endpoint responde `200` no-op (ejercita el
       `catch` de D4)
-- [ ] 13.3 GREEN: añadir ambos casos a `procesos-cerrar.e2e-spec.ts`
+- [x] 13.3 GREEN: añadir ambos casos a `procesos-cerrar.e2e-spec.ts`
 
 ### Phase 14: RED schema — auditoría `[TM4]`
-- [ ] 14.1 `test/schema/auditoria.spec.ts`: `INSERT` directo de `PROCESO_CERRADO`/`ACTA_GENERADA`
+- [x] 14.1 `test/schema/auditoria.spec.ts`: `INSERT` directo de `PROCESO_CERRADO`/`ACTA_GENERADA`
       con `{"detalle":{"candidato_id":…}}` **no** dispara `AU002` (el trigger sólo cubre
       `VOTO`/`RECHAZO`); ambas claves cumplen el `CHECK` `^[A-Z_]+$`
 
 ### Phase 15: Regresión PR3
-- [ ] 15.1 `pnpm --filter @seei/backend test -- procesos-cerrar actas-contenido` verde
-- [ ] 15.2 `pnpm --filter @seei/backend test:e2e -- procesos-cerrar` verde (Postgres real)
-- [ ] 15.3 `pnpm --filter @seei/backend test -- resultados` (regresión `#16`) verde sin editar
-- [ ] 15.4 `pnpm typecheck` verde
+- [x] 15.1 `pnpm --filter @seei/backend test -- procesos-cerrar actas-contenido` verde
+- [x] 15.2 `pnpm --filter @seei/backend test:e2e -- procesos-cerrar` verde (Postgres real)
+- [x] 15.3 `pnpm --filter @seei/backend test -- resultados` (regresión `#16`) verde sin editar
+- [x] 15.4 `pnpm typecheck` verde
 
 ## PR 4 — Endpoints de lectura/descarga y contrato (D13)
 

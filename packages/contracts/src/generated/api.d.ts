@@ -674,6 +674,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/procesos/{id}/cerrar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cierra el proceso, calcula el escrutinio y crea las 4 actas en borrador (D4/D6-D9/D14) */
+        post: operations["ProcesosController_cerrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/listas": {
         parameters: {
             query?: never;
@@ -1352,6 +1369,31 @@ export interface components {
             derechos_estudiante: number;
             /** @description Filas DerechoVoto con en_calidad_de = padre */
             derechos_padre: number;
+        };
+        FirmanteDto: {
+            /** @description Nombre completo del firmante */
+            nombre: string;
+            /** @description Cargo del firmante dentro del comité */
+            cargo: string;
+        };
+        CerrarProcesoDto: {
+            /** @description Confirmación explícita del usuario; debe ser exactamente `true` */
+            confirmar: boolean;
+            /** @description Firmantes del acta (mínimo 1, máximo 10) */
+            firmantes: components["schemas"]["FirmanteDto"][];
+        };
+        CierreRespuestaDto: {
+            /** @description ID del proceso electoral */
+            id: string;
+            /**
+             * @description Estado del proceso tras el cierre
+             * @enum {string}
+             */
+            estado: "cerrado" | "acta_emitida";
+            /** @description Momento de cierre sellado con el reloj de Postgres (ISO-8601) */
+            cierre_real: string;
+            /** @description Cantidad de actas creadas en borrador (siempre 4) */
+            actas_creadas: number;
         };
         ListaRespuestaDto: {
             /** @description ID de la lista */
@@ -3750,6 +3792,67 @@ export interface operations {
                 content?: never;
             };
             /** @description Proceso no abrible desde su estado actual, sin elegibles o sin año escolar activo */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProcesosController_cerrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CerrarProcesoDto"];
+            };
+        };
+        responses: {
+            /** @description Proceso cerrado (o ya lo estaba, idempotente) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CierreRespuestaDto"];
+                };
+            };
+            /** @description Campo inválido (confirmar/firmantes) o :id no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso no cerrable desde su estado actual (borrador) */
             409: {
                 headers: {
                     [name: string]: unknown;

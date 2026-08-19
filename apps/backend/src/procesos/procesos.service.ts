@@ -11,6 +11,10 @@ import type { ProcesoDetalleRespuestaDto } from './dto/proceso-detalle-respuesta
 import type { ProcesoRespuestaDto } from './dto/proceso-respuesta.dto';
 import type { AbrirProcesoDto } from './dto/abrir-proceso.dto';
 import type { AperturaRespuestaDto } from './dto/apertura-respuesta.dto';
+import type { CerrarProcesoDto, FirmanteDto } from './dto/cerrar-proceso.dto';
+import type { CierreRespuestaDto } from './dto/cierre-respuesta.dto';
+import { armarActas } from './actas-contenido';
+import { calcularEscrutinio } from './escrutinio';
 import { resolverAulas, validarSegmentacion } from './padron.service';
 import { PROCESOS_ERROR_CODES } from './procesos.errors';
 
@@ -205,6 +209,76 @@ async function respuestaApertura(
     derechos_estudiante: derechosEstudiante,
     derechos_padre: derechosPadre,
   };
+}
+
+/**
+ * cierre-escrutinio-actas (#17, PR3; design.md D4/D9). Respuesta de `cerrar()`: describe el
+ * ESTADO VIGENTE (mismo criterio silencioso de `respuestaApertura()`). `actas_creadas` se cuenta
+ * en vivo (no se hardcodea `4`) para que el 200 no-op de la relectura fuera de transacción (catch
+ * de `P2034`, D4) reporte lo que realmente existe, incluso en el arnés determinista de la carrera
+ * (Phase 13) donde ninguna `Acta` llegó a crearse todavía.
+ */
+async function respuestaCierre(
+  client: Pick<Prisma.TransactionClient, 'acta'>,
+  procesoId: string,
+  estado: 'cerrado' | 'acta_emitida',
+  cierreReal: Date,
+): Promise<CierreRespuestaDto> {
+  const actasCreadas = await client.acta.count({ where: { proceso_id: procesoId } });
+  return { id: procesoId, estado, cierre_real: cierreReal.toISOString(), actas_creadas: actasCreadas };
+}
+
+const MAX_FIRMANTES = 10;
+const MAX_LARGO_FIRMANTE = 120;
+
+/**
+ * cierre-escrutinio-actas (#17, PR3; design.md D9). Validación a mano ANTES de abrir la
+ * transacción (idioma de la casa, sin `class-validator`, mismo criterio que `abrir()`). Devuelve
+ * los firmantes ya `trim()`eados — `armarActas()` no vuelve a confiar en el valor crudo del DTO.
+ */
+function validarFirmantes(firmantes: unknown): FirmanteDto[] {
+  if (!Array.isArray(firmantes) || firmantes.length === 0 || firmantes.length > MAX_FIRMANTES) {
+    throw new BadRequestException({ codigo: PROCESOS_ERROR_CODES.CAMPO_INVALIDO, campo: 'firmantes', motivo: 'formato' });
+  }
+  const normalizados: FirmanteDto[] = [];
+  for (const firmante of firmantes) {
+    const nombre = typeof firmante?.nombre === 'string' ? firmante.nombre.trim() : '';
+    const cargo = typeof firmante?.cargo === 'string' ? firmante.cargo.trim() : '';
+    if (!nombre || !cargo || nombre.length > MAX_LARGO_FIRMANTE || cargo.length > MAX_LARGO_FIRMANTE) {
+      throw new BadRequestException({ codigo: PROCESOS_ERROR_CODES.CAMPO_INVALIDO, campo: 'firmantes', motivo: 'formato' });
+    }
+    normalizados.push({ nombre, cargo });
+  }
+  return normalizados;
+}
+
+/**
+ * cierre-escrutinio-actas (#17, PR3; design.md D4). `cerrar()` corre en `RepeatableRead` porque
+ * calcula el escrutinio dentro de la misma transacción y necesita un solo snapshot; bajo esa
+ * combinación, dos `cerrar()` concurrentes sobre el mismo proceso pueden hacer que la segunda
+ * levante `P2034` (`40001`, "could not serialize access due to concurrent update") en vez de
+ * bloquear-y-ver-0-filas. Se captura FUERA del callback (la transacción ya quedó abortada) y se
+ * responde el mismo 200 idempotente que habría respondido sin la carrera.
+ */
+function esConflictoDeSerializacion(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+  // P2034: Prisma detecta la carrera en una transacción interactiva escrita 100% con su query
+  // builder. Acá el `UPDATE … RETURNING` es `$queryRaw` (D4, mismo patrón crudo que `abrir()`), así
+  // que Postgres devuelve el SQLSTATE `40001` directo y Prisma lo envuelve como P2010 (fallo de
+  // consulta cruda) con `meta.code === '40001'` — ambas formas son la MISMA carrera y se tratan
+  // igual (idioma de `#14` D5).
+  const code = (error as { code?: unknown }).code;
+  if (code === 'P2034') {
+    return true;
+  }
+  const metaCode = (error as { meta?: { code?: unknown } }).meta?.code;
+  if (code === 'P2010' && metaCode === '40001') {
+    return true;
+  }
+  const message = (error as { message?: unknown }).message;
+  return typeof message === 'string' && message.includes('could not serialize access due to concurrent update');
 }
 
 /**
@@ -631,5 +705,143 @@ export class ProcesosService {
 
       return respuestaApertura(tx, procesoId, aperturaReal, ocultarResultados);
     });
+  }
+
+  /**
+   * cierre-escrutinio-actas (#17, PR3; design.md D4/D9/D14, tareas 11.1-11.5). Espejo estructural
+   * de `abrir()`: `UPDATE … WHERE estado='abierto' RETURNING`, no-op idempotente, `ConflictException`
+   * con código nuevo. Se desvía de `abrir()` en el nivel de aislamiento (`RepeatableRead`, D4): esta
+   * transacción calcula el escrutinio con SEIS lecturas de agregación después del `UPDATE`, y bajo
+   * `ReadCommitted` cada una tomaría un snapshot nuevo — un voto que entrara entre el `count` y el
+   * `groupBy` produciría un acta cuyo cuadre no cuadra. `P2034`/`40001` se captura FUERA del
+   * callback (patrón literal de `#14` D5) y responde el mismo 200 idempotente que un `cerrar()` sin
+   * carrera.
+   */
+  async cerrar(id: string, dto: CerrarProcesoDto, actorId: string): Promise<CierreRespuestaDto> {
+    if (dto.confirmar !== true) {
+      throw new BadRequestException({
+        codigo: PROCESOS_ERROR_CODES.CAMPO_INVALIDO,
+        campo: 'confirmar',
+        motivo: 'requerido',
+      });
+    }
+    const firmantes = validarFirmantes(dto.firmantes);
+
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const filas = await tx.$queryRaw<
+            {
+              id: string;
+              nombre: string;
+              tipo: ProcesoElectoral['tipo'];
+              apertura_real: Date | null;
+              cierre_real: Date;
+              ocultar_resultados: boolean;
+            }[]
+          >`
+            UPDATE "ProcesoElectoral"
+               SET estado = 'cerrado', cierre_real = clock_timestamp()
+             WHERE id = ${id}::uuid AND estado = 'abierto'
+            RETURNING id, nombre, tipo, apertura_real, cierre_real, ocultar_resultados`;
+
+          if (filas.length === 0) {
+            const existente = await tx.procesoElectoral.findUnique({ where: { id } });
+            if (!existente) {
+              throw new NotFoundException();
+            }
+            if (existente.estado === 'cerrado' || existente.estado === 'acta_emitida') {
+              // D4: no-op idempotente silencioso — 200 con el estado vigente, sin auditoría adicional.
+              return respuestaCierre(tx, existente.id, existente.estado, existente.cierre_real!);
+            }
+            throw new ConflictException({
+              codigo: PROCESOS_ERROR_CODES.PROCESO_NO_CERRABLE,
+              estado: existente.estado,
+            });
+          }
+
+          const [{ id: procesoId, nombre, tipo, apertura_real: aperturaReal, cierre_real: cierreReal, ocultar_resultados: ocultarResultados }] =
+            filas;
+
+          const escrutinio = await calcularEscrutinio(tx, procesoId, tipo);
+          const institucion = await tx.configuracion.findUnique({
+            where: { clave: 'institucional' },
+            select: { nombre: true, director: true },
+          });
+          const [aulas, derechosEstudiante, derechosPadre] = await Promise.all([
+            tx.procesoAula.count({ where: { proceso_id: procesoId } }),
+            tx.derechoVoto.count({ where: { proceso_id: procesoId, en_calidad_de: CALIDAD_ESTUDIANTE } }),
+            tx.derechoVoto.count({ where: { proceso_id: procesoId, en_calidad_de: CALIDAD_PADRE } }),
+          ]);
+
+          const actas = armarActas({
+            proceso: {
+              id: procesoId,
+              nombre,
+              tipo,
+              apertura_real: (aperturaReal ?? escrutinio.ahora).toISOString(),
+              cierre_real: cierreReal.toISOString(),
+              ocultar_resultados: ocultarResultados,
+            },
+            institucion: { nombre: institucion?.nombre ?? null, director: institucion?.director ?? null },
+            firmantes,
+            generadoEn: escrutinio.ahora.toISOString(),
+            padron: { derechos_estudiante: derechosEstudiante, derechos_padre: derechosPadre, aulas },
+            escrutinio,
+          });
+
+          await tx.acta.createMany({
+            data: [
+              { proceso_id: procesoId, tipo: 'apertura', estado: 'borrador', contenido: actas.apertura as unknown as Prisma.InputJsonValue },
+              { proceso_id: procesoId, tipo: 'cierre', estado: 'borrador', contenido: actas.cierre as unknown as Prisma.InputJsonValue },
+              { proceso_id: procesoId, tipo: 'escrutinio', estado: 'borrador', contenido: actas.escrutinio as unknown as Prisma.InputJsonValue },
+              { proceso_id: procesoId, tipo: 'oficial', estado: 'borrador', contenido: actas.oficial as unknown as Prisma.InputJsonValue },
+            ],
+          });
+
+          // D14/threat "Secreto del voto en auditoría": SOLO conteos y booleanos, campo por campo —
+          // jamás `candidato_id`/`lista_id`/`opcion_id`/`blanco`/`eleccion`/`empatados`.
+          await this.auditoria.log(
+            tx,
+            AUDIT_EVENT_TYPES.PROCESO_CERRADO,
+            actorId,
+            'ProcesoElectoral',
+            procesoId,
+            {
+              tipo,
+              cierre_real: cierreReal.toISOString(),
+              padron_total: escrutinio.padron_total,
+              votos_emitidos: escrutinio.votos_emitidos,
+              blancos: escrutinio.blancos,
+              abstenciones: actas.cierre.participacion.abstenciones,
+              cuadra: actas.escrutinio.escrutinio.cuadre.cuadra,
+              empate: actas.escrutinio.escrutinio.empate.empate,
+              sin_votos: actas.escrutinio.escrutinio.sin_votos,
+              actas_creadas: 4,
+              firmantes: firmantes.length,
+            } as Prisma.InputJsonValue,
+          );
+
+          return { id: procesoId, estado: 'cerrado', cierre_real: cierreReal.toISOString(), actas_creadas: 4 };
+        },
+        { isolationLevel: 'RepeatableRead' as Prisma.TransactionIsolationLevel },
+      );
+    } catch (error) {
+      if (!esConflictoDeSerializacion(error)) {
+        throw error;
+      }
+      // D4: la transacción quedó abortada por la carrera — relectura en una transacción limpia.
+      const existente = await this.prisma.procesoElectoral.findUnique({ where: { id } });
+      if (!existente) {
+        throw new NotFoundException();
+      }
+      if (existente.estado === 'borrador' || existente.estado === 'abierto') {
+        throw new ConflictException({
+          codigo: PROCESOS_ERROR_CODES.PROCESO_NO_CERRABLE,
+          estado: existente.estado,
+        });
+      }
+      return respuestaCierre(this.prisma, existente.id, existente.estado, existente.cierre_real!);
+    }
   }
 }

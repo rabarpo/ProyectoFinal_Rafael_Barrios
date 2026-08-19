@@ -292,6 +292,34 @@ describe('append_only_audit', () => {
     expect(prohibidos).toEqual([]);
   });
 
+  // [TM4] cierre-escrutinio-actas (#17, PR3; design.md D14, tarea 14.1): un INSERT directo de
+  // PROCESO_CERRADO/ACTA_GENERADA con una clave de detalle que PARECE un identificador de voto
+  // ('candidato_id') NO dispara AU002 — el trigger de claves de elección sólo cubre
+  // VOTO/RECHAZO literalmente (ver [TM4] de abajo). La protección de estas dos claves es de
+  // código (D14), no del motor.
+  it('[TM4] INSERT directo de PROCESO_CERRADO con detalle.candidato_id NO dispara AU002', async () => {
+    await withTransaction(client, async () => {
+      const id = await insertarEvento(client.query.bind(client), 'PROCESO_CERRADO', {
+        detalle: { candidato_id: randomUUID() },
+      });
+      const result = await client.query(`SELECT id FROM "EventoAuditoria" WHERE id = $1`, [id]);
+      expect(result.rows).toHaveLength(1);
+    });
+  });
+
+  it('[TM4] INSERT directo de ACTA_GENERADA con detalle.candidato_id NO dispara AU002', async () => {
+    await withTransaction(client, async () => {
+      const id = await insertarEvento(client.query.bind(client), 'ACTA_GENERADA', {
+        detalle: { candidato_id: randomUUID() },
+      });
+      const result = await client.query(`SELECT id FROM "EventoAuditoria" WHERE id = $1`, [id]);
+      expect(result.rows).toHaveLength(1);
+    });
+  });
+
+  // [TM4] Ambas claves cumplen el CHECK de convención ^[A-Z_]+$ (ya ejercitado arriba de forma
+  // implícita al aceptarse el INSERT: si violaran el CHECK, el insertarEvento() habría lanzado).
+
   // 4.4 [TM4] Catálogo: la cláusula WHEN del trigger de claves lista VOTO/RECHAZO literalmente.
   it('[TM4] la definición del trigger de claves de elección contiene la cláusula WHEN con VOTO/RECHAZO', async () => {
     const trigger = await getTriggerDef(client, 'eventoauditoria_claves_eleccion_trg');

@@ -997,3 +997,301 @@ describe('ProcesosService.abrir() — reintento idempotente no audita de nuevo (
     expect(derechoVotoCreateMany).not.toHaveBeenCalled();
   });
 });
+
+// cierre-escrutinio-actas (#17, PR3; design.md D4/D9/D14, tareas 9.1-9.3/11.1-11.2). Doble de
+// `PrismaService`/`AuditoriaService`, mismo criterio que `construirPrismaAbrir()`/
+// `construirServicioAbrir()`. `$queryRaw` simula la fila `RETURNING` de la guarda de cierre;
+// `voto`/`lista`/`candidato`/`opcionConsulta` cubren `calcularEscrutinio()` (D5, ya extraído).
+const PROCESO_CERRADO_BASE = {
+  id: 'proceso-1',
+  nombre: 'Elección de representantes',
+  tipo: 'representante_aula' as const,
+  estado: 'cerrado' as const,
+  apertura_real: new Date('2026-08-18T09:00:00.000Z'),
+  cierre_real: new Date('2026-08-18T18:00:00.000Z'),
+  ocultar_resultados: false,
+};
+
+function construirPrismaCerrar(overrides: {
+  queryRaw?: jest.Mock;
+  procesoElectoralFindUnique?: jest.Mock;
+  configuracionFindUnique?: jest.Mock;
+  procesoAulaCount?: jest.Mock;
+  derechoVotoCount?: jest.Mock;
+  votoCount?: jest.Mock;
+  votoGroupBy?: jest.Mock;
+  listaFindMany?: jest.Mock;
+  candidatoFindMany?: jest.Mock;
+  opcionConsultaFindMany?: jest.Mock;
+  actaCreateMany?: jest.Mock;
+  actaCount?: jest.Mock;
+  transactionImpl?: jest.Mock;
+}) {
+  const queryRaw = overrides.queryRaw ?? jest.fn().mockResolvedValue([]);
+  const procesoElectoralFindUnique = overrides.procesoElectoralFindUnique ?? jest.fn().mockResolvedValue(null);
+  const configuracionFindUnique = overrides.configuracionFindUnique ?? jest.fn().mockResolvedValue(null);
+  const procesoAulaCount = overrides.procesoAulaCount ?? jest.fn().mockResolvedValue(0);
+  const derechoVotoCount = overrides.derechoVotoCount ?? jest.fn().mockResolvedValue(0);
+  const votoCount = overrides.votoCount ?? jest.fn().mockResolvedValue(0);
+  const votoGroupBy = overrides.votoGroupBy ?? jest.fn().mockResolvedValue([]);
+  const listaFindMany = overrides.listaFindMany ?? jest.fn().mockResolvedValue([]);
+  const candidatoFindMany = overrides.candidatoFindMany ?? jest.fn().mockResolvedValue([]);
+  const opcionConsultaFindMany = overrides.opcionConsultaFindMany ?? jest.fn().mockResolvedValue([]);
+  const actaCreateMany = overrides.actaCreateMany ?? jest.fn().mockResolvedValue({ count: 4 });
+  const actaCount = overrides.actaCount ?? jest.fn().mockResolvedValue(4);
+
+  const tx = {
+    $queryRaw: queryRaw,
+    procesoElectoral: { findUnique: procesoElectoralFindUnique },
+    configuracion: { findUnique: configuracionFindUnique },
+    procesoAula: { count: procesoAulaCount },
+    derechoVoto: { count: derechoVotoCount },
+    voto: { count: votoCount, groupBy: votoGroupBy },
+    lista: { findMany: listaFindMany },
+    candidato: { findMany: candidatoFindMany },
+    opcionConsulta: { findMany: opcionConsultaFindMany },
+    acta: { createMany: actaCreateMany, count: actaCount },
+  };
+
+  const prisma = {
+    $transaction: overrides.transactionImpl ?? jest.fn((cb: (tx: unknown) => Promise<unknown>) => cb(tx)),
+    procesoElectoral: { findUnique: procesoElectoralFindUnique },
+    acta: { count: actaCount },
+  };
+
+  return {
+    prisma,
+    tx,
+    queryRaw,
+    procesoElectoralFindUnique,
+    configuracionFindUnique,
+    procesoAulaCount,
+    derechoVotoCount,
+    votoCount,
+    votoGroupBy,
+    listaFindMany,
+    candidatoFindMany,
+    opcionConsultaFindMany,
+    actaCreateMany,
+    actaCount,
+  };
+}
+
+function construirServicioCerrar(prisma: unknown) {
+  const configuracionLectura = { anioEscolarActivoId: jest.fn().mockResolvedValue('anio-1') };
+  const auditoria = { log: jest.fn().mockResolvedValue(undefined) };
+  const servicio = new ProcesosService(
+    prisma as unknown as PrismaService,
+    configuracionLectura as unknown as ConfiguracionLecturaService,
+    auditoria as unknown as AuditoriaService,
+  );
+  return { servicio, auditoria };
+}
+
+const FIRMANTE_VALIDO = { nombre: 'Ana Presidenta', cargo: 'Presidenta del comité' };
+
+describe('ProcesosService.cerrar() — validación de CerrarProcesoDto (D9, tareas 9.1-9.2)', () => {
+  it('[9.1] confirmar !== true -> 400 CAMPO_INVALIDO campo:confirmar, sin abrir transacción', async () => {
+    const { prisma } = construirPrismaCerrar({});
+    const { servicio } = construirServicioCerrar(prisma);
+
+    await expect(
+      servicio.cerrar('proceso-1', { confirmar: false, firmantes: [FIRMANTE_VALIDO] }, 'actor-1'),
+    ).rejects.toMatchObject({ response: { codigo: 'CAMPO_INVALIDO', campo: 'confirmar', motivo: 'requerido' } });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('[9.2] firmantes vacío -> 400 CAMPO_INVALIDO campo:firmantes, sin abrir transacción', async () => {
+    const { prisma } = construirPrismaCerrar({});
+    const { servicio } = construirServicioCerrar(prisma);
+
+    await expect(
+      servicio.cerrar('proceso-1', { confirmar: true, firmantes: [] }, 'actor-1'),
+    ).rejects.toMatchObject({ response: { codigo: 'CAMPO_INVALIDO', campo: 'firmantes' } });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('[9.2] firmantes con más de 10 elementos -> 400 CAMPO_INVALIDO campo:firmantes', async () => {
+    const { prisma } = construirPrismaCerrar({});
+    const { servicio } = construirServicioCerrar(prisma);
+    const firmantes = Array.from({ length: 11 }, () => FIRMANTE_VALIDO);
+
+    await expect(servicio.cerrar('proceso-1', { confirmar: true, firmantes }, 'actor-1')).rejects.toMatchObject({
+      response: { codigo: 'CAMPO_INVALIDO', campo: 'firmantes' },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('[9.2] nombre vacío tras trim() -> 400 CAMPO_INVALIDO campo:firmantes', async () => {
+    const { prisma } = construirPrismaCerrar({});
+    const { servicio } = construirServicioCerrar(prisma);
+
+    await expect(
+      servicio.cerrar('proceso-1', { confirmar: true, firmantes: [{ nombre: '   ', cargo: 'Presidenta' }] }, 'actor-1'),
+    ).rejects.toMatchObject({ response: { codigo: 'CAMPO_INVALIDO', campo: 'firmantes' } });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('[9.2] cargo de más de 120 caracteres -> 400 CAMPO_INVALIDO campo:firmantes', async () => {
+    const { prisma } = construirPrismaCerrar({});
+    const { servicio } = construirServicioCerrar(prisma);
+
+    await expect(
+      servicio.cerrar(
+        'proceso-1',
+        { confirmar: true, firmantes: [{ nombre: 'Ana', cargo: 'x'.repeat(121) }] },
+        'actor-1',
+      ),
+    ).rejects.toMatchObject({ response: { codigo: 'CAMPO_INVALIDO', campo: 'firmantes' } });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProcesosService.cerrar() — guarda 0 filas (D4, idempotencia/409/404)', () => {
+  it('proceso inexistente -> 404 NotFoundException', async () => {
+    const { prisma } = construirPrismaCerrar({
+      queryRaw: jest.fn().mockResolvedValue([]),
+      procesoElectoralFindUnique: jest.fn().mockResolvedValue(null),
+    });
+    const { servicio } = construirServicioCerrar(prisma);
+
+    await expect(
+      servicio.cerrar('no-existe', { confirmar: true, firmantes: [FIRMANTE_VALIDO] }, 'actor-1'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('estado releído "borrador" -> 409 PROCESO_NO_CERRABLE', async () => {
+    const { prisma } = construirPrismaCerrar({
+      queryRaw: jest.fn().mockResolvedValue([]),
+      procesoElectoralFindUnique: jest.fn().mockResolvedValue({ ...PROCESO_CERRADO_BASE, estado: 'borrador' }),
+    });
+    const { servicio } = construirServicioCerrar(prisma);
+
+    await expect(
+      servicio.cerrar('proceso-1', { confirmar: true, firmantes: [FIRMANTE_VALIDO] }, 'actor-1'),
+    ).rejects.toMatchObject({ response: { codigo: 'PROCESO_NO_CERRABLE', estado: 'borrador' } });
+  });
+
+  it('estado releído "cerrado" -> 200 no-op idempotente, sin calcular escrutinio ni crear actas', async () => {
+    const { prisma, actaCreateMany, votoCount } = construirPrismaCerrar({
+      queryRaw: jest.fn().mockResolvedValue([]),
+      procesoElectoralFindUnique: jest.fn().mockResolvedValue(PROCESO_CERRADO_BASE),
+      actaCount: jest.fn().mockResolvedValue(4),
+    });
+    const { servicio, auditoria } = construirServicioCerrar(prisma);
+
+    const respuesta = await servicio.cerrar('proceso-1', { confirmar: true, firmantes: [FIRMANTE_VALIDO] }, 'actor-1');
+
+    expect(respuesta).toEqual({ id: 'proceso-1', estado: 'cerrado', cierre_real: '2026-08-18T18:00:00.000Z', actas_creadas: 4 });
+    expect(actaCreateMany).not.toHaveBeenCalled();
+    expect(votoCount).not.toHaveBeenCalled();
+    expect(auditoria.log).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProcesosService.cerrar() — camino exitoso: escrutinio, 4 actas, auditoría (D4/D6-D9/D14)', () => {
+  function filaGuarda() {
+    return [
+      {
+        id: 'proceso-1',
+        nombre: 'Elección de representantes',
+        tipo: 'representante_aula',
+        apertura_real: new Date('2026-08-18T09:00:00.000Z'),
+        cierre_real: new Date('2026-08-18T18:00:00.000Z'),
+        ocultar_resultados: false,
+      },
+    ];
+  }
+
+  it('[11.3] crea las 4 Acta en borrador y registra PROCESO_CERRADO con conteos', async () => {
+    // `$queryRaw` se invoca dos veces: la guarda UPDATE...RETURNING (D4) y `SELECT now()` dentro
+    // de `calcularParticipacion()` (D5, ya extraído) — mismo mock, dos resultados en secuencia.
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce(filaGuarda())
+      .mockResolvedValueOnce([{ ahora: new Date('2026-08-18T18:00:01.000Z') }]);
+    const { prisma, tx, actaCreateMany } = construirPrismaCerrar({
+      queryRaw,
+      derechoVotoCount: jest.fn().mockResolvedValue(5),
+      votoCount: jest.fn().mockResolvedValue(4),
+      votoGroupBy: jest.fn().mockResolvedValue([{ candidato_id: 'c1', _count: { _all: 4 } }]),
+      candidatoFindMany: jest.fn().mockResolvedValue([
+        { id: 'c1', nombres: 'Ana', estado: 'activo', baja_en: null },
+      ]),
+    });
+    // `derechoVoto.count` se llama para padron_total (D5, vía calcularParticipacion) Y para
+    // derechos_estudiante/derechos_padre (D6 del acta de apertura) — se resuelve al mismo valor.
+    tx.derechoVoto.count = jest.fn().mockResolvedValue(5);
+
+    const { servicio, auditoria } = construirServicioCerrar(prisma);
+
+    const respuesta = await servicio.cerrar(
+      'proceso-1',
+      { confirmar: true, firmantes: [FIRMANTE_VALIDO] },
+      'actor-1',
+    );
+
+    expect(respuesta).toEqual({
+      id: 'proceso-1',
+      estado: 'cerrado',
+      cierre_real: '2026-08-18T18:00:00.000Z',
+      actas_creadas: 4,
+    });
+
+    expect(actaCreateMany).toHaveBeenCalledTimes(1);
+    const [{ data }] = actaCreateMany.mock.calls[0];
+    expect(data).toHaveLength(4);
+    expect(data.map((fila: { tipo: string }) => fila.tipo).sort()).toEqual(['apertura', 'cierre', 'escrutinio', 'oficial']);
+    expect(data.every((fila: { estado: string }) => fila.estado === 'borrador')).toBe(true);
+
+    expect(auditoria.log).toHaveBeenCalledTimes(1);
+    const [, eventType, actorId, entityType, entityId, payload] = auditoria.log.mock.calls[0];
+    expect(eventType).toBe('PROCESO_CERRADO');
+    expect(actorId).toBe('actor-1');
+    expect(entityType).toBe('ProcesoElectoral');
+    expect(entityId).toBe('proceso-1');
+
+    // [11.2][threat: Secreto del voto en auditoría] — jamás candidato_id/lista_id/opcion_id/
+    // blanco/eleccion/empatados en el payload de PROCESO_CERRADO.
+    const claves = Object.keys(payload as Record<string, unknown>);
+    for (const prohibida of ['candidato_id', 'lista_id', 'opcion_id', 'blanco', 'eleccion', 'empatados']) {
+      expect(claves).not.toContain(prohibida);
+    }
+    expect(payload).toMatchObject({ actas_creadas: 4, firmantes: 1 });
+  });
+});
+
+describe('ProcesosService.cerrar() — conflicto de serialización P2034 (D4, tarea 11.1)', () => {
+  it('[11.1] $transaction rechaza con code P2034 -> relectura limpia -> 200 no-op, sin propagar', async () => {
+    const errorSerializacion = Object.assign(new Error('could not serialize access due to concurrent update'), {
+      code: 'P2034',
+    });
+    const { prisma } = construirPrismaCerrar({
+      transactionImpl: jest.fn().mockRejectedValue(errorSerializacion),
+    });
+    prisma.procesoElectoral.findUnique = jest.fn().mockResolvedValue(PROCESO_CERRADO_BASE);
+    prisma.acta.count = jest.fn().mockResolvedValue(0);
+
+    const { servicio } = construirServicioCerrar(prisma);
+
+    const respuesta = await servicio.cerrar(
+      'proceso-1',
+      { confirmar: true, firmantes: [FIRMANTE_VALIDO] },
+      'actor-1',
+    );
+
+    expect(respuesta).toEqual({ id: 'proceso-1', estado: 'cerrado', cierre_real: '2026-08-18T18:00:00.000Z', actas_creadas: 0 });
+  });
+
+  it('un rechazo de $transaction SIN code P2034 se propaga (no se confunde con la carrera)', async () => {
+    const otroError = new Error('fallo genérico de base de datos');
+    const { prisma } = construirPrismaCerrar({
+      transactionImpl: jest.fn().mockRejectedValue(otroError),
+    });
+    const { servicio } = construirServicioCerrar(prisma);
+
+    await expect(
+      servicio.cerrar('proceso-1', { confirmar: true, firmantes: [FIRMANTE_VALIDO] }, 'actor-1'),
+    ).rejects.toBe(otroError);
+  });
+});

@@ -28,6 +28,8 @@ import type { SesionUsuario } from '../auth/sesion-usuario';
 import { AbrirProcesoDto } from './dto/abrir-proceso.dto';
 import { ActualizarProcesoDto } from './dto/actualizar-proceso.dto';
 import { AperturaRespuestaDto } from './dto/apertura-respuesta.dto';
+import { CerrarProcesoDto } from './dto/cerrar-proceso.dto';
+import { CierreRespuestaDto } from './dto/cierre-respuesta.dto';
 import { CrearProcesoDto } from './dto/crear-proceso.dto';
 import { ListarProcesosQueryDto } from './dto/listar-procesos.query';
 import { PadronRespuestaDto } from './dto/padron-respuesta.dto';
@@ -161,6 +163,25 @@ export class ProcesosController {
     @Req() req: RequestConUsuario,
   ): Promise<AperturaRespuestaDto> {
     return this.procesosService.abrir(id, dto, req.usuario!.userId);
+  }
+
+  @Post(':id/cerrar')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Cierra el proceso, calcula el escrutinio y crea las 4 actas en borrador (D4/D6-D9/D14)' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: CerrarProcesoDto })
+  @ApiResponse({ status: 200, description: 'Proceso cerrado (o ya lo estaba, idempotente)', type: CierreRespuestaDto })
+  @ApiResponse({ status: 400, description: 'Campo inválido (confirmar/firmantes) o :id no-UUID' })
+  @ApiResponse({ status: 409, description: 'Proceso no cerrable desde su estado actual (borrador)' })
+  @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
+  @ApiResponse({ status: 403, description: 'Rol distinto de administrador/director/comite' })
+  @ApiResponse({ status: 404, description: 'Proceso inexistente' })
+  async cerrar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CerrarProcesoDto,
+    @Req() req: RequestConUsuario,
+  ): Promise<CierreRespuestaDto> {
+    return this.procesosService.cerrar(id, dto, req.usuario!.userId);
   }
 
   @Delete(':id')

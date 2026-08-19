@@ -2171,6 +2171,67 @@
         ]
       }
     },
+    "/procesos/{id}/cerrar": {
+      "post": {
+        "operationId": "ProcesosController_cerrar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CerrarProcesoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proceso cerrado (o ya lo estaba, idempotente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CierreRespuestaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo inválido (confirmar/firmantes) o :id no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Proceso inexistente"
+          },
+          "409": {
+            "description": "Proceso no cerrable desde su estado actual (borrador)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Cierra el proceso, calcula el escrutinio y crea las 4 actas en borrador (D4/D6-D9/D14)",
+        "tags": [
+          "procesos"
+        ]
+      }
+    },
     "/listas": {
       "post": {
         "operationId": "ListasController_crear",
@@ -4118,6 +4179,74 @@
           "derechos_totales",
           "derechos_estudiante",
           "derechos_padre"
+        ]
+      },
+      "FirmanteDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "description": "Nombre completo del firmante"
+          },
+          "cargo": {
+            "type": "string",
+            "description": "Cargo del firmante dentro del comité"
+          }
+        },
+        "required": [
+          "nombre",
+          "cargo"
+        ]
+      },
+      "CerrarProcesoDto": {
+        "type": "object",
+        "properties": {
+          "confirmar": {
+            "type": "boolean",
+            "description": "Confirmación explícita del usuario; debe ser exactamente `true`"
+          },
+          "firmantes": {
+            "description": "Firmantes del acta (mínimo 1, máximo 10)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FirmanteDto"
+            }
+          }
+        },
+        "required": [
+          "confirmar",
+          "firmantes"
+        ]
+      },
+      "CierreRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del proceso electoral"
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado del proceso tras el cierre",
+            "enum": [
+              "cerrado",
+              "acta_emitida"
+            ]
+          },
+          "cierre_real": {
+            "type": "string",
+            "description": "Momento de cierre sellado con el reloj de Postgres (ISO-8601)"
+          },
+          "actas_creadas": {
+            "type": "number",
+            "description": "Cantidad de actas creadas en borrador (siempre 4)"
+          }
+        },
+        "required": [
+          "id",
+          "estado",
+          "cierre_real",
+          "actas_creadas"
         ]
       },
       "ListaRespuestaDto": {

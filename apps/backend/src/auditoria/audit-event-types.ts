@@ -117,6 +117,15 @@ export const AUDIT_EVENT_TYPES = {
   OPCION_CONSULTA_ACTUALIZADA: 'OPCION_CONSULTA_ACTUALIZADA',
   OPCION_CONSULTA_ELIMINADA: 'OPCION_CONSULTA_ELIMINADA',
   PROCESO_ABIERTO: 'PROCESO_ABIERTO',
+  // cierre-escrutinio-actas, PR3 (design.md D14, tarea 11.5): dos claves aditivas. `PROCESO_CERRADO`
+  // (actor = usuario del comité) se emite una sola vez por transición `abierto -> cerrado` (nunca en
+  // el no-op idempotente), con conteos agregados en el payload — nunca `candidato_id`/`lista_id`/
+  // `opcion_id`/`blanco`/`eleccion`/`empatados`. `ACTA_GENERADA` (actor `null`, escrito por el
+  // worker de PR5) se emite una vez por cada una de las 4 actas al terminar su render, con `tipo`
+  // en el payload. Ninguna de las dos toca un `Voto`, así que tampoco activan la obligación
+  // versionada de ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4].
+  PROCESO_CERRADO: 'PROCESO_CERRADO',
+  ACTA_GENERADA: 'ACTA_GENERADA',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];
