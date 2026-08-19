@@ -63,6 +63,14 @@ Turborepo, roles de Postgres, topología de Docker Compose) ver
    |---|---|
    | `RESULTADOS_CACHE_TTL_SECONDS` | TTL en segundos de la caché Redis de `GET /procesos/:id/resultados` (por defecto `8`) |
 
+   Cierre y actas de escrutinio (backlog #17, `design.md` D10/D15) agrega estas variables,
+   opcionales en desarrollo, al servicio `worker`:
+
+   | Variable | Uso |
+   |---|---|
+   | `ACTAS_POLL_MS` | Intervalo del despachador de *polling* sobre `Acta WHERE estado='borrador'` (por defecto `5000`) |
+   | `ACTAS_BATCH` | Tamaño de lote que el despachador encola por cada ciclo (por defecto `20`) |
+
 3. **Levantar el stack completo** (Caddy + frontend + backend + worker + Postgres + Redis, con el
    override de desarrollo — bind mounts, puertos de DB/Redis publicados solo en `127.0.0.1`):
 

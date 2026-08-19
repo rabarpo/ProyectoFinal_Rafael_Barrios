@@ -128,3 +128,24 @@ RESULTADOS_CACHE_TTL_SECONDS`, por defecto 8 s — ver la tabla de variables en
 `refetchInterval` de 15 s). El frontend elige el tipo de gráfico (`recharts`) según el campo
 `dimension` que manda el servidor: pastel para `opcion`, barras horizontales para `lista`/
 `candidato` — nunca decidido en el cliente.
+
+## Worker — actas de escrutinio (`acta.pdf`)
+
+Backlog #17 (`openspec/changes/cierre-escrutinio-actas/design.md`) agrega una tercera cola BullMQ,
+`actas`, separada de `correo` para que un SMTP caído nunca encole el cierre detrás de los
+reintentos del outbox de correo. `POST /procesos/:id/cerrar` (backend) crea las 4 filas `Acta` en
+`estado='borrador'` dentro de la misma transacción del cierre; el backend **nunca** encola nada
+(ADR-0018/ADR-0012) — un despachador de *polling* (`apps/worker/src/actas/actas-dispatcher.ts`)
+descubre esas filas cada `ACTAS_POLL_MS` y las encola por lotes de `ACTAS_BATCH` con `jobId`
+determinista (`acta:<id>`).
+
+El processor puro (`apps/worker/src/processors/actas.processor.ts`) sólo conoce dos puertos
+(`ActasRepo`, `RendererActa`), nunca Prisma ni BullMQ. El render corre con `pdfkit`
+(`apps/worker/src/actas/pdfkit-renderer.ts`, único archivo que la importa), sólo fuentes estándar,
+sin recursos externos. La transacción terminal (`apps/worker/src/actas/actas.repo.ts`) hace, por
+acta: `SELECT … FOR UPDATE` sobre `ProcesoElectoral` (obligatorio para evitar que el proceso quede
+atascado entre `cerrado` y `acta_emitida` si dos workers cierran la 3ª y la 4ª acta en paralelo),
+CAS `UPDATE … WHERE estado='borrador'`, un evento `ACTA_GENERADA` de auditoría (`actor_usuario_id
+IS NULL` — el worker no tiene sesión) y, si las 4 actas del proceso quedan `emitida`, la transición
+`cerrado → acta_emitida`. `estado='fallido'` lo escribe sólo el listener `actasWorker.on('failed')`
+cuando la cola agota los `attempts` configurados, nunca el processor ni el repo.

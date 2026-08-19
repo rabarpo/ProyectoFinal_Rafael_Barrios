@@ -31,7 +31,9 @@
         "LOGIN_BLOQUEO_SEGUNDOS",
         "OUTBOX_POLL_MS",
         "OUTBOX_BATCH",
-        "RESULTADOS_CACHE_TTL_SECONDS"
+        "RESULTADOS_CACHE_TTL_SECONDS",
+        "ACTAS_POLL_MS",
+        "ACTAS_BATCH"
       ]
     },
     "test:schema": {

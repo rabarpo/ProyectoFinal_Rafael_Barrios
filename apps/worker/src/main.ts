@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import { PrismaClient } from '@prisma/client';
 import { procesarSystemPing } from './processors/system-ping.processor';
 import { procesarCorreoComprobante } from './processors/outbox-correo.processor';
+import { procesarActa } from './processors/actas.processor';
 import { PrismaOutboxCorreoRepo } from './outbox/outbox-correo.repo';
 import { crearEmailSender } from './outbox/email-sender.factory';
 import {
@@ -10,6 +11,10 @@ import {
   CORREO_QUEUE_NAME,
   despacharLoteOutbox,
 } from './outbox/outbox-dispatcher';
+import { PrismaActasRepo } from './actas/actas.repo';
+import { PdfkitRendererActa } from './actas/pdfkit-renderer';
+import { ACTA_PDF_JOB_NAME, ACTAS_QUEUE_NAME, despacharLoteActas } from './actas/actas-dispatcher';
+import { crearListenerActasFallido, type JobFallido } from './actas/actas-fallido-listener';
 
 /**
  * Deben coincidir con `SYSTEM_QUEUE_NAME`/`SYSTEM_PING_JOB_NAME` de
@@ -27,6 +32,14 @@ const SYSTEM_PING_JOB_NAME = 'system.ping';
  */
 const OUTBOX_POLL_MS = Number(process.env.OUTBOX_POLL_MS ?? 5000);
 const OUTBOX_BATCH = Number(process.env.OUTBOX_BATCH ?? 20);
+
+/**
+ * cierre-escrutinio-actas (#17, PR5; design.md D10/D15). Mismos defaults que `OUTBOX_*` (5000/20)
+ * — el barrido sobre `Acta WHERE estado='borrador'` es igual de barato gracias a
+ * `@@index([estado, creado_en])`.
+ */
+const ACTAS_POLL_MS = Number(process.env.ACTAS_POLL_MS ?? 5000);
+const ACTAS_BATCH = Number(process.env.ACTAS_BATCH ?? 20);
 
 /**
  * `maxRetriesPerRequest: null` es requerido por BullMQ para conexiones de
@@ -112,3 +125,58 @@ setInterval(() => {
     console.error('[worker] error despachando lote de outbox:', error);
   });
 }, OUTBOX_POLL_MS);
+
+/**
+ * cierre-escrutinio-actas (#17, PR5; design.md D10/D11). Cola PROPIA `actas`, nunca compartida con
+ * `correo` (D10): un SMTP caído no debe encolar el cierre detrás de los reintentos del outbox. El
+ * backend NUNCA encola nada — la fila `Acta` nace en `borrador` dentro de la transacción de
+ * `cerrar()` (PR3) y este despachador la descubre por *polling* (ADR-0018/ADR-0012).
+ */
+const actasRepo = new PrismaActasRepo(prisma);
+const actasRenderer = new PdfkitRendererActa();
+const actasQueue = new Queue(ACTAS_QUEUE_NAME, { connection });
+
+/**
+ * D10: el processor recibe puertos (`actasRepo`, `actasRenderer`), nunca Prisma ni BullMQ
+ * directamente — mismo reparto de responsabilidades que `correoWorker`.
+ */
+export const actasWorker = new Worker(
+  ACTAS_QUEUE_NAME,
+  async (job) => {
+    if (job.name !== ACTA_PDF_JOB_NAME) {
+      return;
+    }
+    await procesarActa(actasRepo, actasRenderer, job.data.acta_id as string);
+  },
+  { connection },
+);
+
+actasWorker.on('error', (error) => {
+  // eslint-disable-next-line no-console
+  console.error('[worker] error en la cola "actas":', error);
+});
+
+/**
+ * D11: BullMQ decide CUÁNDO reintentar (`attempts`/`backoff`, ver `actas-dispatcher.ts`); este
+ * listener sólo escribe el estado TERMINAL `fallido` cuando la cola agota los reintentos
+ * configurados — nunca desde el processor, que permanece puro (D10). Lógica de decisión extraída
+ * a `crearListenerActasFallido` (desviación declarada, tarea 23.2) para que sea testeable sin
+ * abrir conexiones reales.
+ */
+const listenerActasFallido = crearListenerActasFallido(actasRepo);
+actasWorker.on('failed', (job, error) => {
+  // eslint-disable-next-line no-console
+  console.error('[worker] error en la cola "actas":', error);
+  listenerActasFallido(job as unknown as JobFallido | undefined, error);
+});
+
+/**
+ * D10: despachador liviano de *polling* — Postgres es la fuente de verdad, BullMQ sólo ejecuta y
+ * reintenta. El backend nunca encola actas (patrón vetado, ADR-0018/ADR-0012).
+ */
+setInterval(() => {
+  despacharLoteActas(actasRepo, actasQueue, ACTAS_BATCH).catch((error: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error('[worker] error despachando lote de actas:', error);
+  });
+}, ACTAS_POLL_MS);

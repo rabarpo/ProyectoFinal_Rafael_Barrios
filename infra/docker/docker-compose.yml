@@ -97,6 +97,12 @@ services:
       # Postgres, la contraseña NUNCA de esa tabla (misma regla que `ConfiguracionEmailSender`).
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
+      # cierre-escrutinio-actas (#17, PR5; design.md D10/D15): mismo patrón de polling que el
+      # outbox de correo — opcionales, el worker cae a 5000/20 sin ellas. Nota: `OUTBOX_POLL_MS`/
+      # `OUTBOX_BATCH` (#15) nunca se agregaron a este compose (quedaron sólo en `docs/onboarding.md`
+      # y `README.md`); ACTAS_* se documentan acá igual, sin reproducir esa omisión.
+      ACTAS_POLL_MS: ${ACTAS_POLL_MS:-5000}
+      ACTAS_BATCH: ${ACTAS_BATCH:-20}
     # Sin healthcheck: el worker no expone superficie HTTP (design.md, "Preguntas abiertas" —
     # omisión aceptada para el andamiaje, a revisar cuando llegue el despachador del outbox).
     depends_on:

@@ -198,63 +198,63 @@ El orquestador debe confirmar con el usuario antes de `sdd-apply`.
 ## PR 5 — Worker: dispatcher, processor, render, transición terminal (D10/D11/D12/D15)
 
 ### Phase 18: Dependencia
-- [ ] 18.1 Modificar `apps/worker/package.json`: `+pdfkit@^0.15`, `+@types/pdfkit` (dev) — verificar
+- [x] 18.1 Modificar `apps/worker/package.json`: `+pdfkit@^0.15`, `+@types/pdfkit` (dev) — verificar
       al instalar que la línea `0.15.x` y `@types/pdfkit` son compatibles
 
 ### Phase 19: RED (Vitest) — dispatcher (`actas-dispatcher.spec.ts`, patrón `outbox-dispatcher.spec.ts`)
-- [ ] 19.1 `despacharLoteActas` ⇒ `jobId:'acta:<id>'`, `attempts:5`, `backoff` exponencial
-- [ ] 19.2 Lote vacío ⇒ **no** llama `addBulk`
-- [ ] 19.3 GREEN: crear `apps/worker/src/actas/actas-dispatcher.ts` (cola `actas`, polling sobre
+- [x] 19.1 `despacharLoteActas` ⇒ `jobId:'acta:<id>'`, `attempts:5`, `backoff` exponencial
+- [x] 19.2 Lote vacío ⇒ **no** llama `addBulk`
+- [x] 19.3 GREEN: crear `apps/worker/src/actas/actas-dispatcher.ts` (cola `actas`, polling sobre
       `Acta WHERE estado='borrador'`, `ACTAS_POLL_MS`/`ACTAS_BATCH` defaults 5000/20)
 
 ### Phase 20: RED (Vitest) — processor puro (`processors/actas.processor.spec.ts`)
-- [ ] 20.1 Acta inexistente / no-`borrador` ⇒ `'no-op'` **sin** renderizar
-- [ ] 20.2 `render` que rechaza ⇒ propaga (sin `try/catch`) y **no** se llama `finalizar`
-- [ ] 20.3 `finalizar` que devuelve `'no-op'` (CAS perdido) no rompe el flujo
-- [ ] 20.4 GREEN: crear `apps/worker/src/processors/actas.processor.ts` (`procesarActa()` sobre los
+- [x] 20.1 Acta inexistente / no-`borrador` ⇒ `'no-op'` **sin** renderizar
+- [x] 20.2 `render` que rechaza ⇒ propaga (sin `try/catch`) y **no** se llama `finalizar`
+- [x] 20.3 `finalizar` que devuelve `'no-op'` (CAS perdido) no rompe el flujo
+- [x] 20.4 GREEN: crear `apps/worker/src/processors/actas.processor.ts` (`procesarActa()` sobre los
       puertos `ActasRepo`/`RendererActa`, sin Prisma ni BullMQ)
 
 ### Phase 21: RED (Vitest) — `pdfkit-renderer.ts` (D12)
-- [ ] 21.1 Render de un snapshot produce un `Buffer` que empieza en `%PDF-` y cuyo texto extraído
+- [x] 21.1 Render de un snapshot produce un `Buffer` que empieza en `%PDF-` y cuyo texto extraído
       contiene los conteos del snapshot
-- [ ] 21.2 Render de un snapshot con 0 votos y con 10 firmantes (D9 al límite) no lanza
-- [ ] 21.3 GREEN: crear `apps/worker/src/actas/pdfkit-renderer.ts` (fuentes estándar, sin recursos
+- [x] 21.2 Render de un snapshot con 0 votos y con 10 firmantes (D9 al límite) no lanza
+- [x] 21.3 GREEN: crear `apps/worker/src/actas/pdfkit-renderer.ts` (fuentes estándar, sin recursos
       externos, `CreationDate` fijado desde `contenido.generado_en`)
 
 ### Phase 22: RED e2e (Postgres real) — repo y transición terminal (D11)
-- [ ] 22.1 Marcar 3 actas `emitida` ⇒ el proceso sigue `cerrado`
-- [ ] 22.2 La 4ª ⇒ pasa a `acta_emitida` y hay **4** eventos `ACTA_GENERADA` con
+- [x] 22.1 Marcar 3 actas `emitida` ⇒ el proceso sigue `cerrado`
+- [x] 22.2 La 4ª ⇒ pasa a `acta_emitida` y hay **4** eventos `ACTA_GENERADA` con
       `actor_usuario_id IS NULL`
-- [ ] 22.3 Ejecutar `finalizar` dos veces sobre la misma acta ⇒ una sola transición y un solo
+- [x] 22.3 Ejecutar `finalizar` dos veces sobre la misma acta ⇒ una sola transición y un solo
       evento
-- [ ] 22.4 **Carrera real**: dos conexiones `pg` finalizando la 3ª y la 4ª en paralelo ⇒ el
+- [x] 22.4 **Carrera real**: dos conexiones `pg` finalizando la 3ª y la 4ª en paralelo ⇒ el
       proceso **sí** llega a `acta_emitida` — esta prueba debe fallar si se quita el `FOR UPDATE`
       [threat: Proceso atascado entre `cerrado` y `acta_emitida` — modo de falla permanente y
       silencioso]
-- [ ] 22.5 GREEN: crear `apps/worker/src/actas/actas.repo.ts` (adaptador Prisma: transacción
+- [x] 22.5 GREEN: crear `apps/worker/src/actas/actas.repo.ts` (adaptador Prisma: transacción
       terminal `SELECT … FOR UPDATE` sobre `ProcesoElectoral`, `updateMany` CAS
       `WHERE estado='borrador'`, `eventoAuditoria.create`, `acta.count`, transición condicional) y
       `test/procesos/actas-transicion.e2e-spec.ts` — pasa 22.1-22.4
 
 ### Phase 23: Wiring del worker
-- [ ] 23.1 Modificar `apps/worker/src/main.ts`: `Queue`/`Worker` de `actas`, `setInterval` del
+- [x] 23.1 Modificar `apps/worker/src/main.ts`: `Queue`/`Worker` de `actas`, `setInterval` del
       dispatcher, listener `on('failed')` ⇒ `attemptsMade >= attempts` ⇒ `marcarFallido(id)`
       [spec: Render de actas por el worker y estado `fallido`]
-- [ ] 23.2 RED (Vitest): `attemptsMade >= attempts` ⇒ se llama `marcarFallido`;
+- [x] 23.2 RED (Vitest): `attemptsMade >= attempts` ⇒ se llama `marcarFallido`;
       `attemptsMade < attempts` ⇒ **no** se marca — GREEN en el mismo listener
 
 ### Phase 24: Documentación de variables de entorno (D15)
-- [ ] 24.1 Modificar `turbo.json`: `test:e2e.env` `+= ACTAS_POLL_MS, ACTAS_BATCH`
-- [ ] 24.2 Modificar `infra/docker/docker-compose.yml`: documentar `ACTAS_POLL_MS`/`ACTAS_BATCH`
+- [x] 24.1 Modificar `turbo.json`: `test:e2e.env` `+= ACTAS_POLL_MS, ACTAS_BATCH`
+- [x] 24.2 Modificar `infra/docker/docker-compose.yml`: documentar `ACTAS_POLL_MS`/`ACTAS_BATCH`
       junto a `OUTBOX_*` en el servicio `worker`
-- [ ] 24.3 Modificar `docs/onboarding.md` y `README.md`: mismas variables
+- [x] 24.3 Modificar `docs/onboarding.md` y `README.md`: mismas variables
 
 ### Phase 25: Regresión final del change
-- [ ] 25.1 `pnpm --filter @seei/worker test -- actas` verde
-- [ ] 25.2 `pnpm --filter @seei/backend test` y `test:e2e` completos verdes (Postgres real)
-- [ ] 25.3 `pnpm turbo run test` verde en los 4 paquetes
-- [ ] 25.4 `pnpm typecheck` verde
-- [ ] 25.5 Verificar `test/resultados/*.e2e-spec.ts` y `resultados.service.spec.ts` (`#16`) siguen
+- [x] 25.1 `pnpm --filter @seei/worker test -- actas` verde
+- [x] 25.2 `pnpm --filter @seei/backend test` y `test:e2e` completos verdes (Postgres real)
+- [x] 25.3 `pnpm turbo run test` verde en los 4 paquetes
+- [x] 25.4 `pnpm typecheck` verde
+- [x] 25.5 Verificar `test/resultados/*.e2e-spec.ts` y `resultados.service.spec.ts` (`#16`) siguen
       verdes sin editarse desde PR2
 
 ## Pendientes explícitamente fuera de este change (constancia, no se inventan aquí)
