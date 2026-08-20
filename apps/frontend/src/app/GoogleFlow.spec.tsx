@@ -55,8 +55,11 @@ describe('Flujo de login con Google (App)', () => {
       onCredentialCapturado.current?.('id-token-valido');
     });
 
+    // menu-navegacion-post-login (#25): "administrador" aparece más de una vez con el menú
+    // montado ("Rol: administrador" en el header, "Hola, administrador" en InicioPage) — se
+    // ancla al span del header, que es lo que este test de flujo de auth verifica.
     await waitFor(() => {
-      expect(screen.getByText(/administrador/i)).toBeInTheDocument();
+      expect(screen.getByText(/rol: administrador/i)).toBeInTheDocument();
     });
     expect(googleMock).toHaveBeenCalledWith('id-token-valido', undefined);
     expect(screen.queryByLabelText(/código institucional/i)).not.toBeInTheDocument();
@@ -83,8 +86,10 @@ describe('Flujo de login con Google (App)', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
+    // menu-navegacion-post-login (#25): mismo criterio — "comite" ahora aparece más de una vez
+    // (header + InicioPage), se ancla al span del header.
     await waitFor(() => {
-      expect(screen.getByText(/comite/i)).toBeInTheDocument();
+      expect(screen.getByText(/rol: comite/i)).toBeInTheDocument();
     });
     expect(googleMock).toHaveBeenNthCalledWith(2, 'id-token-sin-vincular', 'clave-actual');
   });

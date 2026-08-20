@@ -7,6 +7,7 @@
  * para las variantes navegables.
  */
 export type Ruta =
+  | { nombre: 'inicio' }
   | { nombre: 'proceso-nuevo' }
   | { nombre: 'procesos' }
   | { nombre: 'candidatos'; procesoId: string }
@@ -34,11 +35,18 @@ export function parsearRuta(pathname: string): Ruta {
   }
 
   if (partes.length === 0) {
-    return { nombre: 'proceso-nuevo' };
+    return { nombre: 'inicio' };
   }
 
   if (partes.length === 1 && partes[0] === 'procesos') {
     return { nombre: 'procesos' };
+  }
+
+  // menu-navegacion-post-login (#25; design.md D1): agrupa la creación bajo su recurso, igual
+  // que `/procesos/:id/abrir` — `/procesos/nuevo` NO colisiona con el bloque de candidatos
+  // (exige `length >= 3`) ni con `apertura` (exige `length === 3`).
+  if (partes[0] === 'procesos' && partes.length === 2 && partes[1] === 'nuevo') {
+    return { nombre: 'proceso-nuevo' };
   }
 
   // Los ids se pasan tal cual (sin validar formato UUID en el cliente): el
@@ -88,8 +96,10 @@ export function parsearRuta(pathname: string): Ruta {
 
 export function rutaAPath(ruta: Ruta): string {
   switch (ruta.nombre) {
-    case 'proceso-nuevo':
+    case 'inicio':
       return '/';
+    case 'proceso-nuevo':
+      return '/procesos/nuevo';
     case 'procesos':
       return '/procesos';
     case 'candidatos':

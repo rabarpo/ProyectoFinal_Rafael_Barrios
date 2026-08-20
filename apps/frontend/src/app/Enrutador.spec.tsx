@@ -21,6 +21,16 @@ vi.mock('../resultados/ResultadosPage', () => ({
   ResultadosPage: () => <p data-testid="resultados-page">ResultadosPage</p>,
 }));
 
+// menu-navegacion-post-login (#25; design.md D1/D6, tasks.md 2.2). Se doblan `InicioPage` y
+// `ProcesoWizardPage` (esta última llama `procesos-api.padron()` sin mock en este árbol) para
+// mantener este archivo enfocado en la resolución de rutas, no en el contenido de las páginas.
+vi.mock('./InicioPage', () => ({
+  InicioPage: () => <p data-testid="inicio-page">InicioPage</p>,
+}));
+vi.mock('../procesos/ProcesoWizardPage', () => ({
+  ProcesoWizardPage: () => <p data-testid="proceso-wizard-page">ProcesoWizardPage</p>,
+}));
+
 const acciones = { login: vi.fn(), google: vi.fn(), logout: vi.fn(), alRecibir401: vi.fn() };
 
 function proveer(contexto: ContextoSesion) {
@@ -48,6 +58,47 @@ describe('Enrutador', () => {
     expect(screen.getByTestId('login-page')).toBeInTheDocument();
   });
 
+  // [design.md, threat matrix "Enrutamiento (cliente)"; tasks.md 8.1] Sin sesión, `/` y
+  // `/procesos/nuevo` renderizan LoginPage — nunca InicioPage ni ProcesoWizardPage. La sesión,
+  // no la URL, decide (D11, sin cambios de #12).
+  it('[8.1] sin sesión, / renderiza LoginPage, nunca InicioPage', () => {
+    window.history.pushState(null, '', '/');
+
+    render(proveer({ estado: 'anonimo', ...acciones }));
+
+    expect(screen.getByTestId('login-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('inicio-page')).not.toBeInTheDocument();
+  });
+
+  it('[8.1] sin sesión, /procesos/nuevo renderiza LoginPage, nunca ProcesoWizardPage', () => {
+    window.history.pushState(null, '', '/procesos/nuevo');
+
+    render(proveer({ estado: 'anonimo', ...acciones }));
+
+    expect(screen.getByTestId('login-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('proceso-wizard-page')).not.toBeInTheDocument();
+  });
+
+  // [design.md, threat matrix "Enrutamiento (cliente)"; tasks.md 1.2/8.2] `/procesos/nuevo/extra`
+  // cae en 'no-encontrada' dentro del shell, sin excepción — cruce con rutas.spec.ts 1.2.
+  it('[8.2] con sesión válida, /procesos/nuevo/extra resuelve a no-encontrada sin excepción', () => {
+    window.history.pushState(null, '', '/procesos/nuevo/extra');
+
+    expect(() =>
+      render(
+        proveer({
+          estado: 'autenticado',
+          sesion: { userId: 'u1', rol: 'administrador', creadoEn: 1 },
+          ...acciones,
+        }),
+      ),
+    ).not.toThrow();
+
+    expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('proceso-wizard-page')).not.toBeInTheDocument();
+    expect(screen.getByText('Página no encontrada.')).toBeInTheDocument();
+  });
+
   it('con sesión válida, pathname arbitrario resuelve a no-encontrada sin excepción', () => {
     window.history.pushState(null, '', '/algo/que/no/existe');
 
@@ -62,6 +113,40 @@ describe('Enrutador', () => {
     ).not.toThrow();
 
     expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+  });
+
+  // menu-navegacion-post-login (#25; design.md D1/D4, tasks.md 2.2). `/` deja de montar
+  // `ProcesoWizardPage`: ahora resuelve a `inicio` → `InicioPage`. `InicioPage` real llega en
+  // Phase 6 de este change; se dobla acá para mantener este archivo enfocado en la resolución
+  // de rutas, no en el contenido de la página.
+  it('con sesión válida, / resuelve a InicioPage (no ProcesoWizardPage)', () => {
+    window.history.pushState(null, '', '/');
+
+    render(
+      proveer({
+        estado: 'autenticado',
+        sesion: { userId: 'u1', rol: 'administrador', creadoEn: 1 },
+        ...acciones,
+      }),
+    );
+
+    expect(screen.getByTestId('inicio-page')).toBeInTheDocument();
+  });
+
+  // menu-navegacion-post-login (#25; design.md D1, tasks.md 2.2). El asistente de creación de
+  // proceso se muda de `/` a `/procesos/nuevo`.
+  it('con sesión válida, /procesos/nuevo resuelve a ProcesoWizardPage', () => {
+    window.history.pushState(null, '', '/procesos/nuevo');
+
+    render(
+      proveer({
+        estado: 'autenticado',
+        sesion: { userId: 'u1', rol: 'administrador', creadoEn: 1 },
+        ...acciones,
+      }),
+    );
+
+    expect(screen.getByTestId('proceso-wizard-page')).toBeInTheDocument();
   });
 
   // resultados-en-vivo, PR3 (#16; design.md D11, tasks.md 13.6). `ResultadosPage` real llega en

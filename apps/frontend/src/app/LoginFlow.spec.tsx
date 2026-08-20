@@ -30,8 +30,11 @@ describe('Flujo de login (App)', () => {
 
     render(<App />);
 
+    // menu-navegacion-post-login (#25): "administrador" aparece más de una vez con el menú
+    // montado ("Rol: administrador" en el header, "Hola, administrador" en InicioPage) — se
+    // ancla al span del header, que es lo que este test de flujo de auth verifica.
     await waitFor(() => {
-      expect(screen.getByText(/administrador/i)).toBeInTheDocument();
+      expect(screen.getByText(/rol: administrador/i)).toBeInTheDocument();
     });
     expect(screen.queryByLabelText(/código institucional/i)).not.toBeInTheDocument();
   });

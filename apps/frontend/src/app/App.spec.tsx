@@ -26,8 +26,11 @@ describe('App', () => {
 
     render(<App />);
 
+    // menu-navegacion-post-login (#25): con el menú montado, "administrador" aparece más de
+    // una vez ("Rol: administrador" en el header, "Hola, administrador" en InicioPage) — se
+    // ancla al span del header, único que este test verifica (D8, sin lógica propia de App.tsx).
     await waitFor(() => {
-      expect(screen.getByText(/administrador/i)).toBeInTheDocument();
+      expect(screen.getByText(/rol: administrador/i)).toBeInTheDocument();
     });
   });
 });

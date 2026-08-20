@@ -1,4 +1,5 @@
 import { useRuta } from './useRuta';
+import { InicioPage } from './InicioPage';
 import { ProcesoWizardPage } from '../procesos/ProcesoWizardPage';
 import { ProcesosIndexPage } from '../procesos/ProcesosIndexPage';
 import { AperturaProcesoPage } from '../procesos/AperturaProcesoPage';
@@ -20,7 +21,10 @@ import { ResultadosPage } from '../resultados/ResultadosPage';
  * `ComprobantePage` real desde `#15`/PR4 (design.md D12, tasks.md 14.3); `resultados` monta
  * `ResultadosPage` real desde `#16`/PR3 (design.md D11, tasks.md 13.6) — sin
  * stubs restantes en el alcance de este change. `no-encontrada` se renderiza
- * dentro del shell, nunca lanza ni deja `undefined`.
+ * dentro del shell, nunca lanza ni deja `undefined`. menu-navegacion-post-login
+ * (#25; design.md D1): `/` ya NO monta `ProcesoWizardPage` — resuelve a la
+ * variante `inicio` y monta `InicioPage`; el asistente de creación de proceso
+ * se mudó a `/procesos/nuevo` (variante `proceso-nuevo`, sin cambios de nombre).
  */
 function VistaNoEncontrada() {
   return <p className="text-body-md text-on-surface">Página no encontrada.</p>;
@@ -30,6 +34,8 @@ export function Enrutador() {
   const ruta = useRuta();
 
   switch (ruta.nombre) {
+    case 'inicio':
+      return <InicioPage />;
     case 'proceso-nuevo':
       return <ProcesoWizardPage />;
     case 'procesos':

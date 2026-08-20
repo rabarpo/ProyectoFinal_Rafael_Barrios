@@ -51,6 +51,7 @@ describe('VotacionPage', () => {
   afterEach(() => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
+    window.history.pushState(null, '', '/');
   });
 
   it('[18.3] recorre los 3 pasos sin recargar y confirma el voto con éxito', async () => {
@@ -165,6 +166,24 @@ describe('VotacionPage', () => {
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
   }
+
+  // menu-navegacion-post-login (#25; design.md D1, tasks.md 3.2). Un 403 (derecho ajeno o
+  // inexistente, D9 causa 1) redirige con `navegar({ nombre: 'proceso-nuevo' })`, que ahora
+  // resuelve a `/procesos/nuevo` en vez de `/` (D1) — `navegar` NO está mockeado en este archivo,
+  // así que la aserción usa el `pathname` real del historial.
+  it('[3.2] un 403 al confirmar redirige a /procesos/nuevo', async () => {
+    vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
+    vi.mocked(votosApi.emitir).mockResolvedValueOnce({
+      data: undefined,
+      error: undefined,
+      response: { ok: false, status: 403 } as Response,
+    } as never);
+
+    render(<VotacionPage derechoVotoId="dv1" />);
+    await llegarAlPaso3();
+
+    await waitFor(() => expect(window.location.pathname).toBe('/procesos/nuevo'));
+  });
 
   it('[22.1] SIN_DERECHO enruta a la pantalla "No estás en el padrón"', async () => {
     vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());

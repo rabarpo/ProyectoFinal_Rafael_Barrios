@@ -20,7 +20,7 @@ describe('useRuta / navegar', () => {
     window.history.pushState(null, '', '/');
     render(<Sonda />);
 
-    expect(screen.getByTestId('ruta')).toHaveTextContent('proceso-nuevo');
+    expect(screen.getByTestId('ruta')).toHaveTextContent('inicio');
 
     act(() => {
       navegar({ nombre: 'procesos' });

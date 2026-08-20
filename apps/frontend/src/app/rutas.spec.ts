@@ -8,6 +8,7 @@ import type { Ruta } from './rutas';
 describe('rutas', () => {
   it('ida y vuelta para cada variante navegable de Ruta', () => {
     const casos: Ruta[] = [
+      { nombre: 'inicio' },
       { nombre: 'proceso-nuevo' },
       { nombre: 'procesos' },
       { nombre: 'candidatos', procesoId: 'p1' },
@@ -55,5 +56,24 @@ describe('rutas', () => {
     const ruta = parsearRuta('/algo/que/no/existe');
     expect(ruta).toBeDefined();
     expect(ruta.nombre).toBe('no-encontrada');
+  });
+
+  // [design.md D1; tasks.md 1.1-1.2; spec: menu-navegacion-post-login] `/` deja de ser
+  // `proceso-nuevo` y pasa a `inicio`; `proceso-nuevo` se muda a `/procesos/nuevo`.
+  it("[1.1] '/' resuelve a 'inicio' y su rutaAPath es '/'", () => {
+    expect(parsearRuta('/')).toEqual({ nombre: 'inicio' });
+    expect(rutaAPath({ nombre: 'inicio' })).toBe('/');
+  });
+
+  it("[1.2] '/procesos/nuevo' resuelve a 'proceso-nuevo' y su rutaAPath es '/procesos/nuevo'", () => {
+    expect(parsearRuta('/procesos/nuevo')).toEqual({ nombre: 'proceso-nuevo' });
+    expect(rutaAPath({ nombre: 'proceso-nuevo' })).toBe('/procesos/nuevo');
+  });
+
+  it("[1.2] '/procesos/nuevo/extra' resuelve a 'no-encontrada'", () => {
+    expect(parsearRuta('/procesos/nuevo/extra')).toEqual({
+      nombre: 'no-encontrada',
+      pathname: '/procesos/nuevo/extra',
+    });
   });
 });
