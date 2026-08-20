@@ -2,13 +2,21 @@ import { useState } from 'react';
 import { useSesion } from '../auth/sesion-context';
 import { PESTANAS } from './pestanas';
 import type { PestanaAcademica } from './pestanas';
+import { PanelAniosEscolares } from './paneles/PanelAniosEscolares';
+import { PanelNiveles } from './paneles/PanelNiveles';
+import { PanelGrados } from './paneles/PanelGrados';
+import { PanelSecciones } from './paneles/PanelSecciones';
+import { PanelAulas } from './paneles/PanelAulas';
+import { PanelMatriculas } from './paneles/PanelMatriculas';
 
 /**
  * administracion-academica, PR1 (#26; design.md D1/D2/D8). Resuelve `rol` ⇒ `soloLectura`
  * (allowlist fail-closed: cualquier rol que NO sea `administrador`/`director` cae en sólo
  * lectura, nunca `rol === 'comite'` — D8) y la pestaña activa vía `useState` LOCAL, nunca URL ni
- * contexto (D1). Renderiza SÓLO el panel activo — los otros 5 quedan desmontados. Los `case` de
- * este `switch` se reemplazan por paneles reales en PR4-PR7; hasta entonces cada uno es un stub.
+ * contexto (D1). Renderiza SÓLO el panel activo — los otros 5 quedan desmontados. `anios`/`niveles`
+ * montan los paneles reales desde PR4 (tasks.md 13.1); `grados`/`secciones` desde PR5 (tasks.md
+ * 16.1); `aulas` desde PR6 (tasks.md 17.5); `matriculas` desde PR7 (tasks.md 18.11), la última
+ * pestaña del chain.
  */
 export function AcademicaPage() {
   const contexto = useSesion();
@@ -19,17 +27,17 @@ export function AcademicaPage() {
   function renderPanel() {
     switch (pestana) {
       case 'anios':
-        return <p data-testid="panel-stub-anios">Aún no implementado</p>;
+        return <PanelAniosEscolares soloLectura={soloLectura} />;
       case 'niveles':
-        return <p data-testid="panel-stub-niveles">Aún no implementado</p>;
+        return <PanelNiveles soloLectura={soloLectura} />;
       case 'grados':
-        return <p data-testid="panel-stub-grados">Aún no implementado</p>;
+        return <PanelGrados soloLectura={soloLectura} />;
       case 'secciones':
-        return <p data-testid="panel-stub-secciones">Aún no implementado</p>;
+        return <PanelSecciones soloLectura={soloLectura} />;
       case 'aulas':
-        return <p data-testid="panel-stub-aulas">Aún no implementado</p>;
+        return <PanelAulas soloLectura={soloLectura} />;
       case 'matriculas':
-        return <p data-testid="panel-stub-matriculas">Aún no implementado</p>;
+        return <PanelMatriculas soloLectura={soloLectura} />;
     }
   }
 
