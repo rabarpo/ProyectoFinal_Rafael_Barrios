@@ -31,7 +31,10 @@ técnica**, no por prioridad de negocio.
 | 23 | Prueba de carga y ensayo de restauración | Escenario k6/artillery con 1,000 votantes concurrentes (ráfaga de `POST /votos` + polling del panel) y ensayo completo de restauración ejecutando el procedimiento de contingencia, no solo la parte técnica (ADR-0007/0013) | #22 | — |
 | 24 | Aplicación del sistema de diseño visual | Traducir `DESIGN-SYSTEM.md` (paleta, tipografía Hanken Grotesk, espaciado, sombras, componentes) a variables CSS/config de Tailwind y aplicarlo a los componentes ya existentes del login (#11 PR1-PR3, hoy sin estilo) y a los que se vayan agregando (asistente de #11, candidatos de #12, boleta de #14, etc.) | #11 | `DESIGN-SYSTEM.md` (raíz del repo) — documento de estilo, no requiere spec de negocio |
 | 25 | Menú principal y navegación post-login | Pantalla de inicio por rol (reemplaza la ruta raíz `/` hoy hardcodeada a `proceso-nuevo` en `apps/frontend/src/app/rutas.ts`), con accesos a lo que ya tiene frontend (procesos, candidatos, votación/resultados según rol) y a lo que agregue #26; sin lógica de negocio propia, sólo enrutamiento y layout | #11, #24 | — |
-| 26 | Frontend de administración académica, usuarios y configuración | UI de CRUD para los backends ya existentes y sin interfaz: administración académica (#8: año escolar, nivel, grado, sección, aula, turno, matrícula), usuarios y apoderados (#7), importación de Excel con reporte fila a fila (#9), y configuración general (#10) | #7, #8, #9, #10, #25 | — |
+| 26 | Frontend de administración académica | UI de CRUD para año escolar, nivel, grado, sección, aula y matrícula (jerarquía de 6 entidades del backend #8), incluida activación de año escolar | #8, #25 | — |
+| 27 | Frontend de administración de usuarios y apoderados | UI de CRUD de usuarios (5 roles), alta/baja de apoderados vinculados a estudiantes, bloqueo/desbloqueo de cuentas (backend #6/#7) | #6, #7, #25 | — |
+| 28 | Frontend de configuración general | UI del singleton de configuración institucional (nombre, director, comité, colores, zona horaria, SMTP, dominio Google Workspace) y subida de logo (backend #10) | #10, #25 | — |
+| 29 | Frontend de importación de Excel | UI de carga de archivo (`.xlsx`/`.csv`, 5 MB, 2000 filas), reporte de errores fila a fila y descarga del CSV de errores (backend #9) | #9, #25 | — |
 
 ## Ausencia de reglamento previo
 
@@ -73,10 +76,16 @@ Consecuencias para las specs de #11, #13, #17 y #22:
   ninguna otra pantalla a la que ir. Las propuestas de #7, #8 y #10 ya declaraban el frontend
   "fuera de alcance… responsabilidad de una spec de frontend posterior" — están cumplidas en su
   propio contrato, simplemente esa spec posterior nunca se agregó al backlog. Se separan en dos
-  ítems porque son dependencias distintas: #25 es enrutamiento/layout puro (no necesita ningún
-  backend nuevo), #26 es CRUD real contra 4 backends ya construidos y puede alcanzar el tamaño de
-  #17 (varios PRs encadenados), como ya pasó al separar backend académico/usuarios/configuración en
-  #7/#8/#10.
+  frentes porque son dependencias distintas: #25 es enrutamiento/layout puro (no necesita ningún
+  backend nuevo) y ya se implementó y archivó.
+- **#26 original (frontend de administración) se partió en 4 ítems (#26-#29) en 2026-08-20**, uno
+  por dominio de backend (académica, usuarios/apoderados, configuración, importación Excel), tras
+  explorar el alcance real: era 4-6x el tamaño de cualquier change de frontend ya completado (#12
+  candidatos-listas cubrió 1 solo dominio), con un dominio (académica) de 6 entidades
+  jerárquicas. Mismo criterio que ya se usó para separar el backend en #7/#8/#9/#10 en vez de un
+  único "backend de administración" — cada ítem cierra su propio ciclo SDD (explore→propose→
+  spec→design→tasks→apply→verify→archive) en vez de un solo change con varios PRs encadenados.
+  Los 4 dependen de #25 (ya archivado) además de su backend respectivo.
 
 ## Cómo usar este backlog
 
