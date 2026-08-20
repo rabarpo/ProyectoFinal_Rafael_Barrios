@@ -36,20 +36,19 @@ el rol de la sesión — ni más ni menos.
 - GIVEN un usuario con rol `administrador` inicia sesión
 - WHEN el cliente navega a `/`
 - THEN se renderiza `Ruta 'inicio'`, no `proceso-nuevo`
-- AND el menú muestra únicamente `procesos`, `proceso-nuevo` como items reales
+- AND el menú muestra `procesos`, `proceso-nuevo` y `académica` como items reales
 
 #### Scenario: Director aterriza en inicio con su menú completo
 - GIVEN un usuario con rol `director` inicia sesión
 - WHEN el cliente navega a `/`
 - THEN se renderiza `Ruta 'inicio'`
-- AND el menú muestra únicamente `procesos`, `proceso-nuevo` como items reales
+- AND el menú muestra `procesos`, `proceso-nuevo` y `académica` como items reales
 
-#### Scenario: Comité aterriza en inicio con el placeholder de académica
+#### Scenario: Comité aterriza en inicio con académica como item real de solo lectura
 - GIVEN un usuario con rol `comite` inicia sesión
 - WHEN el cliente navega a `/`
 - THEN se renderiza `Ruta 'inicio'`
-- AND el menú muestra `procesos`, `proceso-nuevo` como items reales
-- AND muestra el placeholder "académica" deshabilitado
+- AND el menú muestra `procesos`, `proceso-nuevo` y `académica` como items reales
 - AND no muestra los placeholders de usuarios, configuración ni importación Excel
 
 #### Scenario: Docente aterriza en inicio sin items de gestión
@@ -65,11 +64,12 @@ el rol de la sesión — ni más ni menos.
 - AND el menú no muestra ningún item real ni placeholder de gestión
 
 ### Requirement: Placeholders deshabilitados para lo que #26 no construye
-El sistema MUST mostrar, solo para los roles cuyo mapa lo incluya (`administrador`, `director` para
-las 4 secciones; `comite` únicamente para académica), un placeholder visualmente deshabilitado por
-cada sección futura de #26 (académica, usuarios, configuración, importación Excel) que el rol
-tenga en su mapa. El placeholder MUST NOT tener `href`/`onClick` ni `Ruta`
-asociada — no es un enlace funcional ni una ausencia total del item.
+El sistema MUST mostrar, solo para los roles cuyo mapa lo incluya (`administrador`, `director`
+para las 3 secciones restantes), un placeholder visualmente deshabilitado por cada sección futura
+(usuarios, configuración, importación Excel) que el rol tenga en su mapa. `académica` MUST NOT
+seguir siendo placeholder para ningún rol — pasa a item real navegable para `administrador`,
+`director` y `comite`. El placeholder MUST NOT tener `href`/`onClick` ni `Ruta` asociada — no es
+un enlace funcional ni una ausencia total del item.
 
 #### Scenario: Administrador ve placeholder deshabilitado
 - GIVEN un usuario con rol `administrador` en la pantalla de inicio
@@ -77,10 +77,10 @@ asociada — no es un enlace funcional ni una ausencia total del item.
 - THEN el item aparece deshabilitado con indicación "próximamente"
 - AND interactuar con él no dispara navegación alguna
 
-#### Scenario: Comité solo ve el placeholder de académica
+#### Scenario: Comité ya no ve placeholder de académica
 - GIVEN un usuario con rol `comite` en la pantalla de inicio
 - WHEN revisa el menú completo
-- THEN aparece el placeholder "académica" deshabilitado
+- THEN "académica" aparece como item real navegable, no como placeholder
 - AND no aparece ningún item de usuarios, configuración ni importación Excel
 
 ### Requirement: Navegación a Procesos reutiliza la pantalla existente
@@ -122,3 +122,21 @@ la pantalla de inicio con un menú vacío de items de gestión en ese caso, nunc
 - WHEN el cliente navega a `/`
 - THEN se renderiza `Ruta 'inicio'` sin lanzar error
 - AND el menú no muestra items de gestión, sin romper el resto del shell (header, "Cerrar sesión")
+
+### Requirement: Ítem real de académica para administrador, director y comité
+
+El sistema MUST mostrar el item "Académica" como enlace funcional a `Ruta 'academica'` para las
+sesiones con rol `administrador`, `director` y `comite`, reemplazando el placeholder previo de
+esos tres roles.
+
+#### Scenario: Administrador navega a académica desde el menú
+- GIVEN un usuario con rol `administrador` en la pantalla de inicio
+- WHEN hace click en el item "Académica"
+- THEN el enrutador resuelve `Ruta 'academica'`
+- AND se renderiza `AcademicaPage`
+
+#### Scenario: Comité navega a académica en modo lectura
+- GIVEN un usuario con rol `comite` en la pantalla de inicio
+- WHEN hace click en el item "Académica"
+- THEN el enrutador resuelve `Ruta 'academica'`
+- AND se renderiza `AcademicaPage` sin ningún botón de escritura visible

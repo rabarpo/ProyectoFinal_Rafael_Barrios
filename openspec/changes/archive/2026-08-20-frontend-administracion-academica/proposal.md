@@ -13,7 +13,8 @@ reutilizarán #27/#28/#29.
 
 ### In Scope
 - CRUD completo (crear/editar/eliminar) de `AnioEscolar`, `Nivel`, `Grado`, `Sección`, `Aula`,
-  `Matrícula` — traslado de matrícula como `DELETE`+`POST` (decisión ya tomada en backend).
+  `Matrícula` — traslado de matrícula como `POST`+`DELETE` (crear la nueva antes de eliminar la
+  original, para no dejar al estudiante sin matrícula si el borrado falla; ver design.md D10).
 - Acción `Activar` para `AnioEscolar` (`PATCH :id/activar`) con confirmación explícita.
 - Expansión de `academico-api.ts` a CRUD completo (hoy solo lectura parcial).
 - Una `Ruta` `academica` con navegación interna por pestañas entre las 6 entidades.

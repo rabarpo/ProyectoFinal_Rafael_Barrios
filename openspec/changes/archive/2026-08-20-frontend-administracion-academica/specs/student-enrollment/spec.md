@@ -18,20 +18,34 @@ elimina `Matrícula` reutilizando `TablaGenerica`/`FormularioGenerico`, filtrand
 
 El sistema MUST NOT ofrecer ninguna acción "Editar" sobre una fila de `Matrícula`, dado que el
 backend no expone `PATCH /matriculas/:id`. El sistema MUST implementar el traslado de un
-estudiante a otra `Aula` como una acción de UI compuesta que primero invoca `DELETE` sobre la
-matrícula existente y luego `POST` una nueva con la `Aula` destino, nunca como una edición in
-situ.
+estudiante a otra `Aula` como una acción de UI compuesta que primero invoca `POST` para crear la
+nueva matrícula en la `Aula` destino y solo tras confirmar su éxito invoca `DELETE` sobre la
+matrícula original, nunca como una edición in situ. Este orden (crear antes de eliminar) es
+deliberado: evita dejar al estudiante sin ninguna matrícula activa si el paso de eliminación
+falla, a costa de requerir manejo explícito del caso en que la creación tiene éxito pero la
+eliminación posterior falla (matrícula duplicada temporal, ver escenario siguiente).
 
 #### Scenario: No existe botón "Editar" en el listado de Matrícula
 - GIVEN el listado de `Matrícula` renderizado
 - WHEN se inspeccionan las acciones disponibles por fila
 - THEN no aparece ningún botón "Editar", solo "Eliminar" y "Trasladar"
 
-#### Scenario: Trasladar una Matrícula elimina la original y crea una nueva
+#### Scenario: Trasladar una Matrícula crea la nueva antes de eliminar la original
 - GIVEN una `Matrícula` existente en `Aula` A
 - WHEN el usuario completa la acción de traslado a `Aula` B
-- THEN la UI invoca `DELETE /matriculas/:id` sobre la original seguido de `POST /matriculas` con
-  `aula_id` de B, y nunca un `PATCH`
+- THEN la UI invoca `POST /matriculas` con `aula_id` de B ANTES de invocar `DELETE /matriculas/:id`
+  sobre la original, y nunca un `PATCH`
+
+#### Scenario: Si la creación de la nueva Matrícula falla, no se elimina la original
+- GIVEN el usuario completa la acción de traslado a `Aula` B
+- WHEN `POST /matriculas` responde con un error
+- THEN la UI muestra el error y no invoca `DELETE /matriculas/:id` sobre la matrícula original
+
+#### Scenario: Si la eliminación posterior a una creación exitosa falla, se advierte al usuario
+- GIVEN el traslado creó exitosamente la nueva `Matrícula` en `Aula` B
+- WHEN el posterior `DELETE /matriculas/:id` sobre la original falla
+- THEN la UI muestra una alerta persistente que nombra ambos ids de matrícula e instruye cuál
+  eliminar manualmente
 
 ### Requirement: Defensa en profundidad del rol comité sobre Matrícula
 
