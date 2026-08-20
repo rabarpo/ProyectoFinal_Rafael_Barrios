@@ -29,12 +29,14 @@ afterEach(() => {
 
 describe('NavegacionPrincipal', () => {
   // administracion-academica, PR1 (#26; design.md D12): "académica" deja de ser el ejemplo de
-  // item "próximamente" — pasa a navegable para administrador/director/comité. Se usa "usuarios"
-  // como ejemplo de placeholder deshabilitado, que sigue sin construirse.
+  // item "próximamente" — pasa a navegable para administrador/director/comité.
+  // administracion-usuarios-apoderados, PR1 (#27; design.md D2): "usuarios" deja de ser el
+  // ejemplo de placeholder deshabilitado (pasa a navegable, ver [3.1] abajo) — se usa
+  // "configuracion" como ejemplo de item "próximamente" que sigue sin construirse.
   it('[5.1] un item "próximamente" se renderiza deshabilitado y no navega al hacer click', () => {
     render(proveer('administrador'));
 
-    const boton = screen.getByRole('button', { name: /usuarios/i });
+    const boton = screen.getByRole('button', { name: /configuración/i });
     expect(boton).toBeDisabled();
     expect(boton).toHaveTextContent(/próximamente/i);
 
@@ -49,6 +51,24 @@ describe('NavegacionPrincipal', () => {
     fireEvent.click(screen.getByRole('button', { name: /^académica$/i }));
 
     expect(window.location.pathname).toBe('/academica');
+  });
+
+  // administracion-usuarios-apoderados, PR1 (#27; design.md D2, tasks.md 3.1).
+  it('[3.1] el item "usuarios" es navegable y llama navegar() al hacer click', () => {
+    render(proveer('administrador'));
+
+    fireEvent.click(screen.getByRole('button', { name: /^usuarios$/i }));
+
+    expect(window.location.pathname).toBe('/usuarios');
+  });
+
+  // administracion-usuarios-apoderados, PR1 (#27; design.md D2, tasks.md 3.2).
+  it('[3.2] el item "cuentas bloqueadas" es navegable sólo para comite', () => {
+    render(proveer('comite'));
+
+    fireEvent.click(screen.getByRole('button', { name: /^cuentas bloqueadas$/i }));
+
+    expect(window.location.pathname).toBe('/cuentas-bloqueadas');
   });
 
   it('[5.2] un rol sin items (docente/estudiante) renderiza sin lanzar y sin items', () => {

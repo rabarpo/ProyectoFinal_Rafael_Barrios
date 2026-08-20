@@ -38,6 +38,17 @@ vi.mock('../academico/AcademicaPage', () => ({
   AcademicaPage: () => <p data-testid="academica-page">AcademicaPage</p>,
 }));
 
+// administracion-usuarios-apoderados, PR1 (#27; design.md D1, tasks.md 2.1-2.2). Se doblan
+// `UsuariosPage`/`CuentasBloqueadasPage` (fuera de alcance de este archivo: su gate de rol y
+// fetch se prueban en sus propios specs desde PR2) para mantenerlo enfocado en la resolución
+// de rutas.
+vi.mock('../usuarios/UsuariosPage', () => ({
+  UsuariosPage: () => <p data-testid="usuarios-page">UsuariosPage</p>,
+}));
+vi.mock('../usuarios/CuentasBloqueadasPage', () => ({
+  CuentasBloqueadasPage: () => <p data-testid="cuentas-bloqueadas-page">CuentasBloqueadasPage</p>,
+}));
+
 const acciones = { login: vi.fn(), google: vi.fn(), logout: vi.fn(), alRecibir401: vi.fn() };
 
 function proveer(contexto: ContextoSesion) {
@@ -189,5 +200,37 @@ describe('Enrutador', () => {
 
     expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
     expect(screen.getByTestId('academica-page')).toBeInTheDocument();
+  });
+
+  // administracion-usuarios-apoderados, PR1 (#27; design.md D1, tasks.md 2.1).
+  it('[2.1] con sesión válida, /usuarios resuelve a UsuariosPage', () => {
+    window.history.pushState(null, '', '/usuarios');
+
+    render(
+      proveer({
+        estado: 'autenticado',
+        sesion: { userId: 'u1', rol: 'administrador', creadoEn: 1 },
+        ...acciones,
+      }),
+    );
+
+    expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+    expect(screen.getByTestId('usuarios-page')).toBeInTheDocument();
+  });
+
+  // administracion-usuarios-apoderados, PR1 (#27; design.md D1, tasks.md 2.2).
+  it('[2.2] con sesión válida, /cuentas-bloqueadas resuelve a CuentasBloqueadasPage', () => {
+    window.history.pushState(null, '', '/cuentas-bloqueadas');
+
+    render(
+      proveer({
+        estado: 'autenticado',
+        sesion: { userId: 'u1', rol: 'comite', creadoEn: 1 },
+        ...acciones,
+      }),
+    );
+
+    expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+    expect(screen.getByTestId('cuentas-bloqueadas-page')).toBeInTheDocument();
   });
 });

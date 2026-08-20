@@ -31,7 +31,18 @@ const ACADEMICA: ItemMenu = {
   etiqueta: 'Académica',
   ruta: { nombre: 'academica' },
 };
-const USUARIOS: ItemMenu = { clase: 'proximamente', id: 'usuarios', etiqueta: 'Usuarios' };
+const USUARIOS: ItemMenu = {
+  clase: 'navegable',
+  id: 'usuarios',
+  etiqueta: 'Usuarios',
+  ruta: { nombre: 'usuarios' },
+};
+const CUENTAS_BLOQUEADAS: ItemMenu = {
+  clase: 'navegable',
+  id: 'cuentas-bloqueadas',
+  etiqueta: 'Cuentas bloqueadas',
+  ruta: { nombre: 'cuentas-bloqueadas' },
+};
 const CONFIGURACION: ItemMenu = { clase: 'proximamente', id: 'configuracion', etiqueta: 'Configuración' };
 const IMPORTACION_EXCEL: ItemMenu = {
   clase: 'proximamente',
@@ -53,11 +64,18 @@ const IMPORTACION_EXCEL: ItemMenu = {
  *
  * `académica` (administracion-academica, PR1, #26; design.md D12) pasa de placeholder a item
  * navegable real con `Ruta { nombre: 'academica' }` para `administrador`/`director`/`comite`.
+ *
+ * `usuarios` (administracion-usuarios-apoderados, PR1, #27; design.md D2) pasa de placeholder
+ * a item navegable con `Ruta { nombre: 'usuarios' }`, sólo para `administrador`/`director`
+ * (`UsersController` es `@Roles('administrador','director')`). `cuentas-bloqueadas` es un item
+ * nuevo, exclusivo de `comite` (`AuthController.listarBloqueados`/`desbloquear` es
+ * `@Roles('comite')`) — un item visible que garantiza `403` al primer click es peor que ningún
+ * item, así que ninguno de los dos se comparte entre roles disjuntos.
  */
 export const MENU_POR_ROL: Record<RolSesion, readonly ItemMenu[]> = {
   administrador: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL],
   director: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL],
-  comite: [PROCESOS, PROCESO_NUEVO, ACADEMICA],
+  comite: [PROCESOS, PROCESO_NUEVO, ACADEMICA, CUENTAS_BLOQUEADAS],
   docente: [],
   estudiante: [],
 };

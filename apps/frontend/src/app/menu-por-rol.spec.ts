@@ -11,7 +11,7 @@ describe('MENU_POR_ROL', () => {
   const idsPorRol: Record<RolSesion, string[]> = {
     administrador: ['procesos', 'proceso-nuevo', 'academica', 'usuarios', 'configuracion', 'importacion-excel'],
     director: ['procesos', 'proceso-nuevo', 'academica', 'usuarios', 'configuracion', 'importacion-excel'],
-    comite: ['procesos', 'proceso-nuevo', 'academica'],
+    comite: ['procesos', 'proceso-nuevo', 'academica', 'cuentas-bloqueadas'],
     docente: [],
     estudiante: [],
   };
@@ -46,6 +46,37 @@ describe('MENU_POR_ROL', () => {
         }
       }
     }
+  });
+
+  // administracion-usuarios-apoderados, PR1 (#27; design.md D2, tasks.md 3.1). `usuarios` deja
+  // de ser placeholder para administrador/director: pasa a item navegable con `Ruta 'usuarios'`.
+  it('[3.1] usuarios es navegable para administrador y director', () => {
+    for (const rol of ['administrador', 'director'] as RolSesion[]) {
+      const item = MENU_POR_ROL[rol].find((i) => i.id === 'usuarios');
+      expect(item).toEqual({ clase: 'navegable', id: 'usuarios', etiqueta: 'Usuarios', ruta: { nombre: 'usuarios' } });
+    }
+  });
+
+  // administracion-usuarios-apoderados, PR1 (#27; design.md D2, tasks.md 3.2). Defensa en
+  // profundidad del lado del cliente: sólo `comite` alcanza `cuentas-bloqueadas`.
+  it('[3.2] cuentas-bloqueadas es navegable sólo para comite', () => {
+    const item = MENU_POR_ROL.comite.find((i) => i.id === 'cuentas-bloqueadas');
+    expect(item).toEqual({
+      clase: 'navegable',
+      id: 'cuentas-bloqueadas',
+      etiqueta: 'Cuentas bloqueadas',
+      ruta: { nombre: 'cuentas-bloqueadas' },
+    });
+
+    for (const rol of ['administrador', 'director', 'docente', 'estudiante'] as RolSesion[]) {
+      expect(MENU_POR_ROL[rol].find((i) => i.id === 'cuentas-bloqueadas')).toBeUndefined();
+    }
+  });
+
+  // administracion-usuarios-apoderados, PR1 (#27; spec: administracion-usuarios-apoderados,
+  // "Comité no ve el item de menú usuarios"; tasks.md 3.3).
+  it('[3.3] comite no tiene item usuarios', () => {
+    expect(MENU_POR_ROL.comite.find((i) => i.id === 'usuarios')).toBeUndefined();
   });
 
   it('[4.3] toda ruta de item navegable hace round-trip con parsearRuta/rutaAPath', () => {

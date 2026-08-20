@@ -9,6 +9,8 @@ import { VotacionPage } from '../votos/VotacionPage';
 import { ComprobantePage } from '../votos/ComprobantePage';
 import { ResultadosPage } from '../resultados/ResultadosPage';
 import { AcademicaPage } from '../academico/AcademicaPage';
+import { UsuariosPage } from '../usuarios/UsuariosPage';
+import { CuentasBloqueadasPage } from '../usuarios/CuentasBloqueadasPage';
 
 /**
  * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
@@ -21,7 +23,10 @@ import { AcademicaPage } from '../academico/AcademicaPage';
  * `VotacionPage` real desde `#14`/PR5 (design.md D14, tasks.md 18.2); `comprobante` monta
  * `ComprobantePage` real desde `#15`/PR4 (design.md D12, tasks.md 14.3); `resultados` monta
  * `ResultadosPage` real desde `#16`/PR3 (design.md D11, tasks.md 13.6); `academica` monta
- * `AcademicaPage` real desde `#26`/PR1 (design.md D1, tasks.md 1.3). `no-encontrada` se renderiza
+ * `AcademicaPage` real desde `#26`/PR1 (design.md D1, tasks.md 1.3); `usuarios` monta
+ * `UsuariosPage` y `cuentas-bloqueadas` monta `CuentasBloqueadasPage`, ambos stubs desde
+ * `#27`/PR1 (design.md D1, tasks.md 2.3) reemplazados por su implementación real en PR2.
+ * `no-encontrada` se renderiza
  * dentro del shell, nunca lanza ni deja `undefined`. menu-navegacion-post-login
  * (#25; design.md D1): `/` ya NO monta `ProcesoWizardPage` — resuelve a la
  * variante `inicio` y monta `InicioPage`; el asistente de creación de proceso
@@ -57,6 +62,10 @@ export function Enrutador() {
       return <ResultadosPage procesoId={ruta.procesoId} />;
     case 'academica':
       return <AcademicaPage />;
+    case 'usuarios':
+      return <UsuariosPage />;
+    case 'cuentas-bloqueadas':
+      return <CuentasBloqueadasPage />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }

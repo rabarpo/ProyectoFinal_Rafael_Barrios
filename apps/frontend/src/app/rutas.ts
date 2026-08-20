@@ -6,7 +6,11 @@
  * `/../../etc/passwd`, ruta inexistente). `rutaAPath` es la inversa exacta
  * para las variantes navegables. `academica` (administracion-academica, PR1;
  * design.md D1) es una ruta plana sin sub-rutas: la pestaña activa vive en
- * estado de componente, nunca en la URL.
+ * estado de componente, nunca en la URL. `usuarios` y `cuentas-bloqueadas`
+ * (administracion-usuarios-apoderados, PR1, #27; design.md D1) son también planas y sin
+ * parámetros: el usuario abierto vive en estado de componente (`UsuariosPage`), nunca en la
+ * URL, y `cuentas-bloqueadas` cuelga de la RAÍZ (no anidada bajo `usuarios`) porque sus roles
+ * (`comite` vs. `administrador`/`director`) son disjuntos.
  */
 export type Ruta =
   | { nombre: 'inicio' }
@@ -20,6 +24,8 @@ export type Ruta =
   | { nombre: 'comprobante'; votoId: string }
   | { nombre: 'resultados'; procesoId: string }
   | { nombre: 'academica' }
+  | { nombre: 'usuarios' }
+  | { nombre: 'cuentas-bloqueadas' }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -101,6 +107,18 @@ export function parsearRuta(pathname: string): Ruta {
     return { nombre: 'academica' };
   }
 
+  // administracion-usuarios-apoderados, PR1 (#27; design.md D1, tasks.md 1.1-1.2): dos rutas
+  // planas sin parámetros, sin `usuarioId` embebido — la selección vive en estado de componente
+  // (`UsuariosPage`), nunca en la URL. `cuentas-bloqueadas` cuelga de la RAÍZ, no anidada bajo
+  // `usuarios`, porque sus roles (`comite` vs. `administrador`/`director`) son disjuntos.
+  if (partes.length === 1 && partes[0] === 'usuarios') {
+    return { nombre: 'usuarios' };
+  }
+
+  if (partes.length === 1 && partes[0] === 'cuentas-bloqueadas') {
+    return { nombre: 'cuentas-bloqueadas' };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -128,6 +146,10 @@ export function rutaAPath(ruta: Ruta): string {
       return `/resultados/${ruta.procesoId}`;
     case 'academica':
       return '/academica';
+    case 'usuarios':
+      return '/usuarios';
+    case 'cuentas-bloqueadas':
+      return '/cuentas-bloqueadas';
     case 'no-encontrada':
       return ruta.pathname;
   }

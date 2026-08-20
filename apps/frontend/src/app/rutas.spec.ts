@@ -19,6 +19,8 @@ describe('rutas', () => {
       { nombre: 'comprobante', votoId: 'v1' },
       { nombre: 'resultados', procesoId: 'p1' },
       { nombre: 'academica' },
+      { nombre: 'usuarios' },
+      { nombre: 'cuentas-bloqueadas' },
     ];
 
     for (const ruta of casos) {
@@ -91,6 +93,38 @@ describe('rutas', () => {
     expect(parsearRuta('/procesos/nuevo/extra')).toEqual({
       nombre: 'no-encontrada',
       pathname: '/procesos/nuevo/extra',
+    });
+  });
+
+  // [design.md D1; tasks.md 1.1; spec: minimal-frontend-router] Variante `Ruta 'usuarios'`
+  // plana y sin `usuarioId` embebido: el usuario abierto vive en estado de componente
+  // (`UsuariosPage`), nunca en la URL. Cualquier `/usuarios/...` cae en 'no-encontrada'.
+  it("[1.1] '/usuarios' resuelve a 'usuarios' y su rutaAPath es '/usuarios'", () => {
+    expect(parsearRuta('/usuarios')).toEqual({ nombre: 'usuarios' });
+    expect(rutaAPath({ nombre: 'usuarios' })).toBe('/usuarios');
+  });
+
+  it("[1.1] '/usuarios/x' resuelve a 'no-encontrada'", () => {
+    expect(parsearRuta('/usuarios/x')).toEqual({ nombre: 'no-encontrada', pathname: '/usuarios/x' });
+  });
+
+  it("[1.1] path traversal bajo '/usuarios' resuelve a 'no-encontrada'", () => {
+    expect(() => parsearRuta('/usuarios/../../etc/passwd')).not.toThrow();
+    expect(parsearRuta('/usuarios/../../etc/passwd').nombre).toBe('no-encontrada');
+  });
+
+  // [design.md D1; tasks.md 1.2; spec: bloqueo-desbloqueo-cuentas] Variante
+  // `Ruta 'cuentas-bloqueadas'` plana e independiente, colgando de la RAÍZ y no anidada bajo
+  // `usuarios`: el rol `comite` que la alcanza no puede ni siquiera leer `/usuarios`.
+  it("[1.2] '/cuentas-bloqueadas' resuelve a 'cuentas-bloqueadas' y su rutaAPath es '/cuentas-bloqueadas'", () => {
+    expect(parsearRuta('/cuentas-bloqueadas')).toEqual({ nombre: 'cuentas-bloqueadas' });
+    expect(rutaAPath({ nombre: 'cuentas-bloqueadas' })).toBe('/cuentas-bloqueadas');
+  });
+
+  it("[1.2] '/cuentas-bloqueadas/x' resuelve a 'no-encontrada'", () => {
+    expect(parsearRuta('/cuentas-bloqueadas/x')).toEqual({
+      nombre: 'no-encontrada',
+      pathname: '/cuentas-bloqueadas/x',
     });
   });
 });
