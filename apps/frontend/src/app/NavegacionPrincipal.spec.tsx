@@ -28,16 +28,27 @@ afterEach(() => {
 });
 
 describe('NavegacionPrincipal', () => {
+  // administracion-academica, PR1 (#26; design.md D12): "académica" deja de ser el ejemplo de
+  // item "próximamente" — pasa a navegable para administrador/director/comité. Se usa "usuarios"
+  // como ejemplo de placeholder deshabilitado, que sigue sin construirse.
   it('[5.1] un item "próximamente" se renderiza deshabilitado y no navega al hacer click', () => {
     render(proveer('administrador'));
 
-    const boton = screen.getByRole('button', { name: /académica/i });
+    const boton = screen.getByRole('button', { name: /usuarios/i });
     expect(boton).toBeDisabled();
     expect(boton).toHaveTextContent(/próximamente/i);
 
     fireEvent.click(boton);
 
     expect(window.location.pathname).toBe('/');
+  });
+
+  it('[2.1] el item "académica" es navegable y llama navegar() al hacer click', () => {
+    render(proveer('administrador'));
+
+    fireEvent.click(screen.getByRole('button', { name: /^académica$/i }));
+
+    expect(window.location.pathname).toBe('/academica');
   });
 
   it('[5.2] un rol sin items (docente/estudiante) renderiza sin lanzar y sin items', () => {

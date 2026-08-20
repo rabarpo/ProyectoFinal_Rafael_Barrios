@@ -31,6 +31,13 @@ vi.mock('../procesos/ProcesoWizardPage', () => ({
   ProcesoWizardPage: () => <p data-testid="proceso-wizard-page">ProcesoWizardPage</p>,
 }));
 
+// administracion-academica, PR1 (#26; design.md D1, tasks.md 1.3). Se dobla `AcademicaPage`
+// (consume `useSesion()`/`academico-api` fuera de alcance de este archivo) para mantenerlo
+// enfocado en la resolución de rutas.
+vi.mock('../academico/AcademicaPage', () => ({
+  AcademicaPage: () => <p data-testid="academica-page">AcademicaPage</p>,
+}));
+
 const acciones = { login: vi.fn(), google: vi.fn(), logout: vi.fn(), alRecibir401: vi.fn() };
 
 function proveer(contexto: ContextoSesion) {
@@ -166,5 +173,21 @@ describe('Enrutador', () => {
 
     expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
     expect(screen.getByTestId('resultados-page')).toBeInTheDocument();
+  });
+
+  // administracion-academica, PR1 (#26; design.md D1, tasks.md 1.3).
+  it('[1.3] con sesión válida, /academica resuelve a AcademicaPage', () => {
+    window.history.pushState(null, '', '/academica');
+
+    render(
+      proveer({
+        estado: 'autenticado',
+        sesion: { userId: 'u1', rol: 'administrador', creadoEn: 1 },
+        ...acciones,
+      }),
+    );
+
+    expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+    expect(screen.getByTestId('academica-page')).toBeInTheDocument();
   });
 });

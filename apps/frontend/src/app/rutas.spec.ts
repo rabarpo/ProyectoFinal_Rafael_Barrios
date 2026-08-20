@@ -18,12 +18,29 @@ describe('rutas', () => {
       { nombre: 'votacion', derechoVotoId: 'dv1' },
       { nombre: 'comprobante', votoId: 'v1' },
       { nombre: 'resultados', procesoId: 'p1' },
+      { nombre: 'academica' },
     ];
 
     for (const ruta of casos) {
       const path = rutaAPath(ruta);
       expect(parsearRuta(path)).toEqual(ruta);
     }
+  });
+
+  // [design.md D1; tasks.md 1.1; spec: minimal-frontend-router] Variante `Ruta 'academica'`
+  // sin rutas anidadas: `/academica` es la única forma navegable, cualquier segmento adicional
+  // (`/academica/niveles`) cae en 'no-encontrada' — la pestaña activa vive en estado de
+  // componente, nunca en la URL.
+  it("[1.1] '/academica' resuelve a 'academica' y su rutaAPath es '/academica'", () => {
+    expect(parsearRuta('/academica')).toEqual({ nombre: 'academica' });
+    expect(rutaAPath({ nombre: 'academica' })).toBe('/academica');
+  });
+
+  it("[1.1] '/academica/niveles' resuelve a 'no-encontrada'", () => {
+    expect(parsearRuta('/academica/niveles')).toEqual({
+      nombre: 'no-encontrada',
+      pathname: '/academica/niveles',
+    });
   });
 
   // [design.md D12; tasks.md 13.1; threat: Enrutamiento (cliente)] `/comprobante` sin `votoId`

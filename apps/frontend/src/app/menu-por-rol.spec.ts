@@ -24,6 +24,20 @@ describe('MENU_POR_ROL', () => {
     expect(idsReales).toHaveLength(idsEsperados.length);
   });
 
+  // administracion-academica, PR1 (#26; design.md D12, tasks.md 2.1). `académica` deja de ser
+  // placeholder para administrador/director/comité: pasa a item navegable con `Ruta 'academica'`.
+  it('[2.1] académica es navegable para administrador, director y comité', () => {
+    for (const rol of ['administrador', 'director', 'comite'] as RolSesion[]) {
+      const item = MENU_POR_ROL[rol].find((i) => i.id === 'academica');
+      expect(item).toEqual({ clase: 'navegable', id: 'academica', etiqueta: 'Académica', ruta: { nombre: 'academica' } });
+    }
+  });
+
+  it('[2.1] docente y estudiante no tienen item académica', () => {
+    expect(MENU_POR_ROL.docente).toEqual([]);
+    expect(MENU_POR_ROL.estudiante).toEqual([]);
+  });
+
   it('[4.2] ningún item "proximamente" expone una ruta', () => {
     for (const items of Object.values(MENU_POR_ROL)) {
       for (const item of items) {

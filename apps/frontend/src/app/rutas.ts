@@ -4,7 +4,9 @@
  * `pathname` no reconocido, con segmentos `.`/`..`, o de forma inesperada
  * cae en la variante `no-encontrada` (threat matrix "Enrutamiento (cliente)":
  * `/../../etc/passwd`, ruta inexistente). `rutaAPath` es la inversa exacta
- * para las variantes navegables.
+ * para las variantes navegables. `academica` (administracion-academica, PR1;
+ * design.md D1) es una ruta plana sin sub-rutas: la pestaña activa vive en
+ * estado de componente, nunca en la URL.
  */
 export type Ruta =
   | { nombre: 'inicio' }
@@ -17,6 +19,7 @@ export type Ruta =
   | { nombre: 'votacion'; derechoVotoId: string }
   | { nombre: 'comprobante'; votoId: string }
   | { nombre: 'resultados'; procesoId: string }
+  | { nombre: 'academica' }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -91,6 +94,13 @@ export function parsearRuta(pathname: string): Ruta {
     return { nombre: 'resultados', procesoId: partes[1] };
   }
 
+  // administracion-academica, PR1 (design.md D1, tasks.md 1.1): ruta plana `/academica`, sin
+  // rutas anidadas — la pestaña activa vive en estado de componente (`AcademicaPage`), nunca en
+  // la URL. Cualquier `/academica/...` cae en 'no-encontrada'.
+  if (partes.length === 1 && partes[0] === 'academica') {
+    return { nombre: 'academica' };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -116,6 +126,8 @@ export function rutaAPath(ruta: Ruta): string {
       return `/comprobante/${ruta.votoId}`;
     case 'resultados':
       return `/resultados/${ruta.procesoId}`;
+    case 'academica':
+      return '/academica';
     case 'no-encontrada':
       return ruta.pathname;
   }

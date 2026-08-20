@@ -25,7 +25,12 @@ const PROCESO_NUEVO: ItemMenu = {
   etiqueta: 'Nuevo proceso',
   ruta: { nombre: 'proceso-nuevo' },
 };
-const ACADEMICA: ItemMenu = { clase: 'proximamente', id: 'academica', etiqueta: 'Académica' };
+const ACADEMICA: ItemMenu = {
+  clase: 'navegable',
+  id: 'academica',
+  etiqueta: 'Académica',
+  ruta: { nombre: 'academica' },
+};
 const USUARIOS: ItemMenu = { clase: 'proximamente', id: 'usuarios', etiqueta: 'Usuarios' };
 const CONFIGURACION: ItemMenu = { clase: 'proximamente', id: 'configuracion', etiqueta: 'Configuración' };
 const IMPORTACION_EXCEL: ItemMenu = {
@@ -45,6 +50,9 @@ const IMPORTACION_EXCEL: ItemMenu = {
  * (se llega navegando desde un proceso puntual, ver "Navegación a Procesos reutiliza la
  * pantalla existente" en spec.md) — un item de menú que apuntara a la misma `Ruta 'procesos'`
  * que "Procesos" sería un destino duplicado sin diferencia visible.
+ *
+ * `académica` (administracion-academica, PR1, #26; design.md D12) pasa de placeholder a item
+ * navegable real con `Ruta { nombre: 'academica' }` para `administrador`/`director`/`comite`.
  */
 export const MENU_POR_ROL: Record<RolSesion, readonly ItemMenu[]> = {
   administrador: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL],

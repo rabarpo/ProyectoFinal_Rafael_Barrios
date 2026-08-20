@@ -8,6 +8,7 @@ import { GestionCandidatosPage } from '../candidatos/GestionCandidatosPage';
 import { VotacionPage } from '../votos/VotacionPage';
 import { ComprobantePage } from '../votos/ComprobantePage';
 import { ResultadosPage } from '../resultados/ResultadosPage';
+import { AcademicaPage } from '../academico/AcademicaPage';
 
 /**
  * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
@@ -19,8 +20,8 @@ import { ResultadosPage } from '../resultados/ResultadosPage';
  * desde `#13`/PR5 (design.md D13, tasks.md 18.2); `votacion` monta
  * `VotacionPage` real desde `#14`/PR5 (design.md D14, tasks.md 18.2); `comprobante` monta
  * `ComprobantePage` real desde `#15`/PR4 (design.md D12, tasks.md 14.3); `resultados` monta
- * `ResultadosPage` real desde `#16`/PR3 (design.md D11, tasks.md 13.6) — sin
- * stubs restantes en el alcance de este change. `no-encontrada` se renderiza
+ * `ResultadosPage` real desde `#16`/PR3 (design.md D11, tasks.md 13.6); `academica` monta
+ * `AcademicaPage` real desde `#26`/PR1 (design.md D1, tasks.md 1.3). `no-encontrada` se renderiza
  * dentro del shell, nunca lanza ni deja `undefined`. menu-navegacion-post-login
  * (#25; design.md D1): `/` ya NO monta `ProcesoWizardPage` — resuelve a la
  * variante `inicio` y monta `InicioPage`; el asistente de creación de proceso
@@ -54,6 +55,8 @@ export function Enrutador() {
       return <ComprobantePage votoId={ruta.votoId} />;
     case 'resultados':
       return <ResultadosPage procesoId={ruta.procesoId} />;
+    case 'academica':
+      return <AcademicaPage />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }
