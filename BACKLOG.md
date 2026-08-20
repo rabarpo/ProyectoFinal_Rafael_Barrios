@@ -30,6 +30,8 @@ técnica**, no por prioridad de negocio.
 | 22 | Contingencia de jornada | Extensión de la hora de cierre como acción auditada, anulación de códigos de comprobante posteriores al respaldo, revoto de los votantes afectados y acta de incidencias (ADR-0013) | #17 | — (el procedimiento del ADR-0013 es la fuente; alimentará las bases futuras) |
 | 23 | Prueba de carga y ensayo de restauración | Escenario k6/artillery con 1,000 votantes concurrentes (ráfaga de `POST /votos` + polling del panel) y ensayo completo de restauración ejecutando el procedimiento de contingencia, no solo la parte técnica (ADR-0007/0013) | #22 | — |
 | 24 | Aplicación del sistema de diseño visual | Traducir `DESIGN-SYSTEM.md` (paleta, tipografía Hanken Grotesk, espaciado, sombras, componentes) a variables CSS/config de Tailwind y aplicarlo a los componentes ya existentes del login (#11 PR1-PR3, hoy sin estilo) y a los que se vayan agregando (asistente de #11, candidatos de #12, boleta de #14, etc.) | #11 | `DESIGN-SYSTEM.md` (raíz del repo) — documento de estilo, no requiere spec de negocio |
+| 25 | Menú principal y navegación post-login | Pantalla de inicio por rol (reemplaza la ruta raíz `/` hoy hardcodeada a `proceso-nuevo` en `apps/frontend/src/app/rutas.ts`), con accesos a lo que ya tiene frontend (procesos, candidatos, votación/resultados según rol) y a lo que agregue #26; sin lógica de negocio propia, sólo enrutamiento y layout | #11, #24 | — |
+| 26 | Frontend de administración académica, usuarios y configuración | UI de CRUD para los backends ya existentes y sin interfaz: administración académica (#8: año escolar, nivel, grado, sección, aula, turno, matrícula), usuarios y apoderados (#7), importación de Excel con reporte fila a fila (#9), y configuración general (#10) | #7, #8, #9, #10, #25 | — |
 
 ## Ausencia de reglamento previo
 
@@ -66,6 +68,15 @@ Consecuencias para las specs de #11, #13, #17 y #22:
 - **#23 es un ítem de validación**, no de funcionalidad: cierra los dos riesgos técnicos abiertos
   del TDD (prueba de carga y respaldo no ensayado) y debe completarse antes de la primera
   jornada real.
+- **#25/#26 nacen de un vacío detectado en 2026-08-19**, no de una regresión: al probar el login
+  como administrador, la app cae directo al asistente de creación de proceso porque no existe
+  ninguna otra pantalla a la que ir. Las propuestas de #7, #8 y #10 ya declaraban el frontend
+  "fuera de alcance… responsabilidad de una spec de frontend posterior" — están cumplidas en su
+  propio contrato, simplemente esa spec posterior nunca se agregó al backlog. Se separan en dos
+  ítems porque son dependencias distintas: #25 es enrutamiento/layout puro (no necesita ningún
+  backend nuevo), #26 es CRUD real contra 4 backends ya construidos y puede alcanzar el tamaño de
+  #17 (varios PRs encadenados), como ya pasó al separar backend académico/usuarios/configuración en
+  #7/#8/#10.
 
 ## Cómo usar este backlog
 
