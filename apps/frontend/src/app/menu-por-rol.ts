@@ -43,7 +43,12 @@ const CUENTAS_BLOQUEADAS: ItemMenu = {
   etiqueta: 'Cuentas bloqueadas',
   ruta: { nombre: 'cuentas-bloqueadas' },
 };
-const CONFIGURACION: ItemMenu = { clase: 'proximamente', id: 'configuracion', etiqueta: 'Configuración' };
+const CONFIGURACION: ItemMenu = {
+  clase: 'navegable',
+  id: 'configuracion',
+  etiqueta: 'Configuración',
+  ruta: { nombre: 'configuracion' },
+};
 const IMPORTACION_EXCEL: ItemMenu = {
   clase: 'proximamente',
   id: 'importacion-excel',
@@ -71,6 +76,11 @@ const IMPORTACION_EXCEL: ItemMenu = {
  * nuevo, exclusivo de `comite` (`AuthController.listarBloqueados`/`desbloquear` es
  * `@Roles('comite')`) — un item visible que garantiza `403` al primer click es peor que ningún
  * item, así que ninguno de los dos se comparte entre roles disjuntos.
+ *
+ * `configuracion` (frontend-configuracion-general, PR1, #28; design.md D2) pasa de placeholder a
+ * item navegable con `Ruta { nombre: 'configuracion' }`, sólo para `administrador`/`director`
+ * (`ConfiguracionController` es `@Roles('administrador','director')` a nivel de clase) — cero
+ * cambios en las filas de `MENU_POR_ROL`, ya figuraba sólo en esos dos roles.
  */
 export const MENU_POR_ROL: Record<RolSesion, readonly ItemMenu[]> = {
   administrador: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL],

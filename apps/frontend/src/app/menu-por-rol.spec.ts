@@ -16,6 +16,27 @@ describe('MENU_POR_ROL', () => {
     estudiante: [],
   };
 
+  // frontend-configuracion-general, PR1 (#28; design.md D2, tasks.md 3.1-3.2). `configuracion`
+  // deja de ser placeholder para administrador/director; comite/docente/estudiante no lo tienen
+  // (`ConfiguracionController` es `@Roles('administrador','director')` a nivel de clase).
+  it('[3.1] configuracion es navegable para administrador y director', () => {
+    for (const rol of ['administrador', 'director'] as RolSesion[]) {
+      const item = MENU_POR_ROL[rol].find((i) => i.id === 'configuracion');
+      expect(item).toEqual({
+        clase: 'navegable',
+        id: 'configuracion',
+        etiqueta: 'Configuración',
+        ruta: { nombre: 'configuracion' },
+      });
+    }
+  });
+
+  it('[3.2] comite, docente y estudiante no tienen item configuracion', () => {
+    for (const rol of ['comite', 'docente', 'estudiante'] as RolSesion[]) {
+      expect(MENU_POR_ROL[rol].find((i) => i.id === 'configuracion')).toBeUndefined();
+    }
+  });
+
   it.each(Object.keys(idsPorRol) as RolSesion[])('[4.1] el rol %s expone exactamente su conjunto de ids', (rol) => {
     const idsEsperados = idsPorRol[rol];
     const idsReales = MENU_POR_ROL[rol].map((item) => item.id);

@@ -10,7 +10,10 @@
  * (administracion-usuarios-apoderados, PR1, #27; design.md D1) son también planas y sin
  * parámetros: el usuario abierto vive en estado de componente (`UsuariosPage`), nunca en la
  * URL, y `cuentas-bloqueadas` cuelga de la RAÍZ (no anidada bajo `usuarios`) porque sus roles
- * (`comite` vs. `administrador`/`director`) son disjuntos.
+ * (`comite` vs. `administrador`/`director`) son disjuntos. `configuracion`
+ * (frontend-configuracion-general, PR1, #28; design.md D1) es también plana y singleton: el
+ * recurso es una sola fila (`clave='institucional'`), así que `/configuracion/...` cae siempre en
+ * 'no-encontrada'.
  */
 export type Ruta =
   | { nombre: 'inicio' }
@@ -26,6 +29,7 @@ export type Ruta =
   | { nombre: 'academica' }
   | { nombre: 'usuarios' }
   | { nombre: 'cuentas-bloqueadas' }
+  | { nombre: 'configuracion' }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -119,6 +123,13 @@ export function parsearRuta(pathname: string): Ruta {
     return { nombre: 'cuentas-bloqueadas' };
   }
 
+  // frontend-configuracion-general, PR1 (#28; design.md D1, tasks.md 1.3): ruta plana singleton,
+  // sin sub-rutas ni estado de navegación interna por pestañas — `/configuracion/logo` y
+  // `/configuracion/comite` NO son variantes separadas, caen en 'no-encontrada'.
+  if (partes.length === 1 && partes[0] === 'configuracion') {
+    return { nombre: 'configuracion' };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -150,6 +161,8 @@ export function rutaAPath(ruta: Ruta): string {
       return '/usuarios';
     case 'cuentas-bloqueadas':
       return '/cuentas-bloqueadas';
+    case 'configuracion':
+      return '/configuracion';
     case 'no-encontrada':
       return ruta.pathname;
   }

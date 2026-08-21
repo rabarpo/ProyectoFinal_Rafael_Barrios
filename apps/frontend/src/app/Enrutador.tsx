@@ -11,6 +11,7 @@ import { ResultadosPage } from '../resultados/ResultadosPage';
 import { AcademicaPage } from '../academico/AcademicaPage';
 import { UsuariosPage } from '../usuarios/UsuariosPage';
 import { CuentasBloqueadasPage } from '../usuarios/CuentasBloqueadasPage';
+import { ConfiguracionPage } from '../configuracion/ConfiguracionPage';
 
 /**
  * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
@@ -25,7 +26,8 @@ import { CuentasBloqueadasPage } from '../usuarios/CuentasBloqueadasPage';
  * `ResultadosPage` real desde `#16`/PR3 (design.md D11, tasks.md 13.6); `academica` monta
  * `AcademicaPage` real desde `#26`/PR1 (design.md D1, tasks.md 1.3); `usuarios` monta
  * `UsuariosPage` y `cuentas-bloqueadas` monta `CuentasBloqueadasPage`, ambos stubs desde
- * `#27`/PR1 (design.md D1, tasks.md 2.3) reemplazados por su implementación real en PR2.
+ * `#27`/PR1 (design.md D1, tasks.md 2.3) reemplazados por su implementación real en PR2;
+ * `configuracion` monta `ConfiguracionPage` desde `#28`/PR1 (design.md D1, tasks.md 2.2).
  * `no-encontrada` se renderiza
  * dentro del shell, nunca lanza ni deja `undefined`. menu-navegacion-post-login
  * (#25; design.md D1): `/` ya NO monta `ProcesoWizardPage` — resuelve a la
@@ -66,6 +68,8 @@ export function Enrutador() {
       return <UsuariosPage />;
     case 'cuentas-bloqueadas':
       return <CuentasBloqueadasPage />;
+    case 'configuracion':
+      return <ConfiguracionPage />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }

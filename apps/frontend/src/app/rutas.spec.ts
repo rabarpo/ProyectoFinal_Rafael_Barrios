@@ -21,6 +21,7 @@ describe('rutas', () => {
       { nombre: 'academica' },
       { nombre: 'usuarios' },
       { nombre: 'cuentas-bloqueadas' },
+      { nombre: 'configuracion' },
     ];
 
     for (const ruta of casos) {
@@ -127,4 +128,20 @@ describe('rutas', () => {
       pathname: '/cuentas-bloqueadas/x',
     });
   });
+
+  // [design.md D1; tasks.md 1.1; spec: minimal-frontend-router] Variante `Ruta 'configuracion'`
+  // plana sin sub-rutas: es un singleton sin jerarquía de entidades, ninguna sub-ruta ni estado
+  // de navegación interna por pestañas vive en la URL.
+  it("[1.1] '/configuracion' resuelve a 'configuracion' y su rutaAPath es '/configuracion'", () => {
+    expect(parsearRuta('/configuracion')).toEqual({ nombre: 'configuracion' });
+    expect(rutaAPath({ nombre: 'configuracion' })).toBe('/configuracion');
+  });
+
+  it.each(['/configuracion/logo', '/configuracion/comite', '/configuracion/x', '/configuracion/../../etc/passwd'])(
+    "[1.2] '%s' resuelve a 'no-encontrada'",
+    (pathname) => {
+      expect(() => parsearRuta(pathname)).not.toThrow();
+      expect(parsearRuta(pathname).nombre).toBe('no-encontrada');
+    },
+  );
 });

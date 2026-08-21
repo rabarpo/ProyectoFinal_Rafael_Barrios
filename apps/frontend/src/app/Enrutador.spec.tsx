@@ -49,6 +49,13 @@ vi.mock('../usuarios/CuentasBloqueadasPage', () => ({
   CuentasBloqueadasPage: () => <p data-testid="cuentas-bloqueadas-page">CuentasBloqueadasPage</p>,
 }));
 
+// frontend-configuracion-general, PR1 (#28; design.md D1, tasks.md 2.1). Se dobla
+// `ConfiguracionPage` (su gate de rol y fetch se prueban en su propio spec) para mantenerlo
+// enfocado en la resolución de rutas.
+vi.mock('../configuracion/ConfiguracionPage', () => ({
+  ConfiguracionPage: () => <p data-testid="configuracion-page">ConfiguracionPage</p>,
+}));
+
 const acciones = { login: vi.fn(), google: vi.fn(), logout: vi.fn(), alRecibir401: vi.fn() };
 
 function proveer(contexto: ContextoSesion) {
@@ -232,5 +239,21 @@ describe('Enrutador', () => {
 
     expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
     expect(screen.getByTestId('cuentas-bloqueadas-page')).toBeInTheDocument();
+  });
+
+  // frontend-configuracion-general, PR1 (#28; design.md D1, tasks.md 2.1).
+  it('[2.1] con sesión válida, /configuracion resuelve a ConfiguracionPage', () => {
+    window.history.pushState(null, '', '/configuracion');
+
+    render(
+      proveer({
+        estado: 'autenticado',
+        sesion: { userId: 'u1', rol: 'administrador', creadoEn: 1 },
+        ...acciones,
+      }),
+    );
+
+    expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+    expect(screen.getByTestId('configuracion-page')).toBeInTheDocument();
   });
 });

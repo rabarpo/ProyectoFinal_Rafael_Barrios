@@ -31,18 +31,29 @@ describe('NavegacionPrincipal', () => {
   // administracion-academica, PR1 (#26; design.md D12): "académica" deja de ser el ejemplo de
   // item "próximamente" — pasa a navegable para administrador/director/comité.
   // administracion-usuarios-apoderados, PR1 (#27; design.md D2): "usuarios" deja de ser el
-  // ejemplo de placeholder deshabilitado (pasa a navegable, ver [3.1] abajo) — se usa
-  // "configuracion" como ejemplo de item "próximamente" que sigue sin construirse.
+  // ejemplo de placeholder deshabilitado (pasa a navegable, ver [3.1] abajo).
+  // frontend-configuracion-general, PR1 (#28; design.md D2, tasks.md 4.4): "configuracion" deja
+  // de ser el ejemplo de placeholder (pasa a navegable, ver [3.1] de #28 en menu-por-rol.spec.ts)
+  // — se usa "importacion-excel" como ejemplo de item "próximamente" que sigue sin construirse.
   it('[5.1] un item "próximamente" se renderiza deshabilitado y no navega al hacer click', () => {
     render(proveer('administrador'));
 
-    const boton = screen.getByRole('button', { name: /configuración/i });
+    const boton = screen.getByRole('button', { name: /importación excel/i });
     expect(boton).toBeDisabled();
     expect(boton).toHaveTextContent(/próximamente/i);
 
     fireEvent.click(boton);
 
     expect(window.location.pathname).toBe('/');
+  });
+
+  // frontend-configuracion-general, PR1 (#28; design.md D2, tasks.md 4.4).
+  it('[4.4] el item "configuración" es navegable y llama navegar() al hacer click', () => {
+    render(proveer('administrador'));
+
+    fireEvent.click(screen.getByRole('button', { name: /^configuración$/i }));
+
+    expect(window.location.pathname).toBe('/configuracion');
   });
 
   it('[2.1] el item "académica" es navegable y llama navegar() al hacer click', () => {
