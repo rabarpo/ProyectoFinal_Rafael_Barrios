@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import imagenColegio from '../assets/images/imagen-colegio.jpg';
+import logoColegio from '../assets/images/logo-colegio.jpg';
 import { BotonGoogle } from './BotonGoogle';
 import { DialogoVinculacion } from './DialogoVinculacion';
 import { FormularioCredenciales } from './FormularioCredenciales';
-import { IconoEscudo, IconoInstitucion } from './iconos';
+import { IconoEscudo } from './iconos';
 import { useSesion } from './sesion-context';
 
 const MENSAJES: Record<'credenciales' | 'vinculacion' | 'red', string> = {
@@ -71,22 +73,36 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-on-surface">
-      <header className="flex h-16 w-full items-center border-b border-border-gray bg-surface-white px-5 md:px-12">
-        <div className="flex items-center gap-3">
-          <IconoInstitucion className="size-7 text-primary" />
-          <span className="text-title-md font-bold text-primary md:text-headline-lg-mobile">
-            Portal de Votación Institucional
-          </span>
+    <div className="flex min-h-screen bg-background text-on-surface">
+      {/* Panel izquierdo: mismo criterio que antes (foto + overlay + título), con un tratamiento
+          más editorial — degradé en vez de overlay plano, kicker sobre el título, contenido
+          anclado abajo en vez de centrado, para que se lea como portada institucional y no como
+          un cartel pegado sobre la foto. */}
+      <div
+        className="relative hidden w-1/2 shrink-0 flex-col justify-end bg-cover bg-center px-10 py-10 md:flex"
+        style={{ backgroundImage: `url(${imagenColegio})` }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/85 to-primary/30" />
+        <div className="relative flex flex-col gap-4">
+          <span className="h-1 w-12 rounded-full bg-inverse-primary" />
+          <div>
+            <p className="text-label-md tracking-[0.08em] text-inverse-primary uppercase">
+              Plataforma institucional
+            </p>
+            <h2 className="mt-2 text-headline-lg font-bold text-on-primary">
+              Sistema Electoral Estudiantil Institucional
+            </h2>
+          </div>
+          <p className="mt-6 border-t border-on-primary/20 pt-4 text-caption text-on-primary/70">
+            © Created by BARRIPON
+          </p>
         </div>
-      </header>
+      </div>
 
-      <main className="flex flex-1 items-center justify-center px-5 py-10 md:px-12">
-        <div className="w-full max-w-md rounded-card border border-border-gray bg-surface-white p-6 shadow-elevation md:p-8">
+      <main className="flex w-full items-center justify-center bg-surface px-5 py-10 md:w-1/2 md:px-12">
+        <div className="w-full max-w-md rounded-card border-t-4 border-primary bg-surface-white p-6 shadow-elevation md:p-8">
           <div className="mb-6 flex flex-col items-center text-center">
-            <div className="mb-3 flex size-16 items-center justify-center rounded-full border-2 border-primary/10 bg-surface-container">
-              <IconoEscudo className="size-9 text-primary" />
-            </div>
+            <img src={logoColegio} alt="Escudo institucional" className="mb-3 h-16 w-auto rounded-control shadow-elevation" />
             <h1 className="text-headline-lg-mobile text-primary md:text-headline-lg">SEEI</h1>
             <p className="mt-1 text-body-md text-on-surface-variant">
               Acceso al Sistema Electoral Estudiantil Institucional
@@ -98,7 +114,13 @@ export function LoginPage() {
             cargando={cargando}
             mensajeError={mensajeError}
           />
-          <p className="my-4 text-center text-label-md text-on-surface-variant">o</p>
+
+          <div className="my-6 flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-border-gray" />
+            <span className="text-label-md text-on-surface-variant">o</span>
+            <span className="h-px flex-1 bg-border-gray" />
+          </div>
+
           <div className="flex justify-center">
             <BotonGoogle onCredential={manejarCredencialGoogle} />
           </div>
@@ -112,7 +134,7 @@ export function LoginPage() {
             </div>
           )}
 
-          <div className="mt-8 flex items-start gap-3 rounded-control border border-border-gray/50 bg-surface-container-low p-4">
+          <div className="mt-8 flex items-start gap-3 rounded-control border-l-4 border-tertiary-fixed bg-surface-container-low p-4">
             <IconoEscudo className="mt-0.5 size-5 shrink-0 text-on-tertiary-container" />
             <p className="text-caption text-on-surface-variant">
               Tu voto es secreto y personal. No compartas tus credenciales con terceros.
