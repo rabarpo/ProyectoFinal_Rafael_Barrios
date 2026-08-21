@@ -105,18 +105,39 @@ export function PanelMatriculas({ soloLectura }: PanelMatriculasProps) {
     },
   ];
 
+  // Opción vacía inicial obligatoria (a diferencia de opcionesAula/opcionesAnioEscolar, usados
+  // también por los <select> de filtro): sin ella, FormularioGenerico arranca con
+  // valores[clave] = '' pero ningún <option value=""> con quien matchear, así que el navegador
+  // muestra visualmente la primera opción de la lista mientras el estado sigue vacío — el botón
+  // queda deshabilitado hasta que el usuario cambia y revierte la selección a mano.
+  const opcionesEstudianteCampo = [
+    { valor: '', etiqueta: 'Seleccioná un estudiante' },
+    ...opcionesEstudiante,
+  ];
+  const opcionesAulaCampo = [{ valor: '', etiqueta: 'Seleccioná un aula' }, ...opcionesAula];
+  const opcionesAnioEscolarCampo = [
+    { valor: '', etiqueta: 'Seleccioná un año escolar' },
+    ...opcionesAnioEscolar,
+  ];
+
   const camposCrear: CampoFormulario[] = [
-    { tipo: 'seleccion', clave: 'usuario_id', etiqueta: 'Estudiante', requerido: true, opciones: opcionesEstudiante },
+    {
+      tipo: 'seleccion',
+      clave: 'usuario_id',
+      etiqueta: 'Estudiante',
+      requerido: true,
+      opciones: opcionesEstudianteCampo,
+    },
   ];
 
   const camposTraslado: CampoFormulario[] = [
-    { tipo: 'seleccion', clave: 'aula_id', etiqueta: 'Aula', requerido: true, opciones: opcionesAula },
+    { tipo: 'seleccion', clave: 'aula_id', etiqueta: 'Aula', requerido: true, opciones: opcionesAulaCampo },
     {
       tipo: 'seleccion',
       clave: 'anio_escolar_id',
       etiqueta: 'Año escolar',
       requerido: true,
-      opciones: opcionesAnioEscolar,
+      opciones: opcionesAnioEscolarCampo,
     },
   ];
 

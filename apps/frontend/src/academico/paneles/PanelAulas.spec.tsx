@@ -158,7 +158,9 @@ describe('PanelAulas', () => {
     // se renderiza primero en el DOM, así que el índice 1 es siempre el control del formulario.
     const selectTurno = screen.getAllByLabelText('Turno')[1];
     const opciones = within(selectTurno).getAllByRole('option').map((o) => o.getAttribute('value'));
-    expect(opciones).toEqual(['manana', 'tarde']);
+    // '' es la opción vacía inicial (placeholder) que evita el desajuste entre el <select>
+    // controlado (arranca en '') y las opciones reales cuando no hay valoresIniciales.
+    expect(opciones).toEqual(['', 'manana', 'tarde']);
 
     fireEvent.change(selectTurno, { target: { value: 'tarde' } });
     fireEvent.change(screen.getAllByLabelText('Grado')[1], { target: { value: 'g1' } });

@@ -63,17 +63,28 @@ export function PanelSecciones({ soloLectura }: PanelSeccionesProps) {
   const opcionesAnioEscolar = aniosEscolares.map((anio) => ({ valor: anio.id, etiqueta: anio.nombre }));
 
   const campoNombre: CampoFormulario = { tipo: 'texto', clave: 'nombre', etiqueta: 'Nombre', requerido: true };
+  // Opción vacía inicial obligatoria en los selects de creación (a diferencia de opcionesGrado/
+  // opcionesAnioEscolar, usados también por los <select> de filtro con su propio "Todos"
+  // hardcodeado): sin ella, FormularioGenerico arranca con valores[clave] = '' pero ningún
+  // <option value=""> con quien matchear, así que el navegador muestra visualmente la primera
+  // opción de la lista mientras el estado sigue vacío — el botón Guardar queda deshabilitado hasta
+  // que el usuario cambia y revierte la selección a mano.
+  const opcionesGradoCampo = [{ valor: '', etiqueta: 'Seleccioná un grado' }, ...opcionesGrado];
+  const opcionesAnioEscolarCampo = [
+    { valor: '', etiqueta: 'Seleccioná un año escolar' },
+    ...opcionesAnioEscolar,
+  ];
   // ActualizarSeccionDto no acepta grado_id/anio_escolar_id (sin re-parentado): en edición sólo se
   // ofrece 'nombre' para no sugerir un cambio de jerarquía que manejarEnviarFormulario ya descarta.
   const camposCrear: CampoFormulario[] = [
     campoNombre,
-    { tipo: 'seleccion', clave: 'grado_id', etiqueta: 'Grado', requerido: true, opciones: opcionesGrado },
+    { tipo: 'seleccion', clave: 'grado_id', etiqueta: 'Grado', requerido: true, opciones: opcionesGradoCampo },
     {
       tipo: 'seleccion',
       clave: 'anio_escolar_id',
       etiqueta: 'Año escolar',
       requerido: true,
-      opciones: opcionesAnioEscolar,
+      opciones: opcionesAnioEscolarCampo,
     },
   ];
   const camposEditar: CampoFormulario[] = [campoNombre];

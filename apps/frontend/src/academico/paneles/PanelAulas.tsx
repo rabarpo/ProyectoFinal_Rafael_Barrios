@@ -88,32 +88,47 @@ export function PanelAulas({ soloLectura }: PanelAulasProps) {
   const opcionesSeccion = secciones.map((seccion) => ({ valor: seccion.id, etiqueta: seccion.nombre }));
   const opcionesAnioEscolar = aniosEscolares.map((anio) => ({ valor: anio.id, etiqueta: anio.nombre }));
 
+  // Opción vacía inicial obligatoria en todos los selects de este formulario (a diferencia de las
+  // listas usadas también por los <select> de filtro, que ya tienen su propio "Todos"
+  // hardcodeado): sin ella, FormularioGenerico arranca con valores[clave] = '' pero ningún
+  // <option value=""> con quien matchear, así que el navegador muestra visualmente la primera
+  // opción de la lista mientras el estado sigue vacío — el botón Guardar queda deshabilitado hasta
+  // que el usuario cambia y revierte la selección a mano. En modo edición no afecta: turno llega
+  // precargado con un valor real desde valoresIniciales.
+  const opcionesTurnoCampo = [{ valor: '', etiqueta: 'Seleccioná un turno' }, ...OPCIONES_TURNO];
+  const opcionesGradoCampo = [{ valor: '', etiqueta: 'Seleccioná un grado' }, ...opcionesGrado];
+  const opcionesSeccionCampo = [{ valor: '', etiqueta: 'Seleccioná una sección' }, ...opcionesSeccion];
+  const opcionesAnioEscolarCampo = [
+    { valor: '', etiqueta: 'Seleccioná un año escolar' },
+    ...opcionesAnioEscolar,
+  ];
+
   const campoTurno: CampoFormulario = {
     tipo: 'seleccion',
     clave: 'turno',
     etiqueta: 'Turno',
     requerido: true,
-    opciones: OPCIONES_TURNO,
+    opciones: opcionesTurnoCampo,
   };
   // ActualizarAulaDto no acepta grado_id/seccion_id/anio_escolar_id (sin re-parentado, D del
   // backend): en modo edición el formulario sólo ofrece 'turno' para no sugerir un cambio de
   // jerarquía que el backend descartaría en silencio.
   const camposCrear: CampoFormulario[] = [
     campoTurno,
-    { tipo: 'seleccion', clave: 'grado_id', etiqueta: 'Grado', requerido: true, opciones: opcionesGrado },
+    { tipo: 'seleccion', clave: 'grado_id', etiqueta: 'Grado', requerido: true, opciones: opcionesGradoCampo },
     {
       tipo: 'seleccion',
       clave: 'seccion_id',
       etiqueta: 'Sección',
       requerido: true,
-      opciones: opcionesSeccion,
+      opciones: opcionesSeccionCampo,
     },
     {
       tipo: 'seleccion',
       clave: 'anio_escolar_id',
       etiqueta: 'Año escolar',
       requerido: true,
-      opciones: opcionesAnioEscolar,
+      opciones: opcionesAnioEscolarCampo,
     },
   ];
   const camposEditar: CampoFormulario[] = [campoTurno];

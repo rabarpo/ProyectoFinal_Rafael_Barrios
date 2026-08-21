@@ -54,11 +54,17 @@ export function PanelGrados({ soloLectura }: PanelGradosProps) {
   const opcionesNivel = niveles.map((nivel) => ({ valor: nivel.id, etiqueta: nivel.nombre }));
 
   const campoNombre: CampoFormulario = { tipo: 'texto', clave: 'nombre', etiqueta: 'Nombre', requerido: true };
+  // Opción vacía inicial obligatoria (a diferencia de opcionesNivel, usado también por el <select>
+  // de filtro con su propio "Todos" hardcodeado): sin ella, FormularioGenerico arranca con
+  // valores.nivel_id = '' pero ningún <option value=""> con quien matchear, así que el navegador
+  // muestra visualmente el primer Nivel de la lista mientras el estado sigue vacío — el botón
+  // Guardar queda deshabilitado hasta que el usuario cambia y revierte la selección a mano.
+  const opcionesNivelCampo = [{ valor: '', etiqueta: 'Seleccioná un nivel' }, ...opcionesNivel];
   // ActualizarGradoDto no acepta nivel_id (sin re-parentado): en edición sólo se ofrece 'nombre'
   // para no sugerir un cambio de jerarquía que manejarEnviarFormulario ya descarta al no enviarlo.
   const camposCrear: CampoFormulario[] = [
     campoNombre,
-    { tipo: 'seleccion', clave: 'nivel_id', etiqueta: 'Nivel', requerido: true, opciones: opcionesNivel },
+    { tipo: 'seleccion', clave: 'nivel_id', etiqueta: 'Nivel', requerido: true, opciones: opcionesNivelCampo },
   ];
   const camposEditar: CampoFormulario[] = [campoNombre];
   const campos = filaEnEdicion ? camposEditar : camposCrear;

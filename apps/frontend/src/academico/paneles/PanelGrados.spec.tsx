@@ -125,4 +125,44 @@ describe('PanelGrados', () => {
     );
     expect(academicoApi.eliminarGrado).toHaveBeenCalledWith('g1');
   });
+
+  it('[regresión] el select de Nivel en modo creación arranca sin valor seleccionado (no en el primer Nivel de la lista) y una única selección alcanza para habilitar Guardar', async () => {
+    // Bug reportado: sin filtro activo, FormularioGenerico arrancaba con valores.nivel_id = ''
+    // pero opcionesNivel no tenía ningún <option value="">, así que el navegador mostraba
+    // visualmente el primer Nivel de la lista (aquí "Inicial") mientras el estado seguía vacío.
+    // El usuario tenía que cambiar el select y volver a poner el valor deseado para que el botón
+    // se habilitara. Este test cubre el flujo SIN tocar el filtro primero (a diferencia de [14.3],
+    // que ya deja nivel_id precargado vía el filtro).
+    vi.mocked(academicoApi.listarNiveles).mockResolvedValue({
+      data: [nivel({ id: 'n1', nombre: 'Inicial' }), nivel({ id: 'n2', nombre: 'Primaria' })],
+      response: new Response(),
+    } as never);
+    vi.mocked(academicoApi.listarGrados).mockResolvedValue({
+      data: [grado()],
+      response: new Response(),
+    } as never);
+    vi.mocked(academicoApi.crearGrado).mockResolvedValue({
+      ok: true,
+      data: grado({ id: 'g2', nombre: 'Segundo' }),
+    });
+
+    render(<PanelGrados soloLectura={false} />);
+    await waitFor(() => expect(screen.getByText('Primero')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Crear' }));
+
+    const selectNivel = screen.getAllByLabelText('Nivel')[1];
+    expect(selectNivel).toHaveValue('');
+
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Segundo' } });
+    expect(screen.getByRole('button', { name: /guardar/i })).toBeDisabled();
+
+    fireEvent.change(selectNivel, { target: { value: 'n2' } });
+    expect(screen.getByRole('button', { name: /guardar/i })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
+    await waitFor(() =>
+      expect(academicoApi.crearGrado).toHaveBeenCalledWith({ nombre: 'Segundo', nivel_id: 'n2' }),
+    );
+  });
 });
