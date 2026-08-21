@@ -79,8 +79,8 @@ export function TablaGenerica<T>({
                       onClick={() => accion.onEjecutar(fila)}
                       className={
                         accion.tono === 'peligro'
-                          ? 'rounded-control px-3 py-2 text-label-md text-error transition-colors hover:bg-error/10'
-                          : 'rounded-control px-3 py-2 text-label-md text-primary transition-colors hover:bg-primary/10'
+                          ? 'rounded-control bg-error px-3 py-2 text-label-md text-on-error transition-colors hover:bg-error/10 hover:text-error'
+                          : 'rounded-control bg-primary px-3 py-2 text-label-md text-on-primary transition-colors hover:bg-primary/10 hover:text-primary'
                       }
                     >
                       {accion.etiqueta}

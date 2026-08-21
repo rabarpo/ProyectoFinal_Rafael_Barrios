@@ -235,7 +235,7 @@ export function GestionCandidatosPage({ procesoId }: GestionCandidatosPageProps)
                     {lista.estado === 'activo' ? (
                       <button
                         type="button"
-                        className="rounded-control px-3 py-2 text-label-md text-on-surface-variant hover:bg-surface-container"
+                        className="rounded-control bg-surface-container-high px-3 py-2 text-label-md text-on-surface transition-colors hover:bg-primary/10 hover:text-primary"
                         onClick={async () => {
                           await cambiarEstadoLista(lista.id, 'baja');
                           await recargarListas();
@@ -246,7 +246,7 @@ export function GestionCandidatosPage({ procesoId }: GestionCandidatosPageProps)
                     ) : (
                       <button
                         type="button"
-                        className="rounded-control px-3 py-2 text-label-md text-on-surface-variant hover:bg-surface-container"
+                        className="rounded-control bg-surface-container-high px-3 py-2 text-label-md text-on-surface transition-colors hover:bg-primary/10 hover:text-primary"
                         onClick={async () => {
                           await cambiarEstadoLista(lista.id, 'activo');
                           await recargarListas();
@@ -257,7 +257,7 @@ export function GestionCandidatosPage({ procesoId }: GestionCandidatosPageProps)
                     )}
                     <button
                       type="button"
-                      className="rounded-control px-3 py-2 text-label-md text-error hover:bg-surface-container"
+                      className="rounded-control bg-error px-3 py-2 text-label-md text-on-error transition-colors hover:bg-error/10 hover:text-error"
                       onClick={() => manejarBorrarLista(lista.id)}
                     >
                       Eliminar

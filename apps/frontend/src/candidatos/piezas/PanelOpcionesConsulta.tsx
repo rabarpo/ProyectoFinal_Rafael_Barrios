@@ -54,7 +54,7 @@ export function PanelOpcionesConsulta({
               <span className="text-body-md text-on-surface">{opcion.etiqueta}</span>
               <button
                 type="button"
-                className="rounded-control px-3 py-2 text-label-md text-error hover:bg-surface-container"
+                className="rounded-control bg-error px-3 py-2 text-label-md text-on-error transition-colors hover:bg-error/10 hover:text-error"
                 onClick={() => onBorrar(opcion.id)}
               >
                 Eliminar

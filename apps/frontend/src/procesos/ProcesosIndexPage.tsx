@@ -78,7 +78,7 @@ export function ProcesosIndexPage() {
                   {proceso.estado === 'borrador' && (
                     <button
                       type="button"
-                      className="rounded-control px-4 py-3 text-label-md text-primary hover:bg-surface-container"
+                      className="rounded-control bg-primary px-4 py-3 text-label-md text-on-primary transition-colors hover:bg-primary/10 hover:text-primary"
                       onClick={() => navegar({ nombre: 'apertura', procesoId: proceso.id })}
                     >
                       Abrir proceso
