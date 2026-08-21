@@ -25,6 +25,7 @@ function proveer(rol: 'administrador' | 'director' | 'comite' | 'docente' | 'est
 
 afterEach(() => {
   window.history.pushState(null, '', '/');
+  window.localStorage.clear();
 });
 
 describe('NavegacionPrincipal', () => {
@@ -116,5 +117,49 @@ describe('NavegacionPrincipal', () => {
     ).not.toThrow();
 
     expect(screen.queryAllByRole('button')).toHaveLength(0);
+  });
+
+  // [rediseño: sidebar vertical colapsable, observación del usuario tras probar el sistema]
+  describe('colapsar/expandir', () => {
+    it('arranca expandido por defecto, muestra etiquetas de texto', () => {
+      render(proveer('administrador'));
+
+      expect(screen.getByRole('button', { name: /^procesos$/i })).toHaveTextContent('Procesos');
+      expect(screen.getByRole('button', { name: /colapsar menú/i })).toBeInTheDocument();
+    });
+
+    it('al colapsar, oculta las etiquetas de texto (sólo íconos) y el botón pasa a "Expandir menú"', () => {
+      render(proveer('administrador'));
+
+      fireEvent.click(screen.getByRole('button', { name: /colapsar menú/i }));
+
+      // El botón sigue siendo accesible por su `title`/`aria-label` aunque el texto visible
+      // desaparezca — la búsqueda por name accesible debe seguir encontrándolo.
+      expect(screen.queryByText('Procesos')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /expandir menú/i })).toBeInTheDocument();
+    });
+
+    it('la preferencia de colapsado persiste en localStorage entre montajes', () => {
+      const { unmount } = render(proveer('administrador'));
+      fireEvent.click(screen.getByRole('button', { name: /colapsar menú/i }));
+      expect(window.localStorage.getItem('seei:sidebar-colapsado')).toBe('1');
+      unmount();
+
+      render(proveer('administrador'));
+
+      expect(screen.getByRole('button', { name: /expandir menú/i })).toBeInTheDocument();
+    });
+  });
+
+  it('resalta el item de la ruta actual con aria-current="page"', () => {
+    window.history.pushState(null, '', '/academica');
+
+    render(proveer('administrador'));
+
+    expect(screen.getByRole('button', { name: /^académica$/i })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.getByRole('button', { name: /^procesos$/i })).not.toHaveAttribute('aria-current');
   });
 });
