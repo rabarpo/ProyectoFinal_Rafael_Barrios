@@ -77,7 +77,7 @@ export function PasoRevision({
         onClick={onConfirmar}
         className="rounded-control bg-primary px-6 py-3 text-label-md text-on-primary disabled:opacity-50"
       >
-        {enviando ? 'Creando…' : 'Confirmar'}
+        {enviando ? 'Creando…' : 'Finalizar'}
       </button>
     </section>
   );

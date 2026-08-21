@@ -181,7 +181,7 @@ describe('ProcesoWizardPage — padrón, revisión y submit (PR9)', () => {
     fireEvent.click(screen.getByRole('button', { name: /siguiente/i })); // paso 3 -> 4
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+      fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -213,7 +213,7 @@ describe('ProcesoWizardPage — padrón, revisión y submit (PR9)', () => {
     fireEvent.click(screen.getByRole('button', { name: /siguiente/i })); // paso 3 -> 4
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+      fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
       await Promise.resolve();
       await Promise.resolve();
     });
