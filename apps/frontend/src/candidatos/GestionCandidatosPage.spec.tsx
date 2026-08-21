@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { GestionCandidatosPage } from './GestionCandidatosPage';
 import * as candidatosApi from './candidatos-api';
@@ -22,16 +22,34 @@ vi.mock('./candidatos-api', () => ({
   urlFoto: (id: string) => `http://localhost/api/candidatos/${id}/foto`,
 }));
 
+// [D13, hallazgo de revisión manual] `detalle()` resuelve `proceso.tipo`, que decide qué
+// secciones se muestran (Candidatos/Listas para municipio, sólo Candidatos para
+// representante_aula/padres, sólo Opciones para consulta — nunca ambos).
+vi.mock('../procesos/procesos-api', () => ({ detalle: vi.fn() }));
+
+import * as procesosApi from '../procesos/procesos-api';
+
 const { navegarMock } = vi.hoisted(() => ({ navegarMock: vi.fn() }));
 vi.mock('../app/useRuta', () => ({ navegar: navegarMock }));
 
-function mockVacio() {
+function proceso(tipo: 'municipio' | 'representante_aula' | 'padres' | 'consulta') {
+  return { ok: true, data: { id: 'p1', nombre: 'Proceso', tipo, estado: 'borrador' } } as never;
+}
+
+function mockVacio(tipo: 'municipio' | 'representante_aula' | 'padres' | 'consulta' = 'municipio') {
   vi.mocked(candidatosApi.listarCandidatos).mockResolvedValue({ ok: true, data: [] });
   vi.mocked(candidatosApi.listarListas).mockResolvedValue({ ok: true, data: [] });
   vi.mocked(candidatosApi.listarOpciones).mockResolvedValue({ ok: true, data: [] });
+  vi.mocked(procesosApi.detalle).mockResolvedValue(proceso(tipo));
 }
 
 describe('GestionCandidatosPage', () => {
+  beforeEach(() => {
+    // Default 'municipio' para no romper los tests preexistentes que asumen Candidatos/
+    // "Registrar candidato" siempre visibles; los tests de gating pisan este mock explícitamente.
+    vi.mocked(procesosApi.detalle).mockResolvedValue(proceso('municipio'));
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -117,5 +135,35 @@ describe('GestionCandidatosPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /registrar candidato/i }));
 
     expect(navegarMock).toHaveBeenCalledWith({ nombre: 'candidato-nuevo', procesoId: 'p1' });
+  });
+
+  describe('secciones condicionadas por el tipo de proceso (hallazgo de revisión manual)', () => {
+    it('proceso tipo consulta: sólo muestra "Opciones de consulta", oculta Candidatos/Listas/"Registrar candidato"', async () => {
+      mockVacio('consulta');
+      render(<GestionCandidatosPage procesoId="p1" />);
+
+      await waitFor(() => expect(screen.getByText('Opciones de consulta')).toBeInTheDocument());
+      expect(screen.queryByText('Candidatos')).not.toBeInTheDocument();
+      expect(screen.queryByText('Listas')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /registrar candidato/i })).not.toBeInTheDocument();
+    });
+
+    it('proceso tipo municipio: muestra Candidatos y Listas, oculta Opciones de consulta', async () => {
+      mockVacio('municipio');
+      render(<GestionCandidatosPage procesoId="p1" />);
+
+      await waitFor(() => expect(screen.getByText('Candidatos')).toBeInTheDocument());
+      expect(screen.getByText('Listas')).toBeInTheDocument();
+      expect(screen.queryByText('Opciones de consulta')).not.toBeInTheDocument();
+    });
+
+    it('proceso tipo representante_aula: muestra Candidatos, oculta Listas y Opciones (D1: sin lista asociada)', async () => {
+      mockVacio('representante_aula');
+      render(<GestionCandidatosPage procesoId="p1" />);
+
+      await waitFor(() => expect(screen.getByText('Candidatos')).toBeInTheDocument());
+      expect(screen.queryByText('Listas')).not.toBeInTheDocument();
+      expect(screen.queryByText('Opciones de consulta')).not.toBeInTheDocument();
+    });
   });
 });
