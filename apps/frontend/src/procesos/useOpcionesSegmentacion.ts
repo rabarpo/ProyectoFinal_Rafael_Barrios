@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
-import { listarAniosEscolares, listarAulas, listarGrados, listarNiveles } from '../academico/academico-api';
-import type { AulaRespuestaDto, GradoRespuestaDto, NivelRespuestaDto } from '../academico/academico-api';
+import {
+  listarAniosEscolares,
+  listarAulas,
+  listarGrados,
+  listarNiveles,
+  listarSecciones,
+} from '../academico/academico-api';
+import type {
+  AulaRespuestaDto,
+  GradoRespuestaDto,
+  NivelRespuestaDto,
+  SeccionRespuestaDto,
+} from '../academico/academico-api';
 
 export interface EstadoLista<T> {
   cargando: boolean;
@@ -75,6 +86,40 @@ export function useGrados(nivelId: string | undefined): EstadoLista<GradoRespues
       controller.abort();
     };
   }, [nivelId]);
+
+  return estado;
+}
+
+/**
+ * Carga Secciones filtradas por Grado cuando el usuario eligió uno en el selector auxiliar
+ * (server-side vía `grado_id` — `SeccionesController` ya lo soporta, PR5 de
+ * administracion-academica); sin filtro, trae todas las Secciones. Usado por `FormularioCandidato`
+ * para resolver el nombre de Sección de cada Aula al componer su etiqueta legible.
+ */
+export function useSecciones(gradoId: string | undefined): EstadoLista<SeccionRespuestaDto> {
+  const [estado, setEstado] = useState<EstadoLista<SeccionRespuestaDto>>(vacio);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelado = false;
+    setEstado((anterior) => ({ ...anterior, cargando: true, error: false }));
+
+    listarSecciones(gradoId ? { grado_id: gradoId } : undefined, controller.signal)
+      .then(({ data, response }) => {
+        if (cancelado) return;
+        if (response.ok && data) setEstado({ cargando: false, datos: data, error: false });
+        else setEstado({ cargando: false, datos: [], error: true });
+      })
+      .catch(() => {
+        if (cancelado) return;
+        setEstado({ cargando: false, datos: [], error: true });
+      });
+
+    return () => {
+      cancelado = true;
+      controller.abort();
+    };
+  }, [gradoId]);
 
   return estado;
 }
