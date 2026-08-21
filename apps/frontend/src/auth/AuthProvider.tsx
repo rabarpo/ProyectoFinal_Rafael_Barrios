@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import * as authApi from './auth-api';
 import { SesionContext } from './sesion-context';
 import type { EstadoSesion } from './sesion-context';
+import { navegar } from '../app/useRuta';
 
 /**
  * Único componente con efectos de `auth/` (design.md D8): resuelve `whoami`
@@ -58,11 +59,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // AppShell dispara `logout()` sin `await`.
     } finally {
       setEstado({ estado: 'anonimo' });
+      // Hallazgo de revisión manual: AuthGuard es una composición de estado
+      // pura, nunca toca window.location.pathname (D8), así que sin este
+      // reset el pathname de la sesión anterior sobrevive al logout. Si
+      // otro rol inicia sesión después en la misma pestaña, Enrutador re-lee
+      // ese pathname viejo (p. ej. /usuarios) y lo resuelve contra el rol
+      // nuevo — si no tiene acceso, aterriza directo en el aviso de esa
+      // pantalla en vez de en /.
+      navegar({ nombre: 'inicio' });
     }
   }, []);
 
   const alRecibir401 = useCallback(() => {
     setEstado({ estado: 'anonimo' });
+    // Mismo motivo que logout(): una sesión expirada en una pantalla
+    // restringida no debe dejar esa URL esperando al próximo login.
+    navegar({ nombre: 'inicio' });
   }, []);
 
   return (
