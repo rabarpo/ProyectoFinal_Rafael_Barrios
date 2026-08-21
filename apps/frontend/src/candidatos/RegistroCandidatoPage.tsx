@@ -48,8 +48,6 @@ export function RegistroCandidatoPage({ procesoId, candidatoId }: RegistroCandid
       if (!activo || !data) return;
       setValoresIniciales({
         nombres: data.nombres,
-        grado: data.grado ?? '',
-        aula: data.aula ?? '',
         cargo: data.cargo ?? '',
         lista_id: data.lista_id ?? '',
       });
@@ -68,16 +66,12 @@ export function RegistroCandidatoPage({ procesoId, candidatoId }: RegistroCandid
         ? await crearCandidato({
             proceso_id: procesoId,
             nombres: datos.nombres,
-            grado: datos.grado || undefined,
-            aula: datos.aula || undefined,
             cargo: datos.cargo || undefined,
             lista_id: datos.lista_id || undefined,
             foto: datos.foto as File,
           })
         : await actualizarCandidato(candidatoId as string, {
             nombres: datos.nombres,
-            grado: datos.grado || undefined,
-            aula: datos.aula || undefined,
             cargo: datos.cargo || undefined,
             lista_id: datos.lista_id || undefined,
             foto: datos.foto ?? undefined,
