@@ -122,7 +122,7 @@ export function FormularioGenerico({
           <button
             type="button"
             onClick={onCancelar}
-            className="rounded-control px-4 py-3 text-label-md text-primary"
+            className="rounded-control px-4 py-3 text-label-md text-primary transition-colors hover:bg-primary/10"
           >
             Cancelar
           </button>

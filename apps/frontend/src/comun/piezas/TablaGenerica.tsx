@@ -44,22 +44,25 @@ export function TablaGenerica<T>({
   }
 
   return (
-    <table className="w-full text-left">
+    <table className="w-full overflow-hidden rounded-card text-left">
       <thead>
-        <tr className="border-b border-border-gray">
+        <tr className="bg-primary-fixed">
           {columnas.map((columna) => (
-            <th key={columna.clave} className="px-4 py-3 text-label-md text-on-surface-variant">
+            <th key={columna.clave} className="px-4 py-3 text-label-md text-on-primary-fixed">
               {columna.encabezado}
             </th>
           ))}
           {hayAcciones && (
-            <th className="px-4 py-3 text-label-md text-on-surface-variant">Acciones</th>
+            <th className="px-4 py-3 text-label-md text-on-primary-fixed">Acciones</th>
           )}
         </tr>
       </thead>
       <tbody>
         {filas.map((fila) => (
-          <tr key={claveFila(fila)} className="border-b border-border-gray last:border-b-0">
+          <tr
+            key={claveFila(fila)}
+            className="border-b border-border-gray transition-colors last:border-b-0 even:bg-surface hover:bg-primary/5"
+          >
             {columnas.map((columna) => (
               <td key={columna.clave} className="px-4 py-3 text-body-md text-on-surface">
                 {columna.celda(fila)}
@@ -76,8 +79,8 @@ export function TablaGenerica<T>({
                       onClick={() => accion.onEjecutar(fila)}
                       className={
                         accion.tono === 'peligro'
-                          ? 'rounded-control px-3 py-2 text-label-md text-error hover:bg-surface-container'
-                          : 'rounded-control px-3 py-2 text-label-md text-primary hover:bg-surface-container'
+                          ? 'rounded-control px-3 py-2 text-label-md text-error transition-colors hover:bg-error/10'
+                          : 'rounded-control px-3 py-2 text-label-md text-primary transition-colors hover:bg-primary/10'
                       }
                     >
                       {accion.etiqueta}

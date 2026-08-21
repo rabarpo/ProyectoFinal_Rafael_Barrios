@@ -26,7 +26,7 @@ export function NavegacionPrincipal() {
             key={item.id}
             type="button"
             onClick={() => navegar(item.ruta)}
-            className="rounded-control px-4 py-3 text-left text-label-md text-primary hover:bg-surface-container"
+            className="rounded-control px-4 py-3 text-left text-label-md text-on-primary transition-colors hover:bg-primary-fixed-dim hover:text-on-primary-fixed"
           >
             {item.etiqueta}
           </button>
@@ -35,7 +35,7 @@ export function NavegacionPrincipal() {
             key={item.id}
             type="button"
             disabled
-            className="rounded-control px-4 py-3 text-left text-label-md text-on-surface-variant"
+            className="rounded-control px-4 py-3 text-left text-label-md text-on-primary-container"
           >
             {item.etiqueta} <span className="text-caption">· Próximamente</span>
           </button>

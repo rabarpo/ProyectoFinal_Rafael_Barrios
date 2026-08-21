@@ -16,15 +16,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-on-surface">
-      <header className="border-b border-border-gray bg-surface-white">
+      {/* DESIGN-SYSTEM.md, "Primary (Blue): Used for headers..." — el header nunca aplicaba esto
+          (quedaba en bg-surface-white). sticky top-0 lo fija arriba durante el scroll; z-20 lo
+          mantiene por encima del contenido de <main>. */}
+      <header className="sticky top-0 z-20 bg-primary text-on-primary shadow-elevation">
         <div className="mx-auto flex w-full max-w-page items-center justify-between px-5 py-4 md:px-12">
-          {rol && (
-            <span className="text-label-md text-on-surface-variant">Rol: {rol}</span>
-          )}
+          {rol && <span className="text-label-md text-on-primary/80">Rol: {rol}</span>}
           <button
             type="button"
             onClick={() => contexto.logout()}
-            className="rounded-control px-4 py-3 text-label-md text-primary"
+            className="rounded-control px-4 py-3 text-label-md text-on-primary transition-colors hover:bg-primary-fixed-dim hover:text-on-primary-fixed"
           >
             Cerrar sesión
           </button>

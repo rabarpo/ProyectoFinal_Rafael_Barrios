@@ -28,7 +28,7 @@ export function DialogoConfirmacion({
     <div
       role="dialog"
       aria-label={titulo}
-      className="rounded-card bg-surface-white p-6 shadow-elevation"
+      className="rounded-card border-l-4 border-primary bg-surface-white p-6 shadow-elevation"
     >
       <p className="text-body-lg text-on-surface">{titulo}</p>
       <p className="mt-2 text-body-md text-on-surface-variant">{descripcion}</p>
@@ -38,7 +38,7 @@ export function DialogoConfirmacion({
           type="button"
           onClick={onConfirmar}
           disabled={procesando}
-          className="rounded-control bg-primary px-6 py-3 text-label-md text-on-primary disabled:opacity-50"
+          className="rounded-control bg-primary px-6 py-3 text-label-md text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
         >
           {etiquetaConfirmar}
         </button>
@@ -46,7 +46,7 @@ export function DialogoConfirmacion({
           type="button"
           onClick={onCancelar}
           disabled={procesando}
-          className="rounded-control px-4 py-3 text-label-md text-primary disabled:opacity-50"
+          className="rounded-control px-4 py-3 text-label-md text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
         >
           Cancelar
         </button>
