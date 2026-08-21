@@ -75,7 +75,7 @@ export function TablaCandidatos({
             {candidato.estado === 'activo' ? (
               <button
                 type="button"
-                className="rounded-control bg-surface-container-high px-3 py-2 text-label-md text-on-surface transition-colors hover:bg-primary/10 hover:text-primary"
+                className="rounded-control bg-primary px-3 py-2 text-label-md text-on-primary transition-colors hover:bg-primary/10 hover:text-primary"
                 onClick={() => onDarBaja(candidato.id)}
               >
                 Dar de baja
@@ -83,7 +83,7 @@ export function TablaCandidatos({
             ) : (
               <button
                 type="button"
-                className="rounded-control bg-surface-container-high px-3 py-2 text-label-md text-on-surface transition-colors hover:bg-primary/10 hover:text-primary"
+                className="rounded-control bg-primary px-3 py-2 text-label-md text-on-primary transition-colors hover:bg-primary/10 hover:text-primary"
                 onClick={() => onReactivar(candidato.id)}
               >
                 Reactivar
