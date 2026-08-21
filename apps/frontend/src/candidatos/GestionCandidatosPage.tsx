@@ -185,7 +185,7 @@ export function GestionCandidatosPage({ procesoId }: GestionCandidatosPageProps)
       )}
 
       {!esConsulta && (
-        <section className="mb-6 rounded-card border border-border-gray bg-surface-white shadow-elevation">
+        <section className="mb-6 rounded-card border-t-4 border-primary bg-surface-white shadow-elevation">
           <h2 className="border-b border-border-gray p-6 text-title-md text-on-surface">Candidatos</h2>
           <TablaCandidatos
             candidatos={candidatos}
@@ -199,7 +199,7 @@ export function GestionCandidatosPage({ procesoId }: GestionCandidatosPageProps)
       )}
 
       {proceso?.tipo === 'municipio' && (
-        <section className="mb-6 rounded-card border border-border-gray bg-surface-white p-6 shadow-elevation">
+        <section className="mb-6 rounded-card border-t-4 border-secondary bg-surface-white p-6 shadow-elevation">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-title-md text-on-surface">Listas</h2>
             <button
@@ -271,7 +271,7 @@ export function GestionCandidatosPage({ procesoId }: GestionCandidatosPageProps)
       )}
 
       {esConsulta && (
-      <section className="rounded-card border border-border-gray bg-surface-white p-6 shadow-elevation">
+      <section className="rounded-card border-t-4 border-tertiary-fixed bg-surface-white p-6 shadow-elevation">
         <h2 className="mb-4 text-title-md text-on-surface">Opciones de consulta</h2>
         <PanelOpcionesConsulta
           opciones={opciones}

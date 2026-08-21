@@ -55,7 +55,7 @@ export function AcademicaPage() {
             className={
               pestana === p.id
                 ? 'border-b-2 border-primary px-4 py-3 text-label-md text-primary'
-                : 'px-4 py-3 text-label-md text-on-surface-variant hover:bg-surface-container'
+                : 'rounded-t-control px-4 py-3 text-label-md text-on-surface-variant transition-colors hover:bg-primary/10 hover:text-primary'
             }
             onClick={() => setPestana(p.id)}
           >
@@ -64,7 +64,9 @@ export function AcademicaPage() {
         ))}
       </div>
 
-      {renderPanel()}
+      <div className="rounded-card border border-border-gray bg-surface-white p-6 shadow-elevation">
+        {renderPanel()}
+      </div>
 
       {soloLectura && (
         <p className="sr-only" data-testid="academica-solo-lectura">

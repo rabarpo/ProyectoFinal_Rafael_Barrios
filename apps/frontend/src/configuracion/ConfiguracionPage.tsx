@@ -81,17 +81,27 @@ export function ConfiguracionPage() {
           Cargando configuración…
         </p>
       ) : (
-        <div className="flex flex-col gap-8 py-6">
-          <PanelDatosInstitucionales
-            key={version}
-            config={config}
-            onGuardado={(data) => {
-              setConfig(data);
-              setVersion((v) => v + 1);
-            }}
-          />
-          <PanelLogo logoPresente={config.logo_presente} logoMime={config.logo_mime} />
-          <PanelComite integrantes={integrantesComite} />
+        <div className="flex flex-col gap-6 py-6">
+          <section className="rounded-card border-t-4 border-primary bg-surface-white p-6 shadow-elevation">
+            <h2 className="mb-4 text-title-md text-on-surface">Datos institucionales</h2>
+            <PanelDatosInstitucionales
+              key={version}
+              config={config}
+              onGuardado={(data) => {
+                setConfig(data);
+                setVersion((v) => v + 1);
+              }}
+            />
+          </section>
+          <section className="rounded-card border-t-4 border-secondary bg-surface-white p-6 shadow-elevation">
+            <PanelLogo logoPresente={config.logo_presente} logoMime={config.logo_mime} />
+          </section>
+          {/* --color-tertiary es negro puro en la paleta (rol de contraste de texto, no de acento
+              visual) — se usa la familia tertiary-fixed (verde azulado) para un acento realmente
+              visible, misma lógica que primary-fixed en TablaGenerica/AcademicaPage. */}
+          <section className="rounded-card border-t-4 border-tertiary-fixed bg-surface-white p-6 shadow-elevation">
+            <PanelComite integrantes={integrantesComite} />
+          </section>
         </div>
       )}
     </div>

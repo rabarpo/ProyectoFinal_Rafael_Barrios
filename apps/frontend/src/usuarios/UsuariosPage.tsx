@@ -181,39 +181,41 @@ export function UsuariosPage() {
         </div>
       </div>
 
-      <TablaGenerica
-        columnas={columnas}
-        filas={filasPagina}
-        claveFila={(fila) => fila.id}
-        mensajeVacio="No hay usuarios para este filtro."
-        acciones={acciones}
-      />
+      <div className="rounded-card border border-border-gray bg-surface-white shadow-elevation">
+        <TablaGenerica
+          columnas={columnas}
+          filas={filasPagina}
+          claveFila={(fila) => fila.id}
+          mensajeVacio="No hay usuarios para este filtro."
+          acciones={acciones}
+        />
 
-      {filas.length > 0 && (
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-label-md text-on-surface-variant">
-            Mostrando {inicio + 1}–{Math.min(inicio + PAGINA, filas.length)} de {filas.length}
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={pagina === 0}
-              onClick={() => setPagina((p) => p - 1)}
-              className="rounded-control px-4 py-2 text-label-md text-primary disabled:opacity-40"
-            >
-              Anterior
-            </button>
-            <button
-              type="button"
-              disabled={pagina + 1 >= totalPaginas}
-              onClick={() => setPagina((p) => p + 1)}
-              className="rounded-control px-4 py-2 text-label-md text-primary disabled:opacity-40"
-            >
-              Siguiente
-            </button>
+        {filas.length > 0 && (
+          <div className="flex items-center justify-between border-t border-border-gray px-4 py-3">
+            <p className="text-label-md text-on-surface-variant">
+              Mostrando {inicio + 1}–{Math.min(inicio + PAGINA, filas.length)} de {filas.length}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={pagina === 0}
+                onClick={() => setPagina((p) => p - 1)}
+                className="rounded-control px-4 py-2 text-label-md text-primary transition-colors hover:bg-primary/10 disabled:opacity-40"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                disabled={pagina + 1 >= totalPaginas}
+                onClick={() => setPagina((p) => p + 1)}
+                className="rounded-control px-4 py-2 text-label-md text-primary transition-colors hover:bg-primary/10 disabled:opacity-40"
+              >
+                Siguiente
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

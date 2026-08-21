@@ -34,14 +34,14 @@ export function InicioPage() {
                 key={item.id}
                 type="button"
                 onClick={() => navegar(item.ruta)}
-                className="rounded-card border border-border-gray bg-surface-white p-6 text-left shadow-elevation transition-colors hover:bg-surface-container"
+                className="rounded-card border-t-4 border-primary bg-surface-white p-6 text-left shadow-elevation transition-colors hover:bg-primary/5"
               >
-                <p className="text-label-md text-on-surface">{item.etiqueta}</p>
+                <p className="text-label-md text-primary">{item.etiqueta}</p>
               </button>
             ) : (
               <div
                 key={item.id}
-                className="rounded-card border border-border-gray bg-surface-container p-6 text-left"
+                className="rounded-card border border-dashed border-border-gray bg-surface-container-low p-6 text-left"
               >
                 <p className="text-label-md text-on-surface-variant">{item.etiqueta}</p>
                 <p className="mt-1 text-caption text-on-surface-variant">Próximamente</p>

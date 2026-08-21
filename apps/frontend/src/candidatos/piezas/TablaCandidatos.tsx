@@ -44,7 +44,7 @@ export function TablaCandidatos({
       {candidatos.map((candidato) => (
         <li
           key={candidato.id}
-          className="flex items-center justify-between gap-4 border-b border-border-gray px-6 py-4 last:border-b-0"
+          className="flex items-center justify-between gap-4 border-b border-border-gray px-6 py-4 transition-colors last:border-b-0 even:bg-surface hover:bg-primary/5"
         >
           <div className="flex items-center gap-4">
             {candidato.foto_presente && (
@@ -67,7 +67,7 @@ export function TablaCandidatos({
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              className="rounded-control px-3 py-2 text-label-md text-primary hover:bg-surface-container"
+              className="rounded-control px-3 py-2 text-label-md text-primary transition-colors hover:bg-primary/10"
               onClick={() => onEditar(candidato.id)}
             >
               Editar
@@ -75,7 +75,7 @@ export function TablaCandidatos({
             {candidato.estado === 'activo' ? (
               <button
                 type="button"
-                className="rounded-control px-3 py-2 text-label-md text-on-surface-variant hover:bg-surface-container"
+                className="rounded-control px-3 py-2 text-label-md text-on-surface-variant transition-colors hover:bg-primary/10 hover:text-primary"
                 onClick={() => onDarBaja(candidato.id)}
               >
                 Dar de baja
@@ -83,7 +83,7 @@ export function TablaCandidatos({
             ) : (
               <button
                 type="button"
-                className="rounded-control px-3 py-2 text-label-md text-on-surface-variant hover:bg-surface-container"
+                className="rounded-control px-3 py-2 text-label-md text-on-surface-variant transition-colors hover:bg-primary/10 hover:text-primary"
                 onClick={() => onReactivar(candidato.id)}
               >
                 Reactivar
@@ -91,7 +91,7 @@ export function TablaCandidatos({
             )}
             <button
               type="button"
-              className="rounded-control px-3 py-2 text-label-md text-error hover:bg-surface-container"
+              className="rounded-control px-3 py-2 text-label-md text-error transition-colors hover:bg-error/10"
               onClick={() => onBorrar(candidato.id)}
             >
               Eliminar

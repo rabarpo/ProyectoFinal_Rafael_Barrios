@@ -90,13 +90,15 @@ export function CuentasBloqueadasPage() {
     <div data-testid="cuentas-bloqueadas-page-shell" className="mx-auto w-full max-w-page px-5 md:px-12">
       <h1 className="mb-6 text-headline-lg-mobile text-primary md:text-headline-lg">Cuentas bloqueadas</h1>
 
-      <TablaGenerica
-        columnas={COLUMNAS}
-        filas={filas}
-        claveFila={(fila) => fila.id}
-        mensajeVacio="No hay cuentas bloqueadas."
-        acciones={acciones}
-      />
+      <div className="rounded-card border border-border-gray bg-surface-white shadow-elevation">
+        <TablaGenerica
+          columnas={COLUMNAS}
+          filas={filas}
+          claveFila={(fila) => fila.id}
+          mensajeVacio="No hay cuentas bloqueadas."
+          acciones={acciones}
+        />
+      </div>
 
       {filaADesbloquear && (
         <div className="mt-4">
