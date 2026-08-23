@@ -54,6 +54,12 @@ const IMPORTACION_EXCEL: ItemMenu = {
   id: 'importacion-excel',
   etiqueta: 'Importación Excel',
 };
+const PANEL_JORNADA: ItemMenu = {
+  clase: 'navegable',
+  id: 'panel-jornada',
+  etiqueta: 'Panel de jornada',
+  ruta: { nombre: 'panel-jornada' },
+};
 
 /**
  * design.md D3: espeja los `@Roles` reales verificados en el backend
@@ -81,11 +87,18 @@ const IMPORTACION_EXCEL: ItemMenu = {
  * item navegable con `Ruta { nombre: 'configuracion' }`, sólo para `administrador`/`director`
  * (`ConfiguracionController` es `@Roles('administrador','director')` a nivel de clase) — cero
  * cambios en las filas de `MENU_POR_ROL`, ya figuraba sólo en esos dos roles.
+ *
+ * `panel-jornada` (dashboard-panel-jornada, PR3, #20; design.md "Cambios de archivos", tasks.md
+ * 12.5) es item navegable con `Ruta { nombre: 'panel-jornada' }` para `administrador`/
+ * `director`/`comite` (`PanelJornadaController` es `@Roles('administrador','director','comite')`
+ * a nivel de clase). **Sin** item de proyección: requiere `procesoId` que el menú no tiene
+ * (mismo criterio ya documentado para "Candidatos", spec: "Ruta de modo proyección sin item de
+ * menú").
  */
 export const MENU_POR_ROL: Record<RolSesion, readonly ItemMenu[]> = {
-  administrador: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL],
-  director: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL],
-  comite: [PROCESOS, PROCESO_NUEVO, ACADEMICA, CUENTAS_BLOQUEADAS],
+  administrador: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL, PANEL_JORNADA],
+  director: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL, PANEL_JORNADA],
+  comite: [PROCESOS, PROCESO_NUEVO, ACADEMICA, CUENTAS_BLOQUEADAS, PANEL_JORNADA],
   docente: [],
   estudiante: [],
 };

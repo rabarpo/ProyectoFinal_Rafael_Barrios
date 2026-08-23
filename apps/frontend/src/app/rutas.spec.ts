@@ -22,6 +22,8 @@ describe('rutas', () => {
       { nombre: 'usuarios' },
       { nombre: 'cuentas-bloqueadas' },
       { nombre: 'configuracion' },
+      { nombre: 'panel-jornada' },
+      { nombre: 'proyeccion', procesoId: 'p1' },
     ];
 
     for (const ruta of casos) {
@@ -144,4 +146,36 @@ describe('rutas', () => {
       expect(parsearRuta(pathname).nombre).toBe('no-encontrada');
     },
   );
+
+  // [design.md D2/D10; tasks.md 9.1; spec: panel-jornada, "Panel lista procesos activos";
+  // threat: Enrutamiento (cliente)] `panel-jornada` es plana (sin procesoId embebido: la
+  // selección de proceso vive en estado de componente, D-piezas). `proyeccion` SÍ lleva
+  // `procesoId` en la URL porque la pantalla de kiosco debe sobrevivir a un recargo (design.md
+  // "Cambios de archivos").
+  it("[9.1] '/panel-jornada' resuelve a 'panel-jornada' y su rutaAPath es '/panel-jornada'", () => {
+    expect(parsearRuta('/panel-jornada')).toEqual({ nombre: 'panel-jornada' });
+    expect(rutaAPath({ nombre: 'panel-jornada' })).toBe('/panel-jornada');
+  });
+
+  it("[9.1] '/panel-jornada/algo' resuelve a 'no-encontrada'", () => {
+    expect(parsearRuta('/panel-jornada/algo')).toEqual({
+      nombre: 'no-encontrada',
+      pathname: '/panel-jornada/algo',
+    });
+  });
+
+  it("[9.1] '/proyeccion/p1' resuelve a 'proyeccion' con procesoId y su rutaAPath es '/proyeccion/p1'", () => {
+    expect(parsearRuta('/proyeccion/p1')).toEqual({ nombre: 'proyeccion', procesoId: 'p1' });
+    expect(rutaAPath({ nombre: 'proyeccion', procesoId: 'p1' })).toBe('/proyeccion/p1');
+  });
+
+  it("[9.1] '/proyeccion' sin id resuelve a 'no-encontrada'", () => {
+    expect(() => parsearRuta('/proyeccion')).not.toThrow();
+    expect(parsearRuta('/proyeccion').nombre).toBe('no-encontrada');
+  });
+
+  it("[9.1] '/proyeccion/../../etc/passwd' resuelve a 'no-encontrada'", () => {
+    expect(() => parsearRuta('/proyeccion/../../etc/passwd')).not.toThrow();
+    expect(parsearRuta('/proyeccion/../../etc/passwd').nombre).toBe('no-encontrada');
+  });
 });

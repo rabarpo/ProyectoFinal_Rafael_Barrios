@@ -30,6 +30,8 @@ export type Ruta =
   | { nombre: 'usuarios' }
   | { nombre: 'cuentas-bloqueadas' }
   | { nombre: 'configuracion' }
+  | { nombre: 'panel-jornada' }
+  | { nombre: 'proyeccion'; procesoId: string }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -130,6 +132,18 @@ export function parsearRuta(pathname: string): Ruta {
     return { nombre: 'configuracion' };
   }
 
+  // dashboard-panel-jornada, PR2 (Backlog #20; design.md D2/D10, tasks.md 9.1): `panel-jornada`
+  // es plana (sin procesoId embebido: la selección de proceso vive en estado de componente).
+  // `proyeccion` SÍ lleva `procesoId` en la URL porque la pantalla de kiosco debe sobrevivir a
+  // un recargo (D10). `/proyeccion` sin id y `/panel-jornada/algo` caen en 'no-encontrada'.
+  if (partes.length === 1 && partes[0] === 'panel-jornada') {
+    return { nombre: 'panel-jornada' };
+  }
+
+  if (partes[0] === 'proyeccion' && partes.length === 2) {
+    return { nombre: 'proyeccion', procesoId: partes[1] };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -163,6 +177,10 @@ export function rutaAPath(ruta: Ruta): string {
       return '/cuentas-bloqueadas';
     case 'configuracion':
       return '/configuracion';
+    case 'panel-jornada':
+      return '/panel-jornada';
+    case 'proyeccion':
+      return `/proyeccion/${ruta.procesoId}`;
     case 'no-encontrada':
       return ruta.pathname;
   }

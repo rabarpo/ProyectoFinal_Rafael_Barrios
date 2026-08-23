@@ -7,6 +7,7 @@ import { ConfiguracionLecturaModule } from './configuracion/configuracion-lectur
 import { ConfiguracionModule } from './configuracion/configuracion.module';
 import { HealthModule } from './health/health.module';
 import { ImportacionModule } from './importacion/importacion.module';
+import { PanelJornadaModule } from './panel-jornada/panel-jornada.module';
 import { ProcesosModule } from './procesos/procesos.module';
 import { SystemPingModule } from './system-ping/system-ping.module';
 import { UsersModule } from './users/users.module';
@@ -37,6 +38,10 @@ import { VotosModule } from './votos/votos.module';
 // final de la lista, mismo criterio de orden que los módulos de dominio previos — cambio aditivo
 // puro, sin tocar rutas existentes. Es el primer módulo orientado al VOTANTE (D1), no a la
 // gestión.
+//
+// dashboard-panel-jornada, PR1 (Backlog #20; design.md "Cambios de archivos", tarea 4.3).
+// `PanelJornadaModule` se registra al final de la lista, mismo criterio de orden — cambio aditivo
+// puro, sin tocar rutas existentes; `/panel-jornada/*` no colisiona con ningún prefijo previo.
 @Module({
   imports: [
     HealthModule,
@@ -51,6 +56,7 @@ import { VotosModule } from './votos/votos.module';
     ProcesosModule,
     CandidatosModule,
     VotosModule,
+    PanelJornadaModule,
   ],
 })
 export class AppModule {}

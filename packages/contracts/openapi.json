@@ -3116,6 +3116,243 @@
           "votos"
         ]
       }
+    },
+    "/panel-jornada/institucion": {
+      "get": {
+        "operationId": "PanelJornadaController_institucion",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Conteo institucional",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitucionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Conteo institucional de estudiantes y vínculos apoderado-estudiante, sin proceso",
+        "tags": [
+          "panel-jornada"
+        ]
+      }
+    },
+    "/panel-jornada/procesos/{id}/resumen": {
+      "get": {
+        "operationId": "PanelJornadaController_resumen",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumen de jornada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumenJornadaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ":id no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Proceso inexistente"
+          },
+          "409": {
+            "description": "Proceso en estado borrador (ESTADO_INVALIDO, D11)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Resumen de jornada de un proceso: participación y, según ocultar_resultados, desglose (D6)",
+        "tags": [
+          "panel-jornada"
+        ]
+      }
+    },
+    "/panel-jornada/procesos/{id}/votos-por-hora": {
+      "get": {
+        "operationId": "PanelJornadaController_votosPorHora",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Votos por hora",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VotosPorHoraDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ":id no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Proceso inexistente"
+          },
+          "409": {
+            "description": "Proceso en estado borrador (ESTADO_INVALIDO)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Serie de votos por hora del proceso, sin franjas vacías omitidas",
+        "tags": [
+          "panel-jornada"
+        ]
+      }
+    },
+    "/panel-jornada/procesos/{id}/avance-aulas": {
+      "get": {
+        "operationId": "PanelJornadaController_avanceAulas",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avance por aula",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvanceAulasDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ":id no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Proceso inexistente"
+          },
+          "409": {
+            "description": "Proceso en estado borrador (ESTADO_INVALIDO)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Avance por aula del proceso, con umbral relativo de rezago (D7)",
+        "tags": [
+          "panel-jornada"
+        ]
+      }
+    },
+    "/panel-jornada/procesos/{id}/proyeccion": {
+      "get": {
+        "operationId": "PanelJornadaController_proyeccion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proyección",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProyeccionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ":id no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Proceso inexistente"
+          },
+          "409": {
+            "description": "Proceso en estado borrador (ESTADO_INVALIDO)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Payload de proyección (kiosco), sin desglose por candidato bajo ninguna circunstancia (D8)",
+        "tags": [
+          "panel-jornada"
+        ]
+      }
     }
   },
   "info": {
@@ -4702,6 +4939,241 @@
           "opciones",
           "ya_voto",
           "comprobante"
+        ]
+      },
+      "InstitucionDto": {
+        "type": "object",
+        "properties": {
+          "estudiantes": {
+            "type": "number",
+            "description": "count(Usuario WHERE rol=estudiante AND estado=activo)"
+          },
+          "vinculos_apoderado": {
+            "type": "number",
+            "description": "count(Apoderado), filas crudas sin dedup por DNI"
+          },
+          "hora_servidor": {
+            "type": "string",
+            "description": "Instante del cálculo (now() de Postgres), ISO"
+          }
+        },
+        "required": [
+          "estudiantes",
+          "vinculos_apoderado",
+          "hora_servidor"
+        ]
+      },
+      "ResumenJornadaDto": {
+        "type": "object",
+        "properties": {
+          "proceso_id": {
+            "type": "string",
+            "description": "ID del ProcesoElectoral"
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado actual del proceso",
+            "enum": [
+              "abierto",
+              "cerrado",
+              "acta_emitida"
+            ]
+          },
+          "padron_total": {
+            "type": "number",
+            "description": "count(DerechoVoto) del proceso (padrón congelado)"
+          },
+          "votos_emitidos": {
+            "type": "number",
+            "description": "count(Voto) del proceso"
+          },
+          "correos_fallidos": {
+            "type": "number",
+            "description": "count(JobCorreo WHERE proceso_id=id AND estado=fallido)"
+          },
+          "estado_visibilidad": {
+            "type": "string",
+            "description": "visible | oculto, según ProcesoElectoral.ocultar_resultados (D6)",
+            "enum": [
+              "visible",
+              "oculto"
+            ]
+          },
+          "hora_servidor": {
+            "type": "string",
+            "description": "Instante del cálculo (now() de Postgres), ISO"
+          },
+          "dimension": {
+            "type": "string",
+            "description": "Sólo en modo visible",
+            "enum": [
+              "lista",
+              "candidato",
+              "opcion"
+            ]
+          },
+          "desglose": {
+            "description": "Sólo en modo visible",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResultadoOpcionDto"
+            }
+          },
+          "blancos": {
+            "type": "number",
+            "description": "Sólo en modo visible: count(Voto WHERE blanco = true)"
+          }
+        },
+        "required": [
+          "proceso_id",
+          "estado",
+          "padron_total",
+          "votos_emitidos",
+          "correos_fallidos",
+          "estado_visibilidad",
+          "hora_servidor"
+        ]
+      },
+      "FranjaVotosPorHoraDto": {
+        "type": "object",
+        "properties": {
+          "hora_inicio": {
+            "type": "string",
+            "description": "Inicio de la franja horaria (truncada a la hora), ISO"
+          },
+          "votos": {
+            "type": "number",
+            "description": "count(Voto) emitidos en esa franja"
+          }
+        },
+        "required": [
+          "hora_inicio",
+          "votos"
+        ]
+      },
+      "VotosPorHoraDto": {
+        "type": "object",
+        "properties": {
+          "hora_servidor": {
+            "type": "string",
+            "description": "Instante del cálculo (now() de Postgres), ISO"
+          },
+          "franjas": {
+            "description": "Serie cronológica, sin franjas vacías omitidas",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranjaVotosPorHoraDto"
+            }
+          }
+        },
+        "required": [
+          "hora_servidor",
+          "franjas"
+        ]
+      },
+      "AulaAvanceDto": {
+        "type": "object",
+        "properties": {
+          "aula_id": {
+            "type": "string",
+            "description": "ID del Aula (vía DerechoVoto.aula_snapshot, D3)"
+          },
+          "etiqueta": {
+            "type": "string",
+            "description": "Etiqueta legible: turno + grado + sección"
+          },
+          "padron": {
+            "type": "number",
+            "description": "count(DerechoVoto) del aula (padrón congelado)"
+          },
+          "votos": {
+            "type": "number",
+            "description": "count(Voto) del aula"
+          },
+          "porcentaje": {
+            "type": "number",
+            "description": "votos / padron * 100, 0 si padron = 0"
+          },
+          "rezagada": {
+            "type": "boolean",
+            "description": "padron > 0 && porcentaje <= participacion_global_pp - UMBRAL_REZAGO_PP (D7)"
+          }
+        },
+        "required": [
+          "aula_id",
+          "etiqueta",
+          "padron",
+          "votos",
+          "porcentaje",
+          "rezagada"
+        ]
+      },
+      "AvanceAulasDto": {
+        "type": "object",
+        "properties": {
+          "hora_servidor": {
+            "type": "string",
+            "description": "Instante del cálculo (now() de Postgres), ISO"
+          },
+          "participacion_global_pp": {
+            "type": "number",
+            "description": "% participación global del proceso, en puntos porcentuales"
+          },
+          "umbral_rezago_pp": {
+            "type": "number",
+            "description": "Umbral relativo aplicado (D7)"
+          },
+          "aulas": {
+            "description": "Una fila por aula del proceso",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AulaAvanceDto"
+            }
+          }
+        },
+        "required": [
+          "hora_servidor",
+          "participacion_global_pp",
+          "umbral_rezago_pp",
+          "aulas"
+        ]
+      },
+      "ProyeccionDto": {
+        "type": "object",
+        "properties": {
+          "hora_servidor": {
+            "type": "string",
+            "description": "Instante del cálculo (now() de Postgres), ISO"
+          },
+          "padron_total": {
+            "type": "number",
+            "description": "count(DerechoVoto) del proceso (padrón congelado)"
+          },
+          "votos_emitidos": {
+            "type": "number",
+            "description": "count(Voto) del proceso"
+          },
+          "franjas": {
+            "description": "Serie cronológica de votos por hora",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranjaVotosPorHoraDto"
+            }
+          },
+          "aulas": {
+            "description": "Avance por aula, sólo participación",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AulaAvanceDto"
+            }
+          }
+        },
+        "required": [
+          "hora_servidor",
+          "padron_total",
+          "votos_emitidos",
+          "franjas",
+          "aulas"
         ]
       }
     }

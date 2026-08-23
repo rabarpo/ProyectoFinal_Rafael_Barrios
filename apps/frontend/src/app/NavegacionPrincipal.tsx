@@ -3,7 +3,7 @@ import { useSesion } from '../auth/sesion-context';
 import { MENU_POR_ROL } from './menu-por-rol';
 import { navegar, useRuta } from './useRuta';
 import { IconoInstitucion, IconoUsuario, IconoCandado } from '../auth/iconos';
-import { IconoColapsar, IconoConfiguracion, IconoExpandir, IconoImportacion, IconoProcesoNuevo, IconoProcesos } from './iconos-menu';
+import { IconoColapsar, IconoConfiguracion, IconoExpandir, IconoImportacion, IconoPanel, IconoProcesoNuevo, IconoProcesos } from './iconos-menu';
 
 const CLAVE_COLAPSADO = 'seei:sidebar-colapsado';
 
@@ -15,6 +15,7 @@ const ICONO_POR_ID: Record<string, typeof IconoProcesos> = {
   'cuentas-bloqueadas': IconoCandado,
   configuracion: IconoConfiguracion,
   'importacion-excel': IconoImportacion,
+  'panel-jornada': IconoPanel,
 };
 
 function leerPreferenciaColapsado(): boolean {

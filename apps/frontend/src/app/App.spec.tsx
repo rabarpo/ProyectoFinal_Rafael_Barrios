@@ -33,4 +33,27 @@ describe('App', () => {
       expect(screen.getByText(/rol: administrador/i)).toBeInTheDocument();
     });
   });
+
+  // dashboard-panel-jornada (Backlog #20, PR4; design.md D10, tasks.md 14.5). `RUTAS_SIN_SHELL`
+  // monta `<Enrutador/>` desnudo, SIN `AppShell` (sin header "Rol:", sin sidebar) — la pantalla
+  // de kiosco de `/proyeccion/:procesoId` no debe llevar chrome de navegación.
+  it('[14.5] ruta proyeccion monta el Enrutador sin AppShell (sin header, sin sidebar)', async () => {
+    whoamiMock.mockResolvedValueOnce({
+      userId: 'u1',
+      rol: 'administrador',
+      creadoEn: 1,
+    });
+    window.history.pushState(null, '', '/proyeccion/p1');
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/cargando/i) || screen.queryByRole('alert')).toBeTruthy();
+    });
+
+    expect(screen.queryByText(/rol: administrador/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/cerrar sesión/i)).not.toBeInTheDocument();
+
+    window.history.pushState(null, '', '/');
+  });
 });

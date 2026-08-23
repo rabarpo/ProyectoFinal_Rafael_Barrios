@@ -9,9 +9,25 @@ import { parsearRuta, rutaAPath } from './rutas';
 // jsdom y no se rompe al retocar un `className`.
 describe('MENU_POR_ROL', () => {
   const idsPorRol: Record<RolSesion, string[]> = {
-    administrador: ['procesos', 'proceso-nuevo', 'academica', 'usuarios', 'configuracion', 'importacion-excel'],
-    director: ['procesos', 'proceso-nuevo', 'academica', 'usuarios', 'configuracion', 'importacion-excel'],
-    comite: ['procesos', 'proceso-nuevo', 'academica', 'cuentas-bloqueadas'],
+    administrador: [
+      'procesos',
+      'proceso-nuevo',
+      'academica',
+      'usuarios',
+      'configuracion',
+      'importacion-excel',
+      'panel-jornada',
+    ],
+    director: [
+      'procesos',
+      'proceso-nuevo',
+      'academica',
+      'usuarios',
+      'configuracion',
+      'importacion-excel',
+      'panel-jornada',
+    ],
+    comite: ['procesos', 'proceso-nuevo', 'academica', 'cuentas-bloqueadas', 'panel-jornada'],
     docente: [],
     estudiante: [],
   };
@@ -98,6 +114,44 @@ describe('MENU_POR_ROL', () => {
   // "Comité no ve el item de menú usuarios"; tasks.md 3.3).
   it('[3.3] comite no tiene item usuarios', () => {
     expect(MENU_POR_ROL.comite.find((i) => i.id === 'usuarios')).toBeUndefined();
+  });
+
+  // dashboard-panel-jornada, PR3 (Backlog #20; design.md "Cambios de archivos", tasks.md 12.5;
+  // spec: menu-navegacion-post-login, "Navegación a Panel de jornada reutiliza la ruta nueva").
+  it('[12.5] panel-jornada es navegable para administrador, director y comité', () => {
+    for (const rol of ['administrador', 'director', 'comite'] as RolSesion[]) {
+      const item = MENU_POR_ROL[rol].find((i) => i.id === 'panel-jornada');
+      expect(item).toEqual({
+        clase: 'navegable',
+        id: 'panel-jornada',
+        etiqueta: 'Panel de jornada',
+        ruta: { nombre: 'panel-jornada' },
+      });
+    }
+  });
+
+  // dashboard-panel-jornada, PR3 (Backlog #20; tasks.md 12.6; threat: "Rol no autorizado navega
+  // a mano"). `MENU_POR_ROL` no expone el ítem a `docente`/`estudiante` — la autorización real
+  // sigue siendo `@Roles()` server-side.
+  it('[12.6] docente y estudiante no tienen item panel-jornada', () => {
+    for (const rol of ['docente', 'estudiante'] as RolSesion[]) {
+      expect(MENU_POR_ROL[rol].find((i) => i.id === 'panel-jornada')).toBeUndefined();
+    }
+  });
+
+  // dashboard-panel-jornada, PR4 (Backlog #20; design.md D10, tasks.md 14.6; spec:
+  // "Proyección no aparece en el menú"). Ningún item de `MENU_POR_ROL` enlaza a la ruta de
+  // proyección, para ningún rol — requiere `procesoId` que el menú no tiene (mismo criterio que
+  // "Candidatos"), y además es intencionalmente inaccesible desde el menú (D10, pantalla de
+  // kiosco, sólo por URL directa).
+  it('[14.6] ningún item de MENU_POR_ROL enlaza a la ruta de proyección', () => {
+    for (const items of Object.values(MENU_POR_ROL)) {
+      for (const item of items) {
+        if (item.clase === 'navegable') {
+          expect(item.ruta.nombre).not.toBe('proyeccion');
+        }
+      }
+    }
   });
 
   it('[4.3] toda ruta de item navegable hace round-trip con parsearRuta/rutaAPath', () => {

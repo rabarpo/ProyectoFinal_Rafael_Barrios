@@ -957,6 +957,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/panel-jornada/institucion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Conteo institucional de estudiantes y vínculos apoderado-estudiante, sin proceso */
+        get: operations["PanelJornadaController_institucion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/panel-jornada/procesos/{id}/resumen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resumen de jornada de un proceso: participación y, según ocultar_resultados, desglose (D6) */
+        get: operations["PanelJornadaController_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/panel-jornada/procesos/{id}/votos-por-hora": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Serie de votos por hora del proceso, sin franjas vacías omitidas */
+        get: operations["PanelJornadaController_votosPorHora"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/panel-jornada/procesos/{id}/avance-aulas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Avance por aula del proceso, con umbral relativo de rezago (D7) */
+        get: operations["PanelJornadaController_avanceAulas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/panel-jornada/procesos/{id}/proyeccion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payload de proyección (kiosco), sin desglose por candidato bajo ninguna circunstancia (D8) */
+        get: operations["PanelJornadaController_proyeccion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1561,6 +1646,93 @@ export interface components {
             opciones: components["schemas"]["PapeletaOpcionDto"][];
             ya_voto: boolean;
             comprobante: components["schemas"]["PapeletaComprobanteDto"] | null;
+        };
+        InstitucionDto: {
+            /** @description count(Usuario WHERE rol=estudiante AND estado=activo) */
+            estudiantes: number;
+            /** @description count(Apoderado), filas crudas sin dedup por DNI */
+            vinculos_apoderado: number;
+            /** @description Instante del cálculo (now() de Postgres), ISO */
+            hora_servidor: string;
+        };
+        ResumenJornadaDto: {
+            /** @description ID del ProcesoElectoral */
+            proceso_id: string;
+            /**
+             * @description Estado actual del proceso
+             * @enum {string}
+             */
+            estado: "abierto" | "cerrado" | "acta_emitida";
+            /** @description count(DerechoVoto) del proceso (padrón congelado) */
+            padron_total: number;
+            /** @description count(Voto) del proceso */
+            votos_emitidos: number;
+            /** @description count(JobCorreo WHERE proceso_id=id AND estado=fallido) */
+            correos_fallidos: number;
+            /**
+             * @description visible | oculto, según ProcesoElectoral.ocultar_resultados (D6)
+             * @enum {string}
+             */
+            estado_visibilidad: "visible" | "oculto";
+            /** @description Instante del cálculo (now() de Postgres), ISO */
+            hora_servidor: string;
+            /**
+             * @description Sólo en modo visible
+             * @enum {string}
+             */
+            dimension?: "lista" | "candidato" | "opcion";
+            /** @description Sólo en modo visible */
+            desglose?: components["schemas"]["ResultadoOpcionDto"][];
+            /** @description Sólo en modo visible: count(Voto WHERE blanco = true) */
+            blancos?: number;
+        };
+        FranjaVotosPorHoraDto: {
+            /** @description Inicio de la franja horaria (truncada a la hora), ISO */
+            hora_inicio: string;
+            /** @description count(Voto) emitidos en esa franja */
+            votos: number;
+        };
+        VotosPorHoraDto: {
+            /** @description Instante del cálculo (now() de Postgres), ISO */
+            hora_servidor: string;
+            /** @description Serie cronológica, sin franjas vacías omitidas */
+            franjas: components["schemas"]["FranjaVotosPorHoraDto"][];
+        };
+        AulaAvanceDto: {
+            /** @description ID del Aula (vía DerechoVoto.aula_snapshot, D3) */
+            aula_id: string;
+            /** @description Etiqueta legible: turno + grado + sección */
+            etiqueta: string;
+            /** @description count(DerechoVoto) del aula (padrón congelado) */
+            padron: number;
+            /** @description count(Voto) del aula */
+            votos: number;
+            /** @description votos / padron * 100, 0 si padron = 0 */
+            porcentaje: number;
+            /** @description padron > 0 && porcentaje <= participacion_global_pp - UMBRAL_REZAGO_PP (D7) */
+            rezagada: boolean;
+        };
+        AvanceAulasDto: {
+            /** @description Instante del cálculo (now() de Postgres), ISO */
+            hora_servidor: string;
+            /** @description % participación global del proceso, en puntos porcentuales */
+            participacion_global_pp: number;
+            /** @description Umbral relativo aplicado (D7) */
+            umbral_rezago_pp: number;
+            /** @description Una fila por aula del proceso */
+            aulas: components["schemas"]["AulaAvanceDto"][];
+        };
+        ProyeccionDto: {
+            /** @description Instante del cálculo (now() de Postgres), ISO */
+            hora_servidor: string;
+            /** @description count(DerechoVoto) del proceso (padrón congelado) */
+            padron_total: number;
+            /** @description count(Voto) del proceso */
+            votos_emitidos: number;
+            /** @description Serie cronológica de votos por hora */
+            franjas: components["schemas"]["FranjaVotosPorHoraDto"][];
+            /** @description Avance por aula, sólo participación */
+            aulas: components["schemas"]["AulaAvanceDto"][];
         };
     };
     responses: never;
@@ -4872,6 +5044,268 @@ export interface operations {
             };
             /** @description Voto ajeno o inexistente */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PanelJornadaController_institucion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conteo institucional */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstitucionDto"];
+                };
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PanelJornadaController_resumen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumen de jornada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumenJornadaDto"];
+                };
+            };
+            /** @description :id no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso en estado borrador (ESTADO_INVALIDO, D11) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PanelJornadaController_votosPorHora: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Votos por hora */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VotosPorHoraDto"];
+                };
+            };
+            /** @description :id no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso en estado borrador (ESTADO_INVALIDO) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PanelJornadaController_avanceAulas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Avance por aula */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvanceAulasDto"];
+                };
+            };
+            /** @description :id no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso en estado borrador (ESTADO_INVALIDO) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PanelJornadaController_proyeccion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proyección */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProyeccionDto"];
+                };
+            };
+            /** @description :id no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Proceso en estado borrador (ESTADO_INVALIDO) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

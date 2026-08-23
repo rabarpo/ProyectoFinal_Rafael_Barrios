@@ -12,6 +12,8 @@ import { AcademicaPage } from '../academico/AcademicaPage';
 import { UsuariosPage } from '../usuarios/UsuariosPage';
 import { CuentasBloqueadasPage } from '../usuarios/CuentasBloqueadasPage';
 import { ConfiguracionPage } from '../configuracion/ConfiguracionPage';
+import { PanelJornadaPage } from '../panel-jornada/PanelJornadaPage';
+import { ProyeccionPage } from '../panel-jornada/ProyeccionPage';
 
 /**
  * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
@@ -33,6 +35,11 @@ import { ConfiguracionPage } from '../configuracion/ConfiguracionPage';
  * (#25; design.md D1): `/` ya NO monta `ProcesoWizardPage` — resuelve a la
  * variante `inicio` y monta `InicioPage`; el asistente de creación de proceso
  * se mudó a `/procesos/nuevo` (variante `proceso-nuevo`, sin cambios de nombre).
+ * dashboard-panel-jornada (Backlog #20, PR3/PR4; design.md D10, "Cambios de archivos", tasks.md
+ * 12.4/14.4): `panel-jornada` monta `PanelJornadaPage` real (reemplaza el placeholder de PR2,
+ * tasks.md 9.3). `proyeccion` monta `ProyeccionPage` real, siempre fuera de `AppShell` (D10,
+ * `App.tsx`/`RUTAS_SIN_SHELL`, tasks.md 14.5) — el `Enrutador` no distingue el layout, sólo la
+ * variante de `Ruta`.
  */
 function VistaNoEncontrada() {
   return <p className="text-body-md text-on-surface">Página no encontrada.</p>;
@@ -70,6 +77,10 @@ export function Enrutador() {
       return <CuentasBloqueadasPage />;
     case 'configuracion':
       return <ConfiguracionPage />;
+    case 'panel-jornada':
+      return <PanelJornadaPage />;
+    case 'proyeccion':
+      return <ProyeccionPage procesoId={ruta.procesoId} />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }

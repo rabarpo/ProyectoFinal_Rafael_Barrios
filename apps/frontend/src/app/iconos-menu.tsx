@@ -54,6 +54,16 @@ export function IconoImportacion(props: IconoProps) {
   );
 }
 
+// dashboard-panel-jornada (Backlog #20, PR3; design.md "Cambios de archivos", tasks.md 12.5).
+export function IconoPanel(props: IconoProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="1.5" />
+      <path d="M8 17V11M12 17V7M16 17v-4" />
+    </svg>
+  );
+}
+
 export function IconoColapsar(props: IconoProps) {
   return (
     <svg {...baseProps} {...props}>
