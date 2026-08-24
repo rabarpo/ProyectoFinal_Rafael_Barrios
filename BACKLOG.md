@@ -35,6 +35,7 @@ técnica**, no por prioridad de negocio.
 | 27 | Frontend de administración de usuarios y apoderados | UI de CRUD de usuarios (5 roles), alta/baja de apoderados vinculados a estudiantes, bloqueo/desbloqueo de cuentas (backend #6/#7) | #6, #7, #25 | — |
 | 28 | Frontend de configuración general | UI del singleton de configuración institucional (nombre, director, comité, colores, zona horaria, SMTP, dominio Google Workspace) y subida de logo (backend #10) | #10, #25 | — |
 | 29 | Frontend de importación de Excel | UI de carga de archivo (`.xlsx`/`.csv`, 5 MB, 2000 filas), reporte de errores fila a fila y descarga del CSV de errores (backend #9) | #9, #25 | — |
+| 30 | Acceso a votación por login | `GET /votos/mis-derechos` scoped a `req.usuario`, lista `DerechoVoto` vigentes en procesos abiertos agrupados por `en_calidad_de` sin exponer la elección; pantalla nueva que reemplaza el estado vacío de `estudiante` en `InicioPage` y navega a `/votar/:derechoVotoId` existente | #14, #25 | — (independiente de #19; deja el terreno listo para que el correo de "inicio de votación" enlace a la misma ruta) |
 
 ## Ausencia de reglamento previo
 
@@ -86,6 +87,13 @@ Consecuencias para las specs de #11, #13, #17 y #22:
   único "backend de administración" — cada ítem cierra su propio ciclo SDD (explore→propose→
   spec→design→tasks→apply→verify→archive) en vez de un solo change con varios PRs encadenados.
   Los 4 dependen de #25 (ya archivado) además de su backend respectivo.
+- **#30 nace de un vacío detectado en 2026-08-24**, mismo patrón que #25/#26: al explorar el
+  reclamo de que el voto "depende de un correo", se confirmó que la premisa era incorrecta pero el
+  síntoma real — un estudiante logueado no tiene ninguna forma, dentro de la app, de llegar a
+  votar — sí existe. No hay endpoint que liste sus `DerechoVoto` ni pantalla que los muestre; solo
+  la ruta `/votar/:derechoVotoId` funciona, y requiere conocer el UUID de antemano. Es
+  independiente de #19 (Notificaciones): no reemplaza el correo de "inicio de votación" futuro,
+  solo construye el camino que faltaba y deja lista la ruta para que #19 enlace ahí.
 
 ## Cómo usar este backlog
 
