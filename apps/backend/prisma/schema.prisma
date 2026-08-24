@@ -72,6 +72,8 @@ model Usuario {
   derechoVotos     DerechoVoto[]
   jobsCorreo       JobCorreo[]
   eventosAuditoria EventoAuditoria[]
+  // reportes-y-exportaciones (#18, PR1; design.md D2): relación inversa 1:N, sólo schema.
+  reportesSolicitados Reporte[]
 }
 
 model Apoderado {
@@ -227,6 +229,8 @@ model ProcesoElectoral {
   // outbox-correo-comprobante-autenticado (#15, PR1; design.md D1): relación inversa 1:N,
   // sólo schema (sin SQL) — abre la puerta a #19 (notificaciones sin voto) sin migración adicional.
   jobsCorreo   JobCorreo[]
+  // reportes-y-exportaciones (#18, PR1; design.md D2): relación inversa 1:N, sólo schema.
+  reportes     Reporte[]
 }
 
 model Lista {
@@ -480,4 +484,54 @@ model EventoAuditoria {
   payload          Json     @db.JsonB
 
   actor Usuario? @relation(fields: [actor_usuario_id], references: [id], onDelete: Restrict)
+}
+
+// reportes-y-exportaciones (#18, PR1; design.md D2/D3). Grupo nuevo, 100% aditivo: ningún tipo ni
+// tabla existente cambia.
+enum DimensionReporte {
+  participacion
+  votantes
+  abstenciones
+  resultados
+  candidatos
+  consultas
+}
+
+enum FormatoReporte {
+  excel
+  pdf
+  csv
+}
+
+// Paridad exacta con EstadoActa (#17 D2): el worker escribe 'fallido' solo tras agotar reintentos.
+enum EstadoReporte {
+  borrador
+  emitida
+  fallido
+}
+
+/// D3: la AUSENCIA de @@unique([proceso_id, dimension, formato]) es DELIBERADA — al revés que
+/// Acta (1 por tipo por proceso), cada solicitud es su propio snapshot inmutable. No agregarla.
+model Reporte {
+  id             String           @id @default(uuid()) @db.Uuid
+  proceso_id     String           @db.Uuid
+  dimension      DimensionReporte
+  formato        FormatoReporte
+  estado         EstadoReporte    @default(borrador)
+  /// D2/D13: NOT NULL a propósito — único camino del actor hasta REPORTE_GENERADO.
+  solicitado_por String           @db.Uuid
+  /// D7: null mientras 'borrador'; lo escribe el worker con el gate EFECTIVO de la generación.
+  gate_aplicado  Boolean?
+  contenido      Json             @db.JsonB
+  archivo        Bytes?
+  archivo_mime   String?
+  archivo_nombre String?
+  creado_en      DateTime         @default(now()) @db.Timestamptz(3)
+  emitido_en     DateTime?        @db.Timestamptz(3)
+
+  proceso     ProcesoElectoral @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
+  solicitante Usuario          @relation(fields: [solicitado_por], references: [id], onDelete: Restrict)
+
+  @@index([estado, creado_en])
+  @@index([proceso_id, dimension, formato, creado_en])
 }

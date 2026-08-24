@@ -9,6 +9,7 @@ import { HealthModule } from './health/health.module';
 import { ImportacionModule } from './importacion/importacion.module';
 import { PanelJornadaModule } from './panel-jornada/panel-jornada.module';
 import { ProcesosModule } from './procesos/procesos.module';
+import { ReportesModule } from './reportes/reportes.module';
 import { SystemPingModule } from './system-ping/system-ping.module';
 import { UsersModule } from './users/users.module';
 import { VotosModule } from './votos/votos.module';
@@ -42,6 +43,10 @@ import { VotosModule } from './votos/votos.module';
 // dashboard-panel-jornada, PR1 (Backlog #20; design.md "Cambios de archivos", tarea 4.3).
 // `PanelJornadaModule` se registra al final de la lista, mismo criterio de orden — cambio aditivo
 // puro, sin tocar rutas existentes; `/panel-jornada/*` no colisiona con ningún prefijo previo.
+//
+// reportes-y-exportaciones, PR3 (Backlog #18; design.md D1, "Cambios de archivos"). `ReportesModule`
+// se registra al final de la lista, mismo criterio de orden — cambio aditivo puro; `/reportes/*` no
+// colisiona con ningún prefijo previo.
 @Module({
   imports: [
     HealthModule,
@@ -57,6 +62,7 @@ import { VotosModule } from './votos/votos.module';
     CandidatosModule,
     VotosModule,
     PanelJornadaModule,
+    ReportesModule,
   ],
 })
 export class AppModule {}

@@ -317,6 +317,20 @@ describe('append_only_audit', () => {
     });
   });
 
+  // reportes-y-exportaciones (#18, PR4; design.md D13, tarea 21.1): INSERT directo de
+  // REPORTE_GENERADO cumple el CHECK `^[A-Z_]+$` y NO dispara AU002 — el trigger de claves de
+  // elección sólo cubre VOTO/RECHAZO literalmente. Constancia de que la protección de esta clave
+  // (jamás candidato_id/lista_id/opcion_id/blanco en el payload) es de código (D13), no del motor.
+  it('[TM4] INSERT directo de REPORTE_GENERADO con detalle.candidato_id NO dispara AU002', async () => {
+    await withTransaction(client, async () => {
+      const id = await insertarEvento(client.query.bind(client), 'REPORTE_GENERADO', {
+        detalle: { candidato_id: randomUUID() },
+      });
+      const result = await client.query(`SELECT id FROM "EventoAuditoria" WHERE id = $1`, [id]);
+      expect(result.rows).toHaveLength(1);
+    });
+  });
+
   // [TM4] Ambas claves cumplen el CHECK de convención ^[A-Z_]+$ (ya ejercitado arriba de forma
   // implícita al aceptarse el INSERT: si violaran el CHECK, el insertarEvento() habría lanzado).
 

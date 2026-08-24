@@ -3353,6 +3353,145 @@
           "panel-jornada"
         ]
       }
+    },
+    "/reportes": {
+      "post": {
+        "operationId": "ReportesController_solicitar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolicitarReporteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Reporte en borrador, listo para que el worker lo recoja",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReporteDetalleDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "dimension/formato/proceso_id inválidos"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "ProcesoElectoral inexistente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Solicita un reporte: crea la fila Reporte en borrador (patrón outbox)",
+        "tags": [
+          "reportes"
+        ]
+      }
+    },
+    "/reportes/{id}": {
+      "get": {
+        "operationId": "ReportesController_obtener",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID del reporte",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle del reporte",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReporteDetalleDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Reporte inexistente"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Consulta el detalle de un reporte (nunca contenido ni archivo)",
+        "tags": [
+          "reportes"
+        ]
+      }
+    },
+    "/reportes/{id}/archivo": {
+      "get": {
+        "operationId": "ReportesController_archivo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "ID del reporte",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archivo del reporte"
+          },
+          "400": {
+            "description": "id malformado"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Rol distinto de administrador/director/comite"
+          },
+          "404": {
+            "description": "Reporte inexistente"
+          },
+          "409": {
+            "description": "Reporte aún no emitido, o gate vigente (REPORTE_NO_DISPONIBLE)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Descarga el archivo de un reporte emitido",
+        "tags": [
+          "reportes"
+        ]
+      }
     }
   },
   "info": {
@@ -5174,6 +5313,131 @@
           "votos_emitidos",
           "franjas",
           "aulas"
+        ]
+      },
+      "SolicitarReporteDto": {
+        "type": "object",
+        "properties": {
+          "proceso_id": {
+            "type": "string",
+            "description": "ID del ProcesoElectoral sobre el que se solicita el reporte"
+          },
+          "dimension": {
+            "type": "string",
+            "description": "Dimensión del reporte",
+            "enum": [
+              "participacion",
+              "votantes",
+              "abstenciones",
+              "resultados",
+              "candidatos",
+              "consultas"
+            ]
+          },
+          "formato": {
+            "type": "string",
+            "description": "Formato de salida del reporte",
+            "enum": [
+              "excel",
+              "pdf",
+              "csv"
+            ]
+          }
+        },
+        "required": [
+          "proceso_id",
+          "dimension",
+          "formato"
+        ]
+      },
+      "ReporteDetalleDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID del reporte"
+          },
+          "proceso_id": {
+            "type": "string",
+            "description": "ID del ProcesoElectoral"
+          },
+          "dimension": {
+            "type": "string",
+            "description": "Dimensión del reporte",
+            "enum": [
+              "participacion",
+              "votantes",
+              "abstenciones",
+              "resultados",
+              "candidatos",
+              "consultas"
+            ]
+          },
+          "formato": {
+            "type": "string",
+            "description": "Formato de salida",
+            "enum": [
+              "excel",
+              "pdf",
+              "csv"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado de emisión del reporte",
+            "enum": [
+              "borrador",
+              "emitida",
+              "fallido"
+            ]
+          },
+          "gate_aplicado": {
+            "type": "boolean",
+            "description": "Gate efectivo aplicado por el worker al generar (D7.2); null mientras el reporte sigue en borrador",
+            "nullable": true
+          },
+          "archivo_disponible": {
+            "type": "boolean",
+            "description": "true si el archivo ya fue persistido y puede descargarse"
+          },
+          "archivo_bytes": {
+            "type": "number",
+            "description": "Tamaño del archivo en bytes",
+            "nullable": true
+          },
+          "archivo_mime": {
+            "type": "string",
+            "description": "Content-Type del archivo emitido",
+            "nullable": true
+          },
+          "archivo_nombre": {
+            "type": "string",
+            "description": "Nombre de archivo sugerido para la descarga",
+            "nullable": true
+          },
+          "solicitado_por": {
+            "type": "string",
+            "description": "ID del usuario que solicitó el reporte"
+          },
+          "creado_en": {
+            "type": "string",
+            "description": "Momento de creación en borrador (ISO-8601)"
+          },
+          "emitido_en": {
+            "type": "string",
+            "description": "Momento de emisión (ISO-8601)",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "proceso_id",
+          "dimension",
+          "formato",
+          "estado",
+          "archivo_disponible",
+          "solicitado_por",
+          "creado_en"
         ]
       }
     }

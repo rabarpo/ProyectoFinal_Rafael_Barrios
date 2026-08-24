@@ -1042,6 +1042,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reportes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Solicita un reporte: crea la fila Reporte en borrador (patrón outbox) */
+        post: operations["ReportesController_solicitar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reportes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta el detalle de un reporte (nunca contenido ni archivo) */
+        get: operations["ReportesController_obtener"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reportes/{id}/archivo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descarga el archivo de un reporte emitido */
+        get: operations["ReportesController_archivo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1733,6 +1784,57 @@ export interface components {
             franjas: components["schemas"]["FranjaVotosPorHoraDto"][];
             /** @description Avance por aula, sólo participación */
             aulas: components["schemas"]["AulaAvanceDto"][];
+        };
+        SolicitarReporteDto: {
+            /** @description ID del ProcesoElectoral sobre el que se solicita el reporte */
+            proceso_id: string;
+            /**
+             * @description Dimensión del reporte
+             * @enum {string}
+             */
+            dimension: "participacion" | "votantes" | "abstenciones" | "resultados" | "candidatos" | "consultas";
+            /**
+             * @description Formato de salida del reporte
+             * @enum {string}
+             */
+            formato: "excel" | "pdf" | "csv";
+        };
+        ReporteDetalleDto: {
+            /** @description ID del reporte */
+            id: string;
+            /** @description ID del ProcesoElectoral */
+            proceso_id: string;
+            /**
+             * @description Dimensión del reporte
+             * @enum {string}
+             */
+            dimension: "participacion" | "votantes" | "abstenciones" | "resultados" | "candidatos" | "consultas";
+            /**
+             * @description Formato de salida
+             * @enum {string}
+             */
+            formato: "excel" | "pdf" | "csv";
+            /**
+             * @description Estado de emisión del reporte
+             * @enum {string}
+             */
+            estado: "borrador" | "emitida" | "fallido";
+            /** @description Gate efectivo aplicado por el worker al generar (D7.2); null mientras el reporte sigue en borrador */
+            gate_aplicado?: boolean | null;
+            /** @description true si el archivo ya fue persistido y puede descargarse */
+            archivo_disponible: boolean;
+            /** @description Tamaño del archivo en bytes */
+            archivo_bytes?: number | null;
+            /** @description Content-Type del archivo emitido */
+            archivo_mime?: string | null;
+            /** @description Nombre de archivo sugerido para la descarga */
+            archivo_nombre?: string | null;
+            /** @description ID del usuario que solicitó el reporte */
+            solicitado_por: string;
+            /** @description Momento de creación en borrador (ISO-8601) */
+            creado_en: string;
+            /** @description Momento de emisión (ISO-8601) */
+            emitido_en?: string | null;
         };
     };
     responses: never;
@@ -5305,6 +5407,165 @@ export interface operations {
                 content?: never;
             };
             /** @description Proceso en estado borrador (ESTADO_INVALIDO) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportesController_solicitar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolicitarReporteDto"];
+            };
+        };
+        responses: {
+            /** @description Reporte en borrador, listo para que el worker lo recoja */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReporteDetalleDto"];
+                };
+            };
+            /** @description dimension/formato/proceso_id inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ProcesoElectoral inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportesController_obtener: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID del reporte */
+                id: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detalle del reporte */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReporteDetalleDto"];
+                };
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Reporte inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportesController_archivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID del reporte */
+                id: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archivo del reporte */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description id malformado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rol distinto de administrador/director/comite */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Reporte inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Reporte aún no emitido, o gate vigente (REPORTE_NO_DISPONIBLE) */
             409: {
                 headers: {
                     [name: string]: unknown;

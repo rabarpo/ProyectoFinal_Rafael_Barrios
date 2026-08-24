@@ -103,6 +103,10 @@ services:
       # y `README.md`); ACTAS_* se documentan acá igual, sin reproducir esa omisión.
       ACTAS_POLL_MS: ${ACTAS_POLL_MS:-5000}
       ACTAS_BATCH: ${ACTAS_BATCH:-20}
+      # reportes-y-exportaciones (#18, PR4; design.md D9/D14): mismo patrón de polling que ACTAS_*,
+      # cola propia `reportes`, opcionales, el worker cae a 5000/20 sin ellas.
+      REPORTES_POLL_MS: ${REPORTES_POLL_MS:-5000}
+      REPORTES_BATCH: ${REPORTES_BATCH:-20}
     # Sin healthcheck: el worker no expone superficie HTTP (design.md, "Preguntas abiertas" —
     # omisión aceptada para el andamiaje, a revisar cuando llegue el despachador del outbox).
     depends_on:

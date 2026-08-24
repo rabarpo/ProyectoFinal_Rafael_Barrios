@@ -15,6 +15,20 @@ import { PrismaActasRepo } from './actas/actas.repo';
 import { PdfkitRendererActa } from './actas/pdfkit-renderer';
 import { ACTA_PDF_JOB_NAME, ACTAS_QUEUE_NAME, despacharLoteActas } from './actas/actas-dispatcher';
 import { crearListenerActasFallido, type JobFallido } from './actas/actas-fallido-listener';
+import { procesarReporte, type RendererReporte } from './processors/reportes.processor';
+import { PrismaReportesRepo } from './reportes/reportes.repo';
+import { RendererExcel } from './reportes/exceljs-renderer';
+import { RendererPdf } from './reportes/pdfkit-renderer-reporte';
+import { RendererCsv } from './reportes/csv-renderer';
+import {
+  REPORTE_GENERAR_JOB_NAME,
+  REPORTES_QUEUE_NAME,
+  despacharLoteReportes,
+} from './reportes/reportes-dispatcher';
+import {
+  crearListenerReportesFallido,
+  type JobFallido as ReporteJobFallido,
+} from './reportes/reportes-fallido-listener';
 
 /**
  * Deben coincidir con `SYSTEM_QUEUE_NAME`/`SYSTEM_PING_JOB_NAME` de
@@ -40,6 +54,14 @@ const OUTBOX_BATCH = Number(process.env.OUTBOX_BATCH ?? 20);
  */
 const ACTAS_POLL_MS = Number(process.env.ACTAS_POLL_MS ?? 5000);
 const ACTAS_BATCH = Number(process.env.ACTAS_BATCH ?? 20);
+
+/**
+ * reportes-y-exportaciones (#18, PR4; design.md D9/D14). Mismos defaults que `ACTAS_*`/`OUTBOX_*`
+ * (5000/20) — el barrido sobre `Reporte WHERE estado='borrador'` es igual de barato gracias a
+ * `@@index([estado, creado_en])` (PR1).
+ */
+const REPORTES_POLL_MS = Number(process.env.REPORTES_POLL_MS ?? 5000);
+const REPORTES_BATCH = Number(process.env.REPORTES_BATCH ?? 20);
 
 /**
  * `maxRetriesPerRequest: null` es requerido por BullMQ para conexiones de
@@ -180,3 +202,62 @@ setInterval(() => {
     console.error('[worker] error despachando lote de actas:', error);
   });
 }, ACTAS_POLL_MS);
+
+/**
+ * reportes-y-exportaciones (#18, PR4; design.md D9/D10). Cola PROPIA `reportes`, nunca compartida
+ * con `actas` ni `correo` (D9): un export de 2000 filas en Excel es lento y con `attempts: 5`
+ * puede ocupar un worker minutos — encolarlo detrás del cierre de actas retrasaría la operación
+ * crítica. El backend NUNCA encola nada — la fila `Reporte` nace en `borrador` dentro de la
+ * transacción de `ReportesService.solicitar()` (PR3) y este despachador la descubre por *polling*.
+ */
+const reportesRepo = new PrismaReportesRepo(prisma);
+const reportesQueue = new Queue(REPORTES_QUEUE_NAME, { connection });
+
+/**
+ * D10: mapa `Record<FormatoReporte, RendererReporte>` — el processor recibe puertos (`reportesRepo`,
+ * `reportesRenderers`), nunca Prisma ni BullMQ directamente.
+ */
+const reportesRenderers: Record<string, RendererReporte> = {
+  excel: new RendererExcel(),
+  pdf: new RendererPdf(),
+  csv: new RendererCsv(),
+};
+
+export const reportesWorker = new Worker(
+  REPORTES_QUEUE_NAME,
+  async (job) => {
+    if (job.name !== REPORTE_GENERAR_JOB_NAME) {
+      return;
+    }
+    await procesarReporte(reportesRepo, reportesRenderers, job.data.reporte_id as string);
+  },
+  { connection },
+);
+
+reportesWorker.on('error', (error) => {
+  // eslint-disable-next-line no-console
+  console.error('[worker] error en la cola "reportes":', error);
+});
+
+/**
+ * D13: BullMQ decide CUÁNDO reintentar (`attempts`/`backoff`, ver `reportes-dispatcher.ts`); este
+ * listener sólo escribe el estado TERMINAL `fallido` cuando la cola agota los reintentos
+ * configurados — nunca desde el processor, que permanece puro (D9).
+ */
+const listenerReportesFallido = crearListenerReportesFallido(reportesRepo);
+reportesWorker.on('failed', (job, error) => {
+  // eslint-disable-next-line no-console
+  console.error('[worker] error en la cola "reportes":', error);
+  listenerReportesFallido(job as unknown as ReporteJobFallido | undefined, error);
+});
+
+/**
+ * D9: despachador liviano de *polling* — Postgres es la fuente de verdad, BullMQ sólo ejecuta y
+ * reintenta. El backend nunca encola reportes (ADR-0012).
+ */
+setInterval(() => {
+  despacharLoteReportes(reportesRepo, reportesQueue, REPORTES_BATCH).catch((error: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error('[worker] error despachando lote de reportes:', error);
+  });
+}, REPORTES_POLL_MS);

@@ -71,6 +71,14 @@ Turborepo, roles de Postgres, topología de Docker Compose) ver
    | `ACTAS_POLL_MS` | Intervalo del despachador de *polling* sobre `Acta WHERE estado='borrador'` (por defecto `5000`) |
    | `ACTAS_BATCH` | Tamaño de lote que el despachador encola por cada ciclo (por defecto `20`) |
 
+   Reportes y exportaciones (backlog #18, `design.md` D9/D14) agrega estas variables, opcionales
+   en desarrollo, al servicio `worker`:
+
+   | Variable | Uso |
+   |---|---|
+   | `REPORTES_POLL_MS` | Intervalo del despachador de *polling* sobre `Reporte WHERE estado='borrador'` (por defecto `5000`) |
+   | `REPORTES_BATCH` | Tamaño de lote que el despachador encola por cada ciclo (por defecto `20`) |
+
 3. **Levantar el stack completo** (Caddy + frontend + backend + worker + Postgres + Redis, con el
    override de desarrollo — bind mounts, puertos de DB/Redis publicados solo en `127.0.0.1`):
 

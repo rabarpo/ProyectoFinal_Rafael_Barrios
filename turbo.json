@@ -33,7 +33,9 @@
         "OUTBOX_BATCH",
         "RESULTADOS_CACHE_TTL_SECONDS",
         "ACTAS_POLL_MS",
-        "ACTAS_BATCH"
+        "ACTAS_BATCH",
+        "REPORTES_POLL_MS",
+        "REPORTES_BATCH"
       ]
     },
     "test:schema": {

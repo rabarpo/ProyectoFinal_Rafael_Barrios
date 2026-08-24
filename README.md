@@ -149,3 +149,33 @@ CAS `UPDATE … WHERE estado='borrador'`, un evento `ACTA_GENERADA` de auditorí
 IS NULL` — el worker no tiene sesión) y, si las 4 actas del proceso quedan `emitida`, la transición
 `cerrado → acta_emitida`. `estado='fallido'` lo escribe sólo el listener `actasWorker.on('failed')`
 cuando la cola agota los `attempts` configurados, nunca el processor ni el repo.
+
+## Worker — reportes y exportaciones (`reporte.generar`)
+
+Backlog #18 (`openspec/changes/reportes-y-exportaciones/design.md`) agrega una cuarta cola BullMQ,
+`reportes`, propia y separada de `actas`/`correo`: un export de 2000 filas en Excel es lento y con
+`attempts: 5` puede ocupar un worker minutos, y encolarlo detrás del cierre de actas retrasaría esa
+operación crítica. `POST /reportes` (backend) congela el `ModeloReporte` completo en
+`Reporte.contenido` dentro de la transacción de la solicitud y deja la fila en `estado='borrador'`
+— el backend **nunca** encola nada (ADR-0012) — un despachador de *polling*
+(`apps/worker/src/reportes/reportes-dispatcher.ts`) descubre esas filas cada `REPORTES_POLL_MS` y
+las encola por lotes de `REPORTES_BATCH` con `jobId` determinista (`reporte:<id>`).
+
+El processor puro (`apps/worker/src/processors/reportes.processor.ts`) sólo conoce dos puertos
+(`ReportesRepo`, un `RendererReporte` por formato), nunca Prisma ni BullMQ. Antes de renderizar
+relee `ProcesoElectoral.ocultar_resultados` VIGENTE (nunca el congelado en la solicitud) y poda toda
+sección `sensible: true` con la misma regla genérica de `modelo-reporte.ts` — la visibilidad es una
+política, no un dato, y se evalúa de nuevo en cada capa (gate de tres capas: solicitud, generación,
+descarga). Tres renderizadores separados, un adaptador por formato, ninguno conoce a los otros:
+`apps/worker/src/reportes/exceljs-renderer.ts` (`exceljs`, hoja por sección + `Metadatos`),
+`apps/worker/src/reportes/pdfkit-renderer-reporte.ts` (`pdfkit`, mismas decisiones de determinismo
+que el renderizador de actas) y `apps/worker/src/reportes/csv-renderer.ts` (función pura, sólo
+`secciones[0]`, con `apps/worker/src/reportes/csv.ts` reimplementando a propósito el escaping RFC
+4180 y la neutralización anti-fórmula de `apps/backend/src/importacion/padron-csv.ts` — el worker
+no puede importar ese módulo del backend, `rootDir` de `apps/worker/tsconfig.json`). La transacción
+terminal (`apps/worker/src/reportes/reportes.repo.ts`) hace, por reporte: CAS
+`UPDATE … WHERE estado='borrador'` (sin `SELECT … FOR UPDATE` — a diferencia de actas, no hay
+ninguna agregación entre filas que proteger) y un evento `REPORTE_GENERADO` de auditoría con
+`actor_usuario_id` leído de `Reporte.solicitado_por` **dentro** de la transacción, nunca del
+payload de BullMQ (volátil). `estado='fallido'` lo escribe sólo el listener
+`reportesWorker.on('failed')` cuando la cola agota los `attempts` configurados.

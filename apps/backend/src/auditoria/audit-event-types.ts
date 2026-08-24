@@ -58,6 +58,14 @@
 // voto). Ninguno de los dos payloads incluye `candidato_id`/`lista_id`/`opcion_id`/`blanco`/
 // `eleccion` — sí activan la cláusula `WHEN` del trigger de ADR-0016 (`ambas` ya estaban cubiertas
 // desde su enmienda en #3) — ver test/schema/auditoria.spec.ts, caso [TM4].
+// reportes-y-exportaciones (#18, PR3; design.md D13, tarea 7.3): una clave aditiva
+// `REPORTE_GENERADO`, escrita por el worker (PR4) dentro de la misma transacción terminal que
+// transiciona un `Reporte` a `estado='emitida'`. A diferencia de `ACTA_GENERADA`, el actor NO es
+// `null`: `actor_usuario_id = reporte.solicitado_por`, leído de la fila dentro de la transacción,
+// nunca del payload volátil de la cola (D2/D13 — corrige la regresión de `ACTA_GENERADA`). Payload
+// cerrado `{ proceso_id, dimension, formato, gate_aplicado, filas, bytes }`: sólo cardinalidades,
+// jamás desglose ni nombres. No toca la cláusula `WHEN` del trigger de ADR-0016 (no involucra un
+// `Voto`) — ver test/schema/auditoria.spec.ts, caso [TM4].
 export const AUDIT_EVENT_TYPES = {
   VOTO: 'VOTO',
   RECHAZO: 'RECHAZO',
@@ -126,6 +134,7 @@ export const AUDIT_EVENT_TYPES = {
   // versionada de ADR-0016 — ver test/schema/auditoria.spec.ts, caso [TM4].
   PROCESO_CERRADO: 'PROCESO_CERRADO',
   ACTA_GENERADA: 'ACTA_GENERADA',
+  REPORTE_GENERADO: 'REPORTE_GENERADO',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];
