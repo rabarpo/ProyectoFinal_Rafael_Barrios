@@ -24,6 +24,7 @@ describe('rutas', () => {
       { nombre: 'configuracion' },
       { nombre: 'panel-jornada' },
       { nombre: 'proyeccion', procesoId: 'p1' },
+      { nombre: 'mis-votaciones' },
     ];
 
     for (const ruta of casos) {
@@ -177,5 +178,19 @@ describe('rutas', () => {
   it("[9.1] '/proyeccion/../../etc/passwd' resuelve a 'no-encontrada'", () => {
     expect(() => parsearRuta('/proyeccion/../../etc/passwd')).not.toThrow();
     expect(parsearRuta('/proyeccion/../../etc/passwd').nombre).toBe('no-encontrada');
+  });
+
+  // [4.1; design.md D7; spec: descubrimiento-derechos-voto, "Aterrizaje frontend"] Ruta plana
+  // `/mis-votaciones`, sin `derechoVotoId` embebido — mismo criterio que `/academica`/`/usuarios`.
+  it("[4.1] '/mis-votaciones' resuelve a 'mis-votaciones' y su rutaAPath es '/mis-votaciones'", () => {
+    expect(parsearRuta('/mis-votaciones')).toEqual({ nombre: 'mis-votaciones' });
+    expect(rutaAPath({ nombre: 'mis-votaciones' })).toBe('/mis-votaciones');
+  });
+
+  it("[4.1] '/mis-votaciones/algo' resuelve a 'no-encontrada'", () => {
+    expect(parsearRuta('/mis-votaciones/algo')).toEqual({
+      nombre: 'no-encontrada',
+      pathname: '/mis-votaciones/algo',
+    });
   });
 });

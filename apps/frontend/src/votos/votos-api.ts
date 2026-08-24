@@ -5,6 +5,7 @@ export type EmitirVotoDto = components['schemas']['EmitirVotoDto'];
 export type ComprobanteDto = components['schemas']['ComprobanteDto'];
 export type PapeletaDto = components['schemas']['PapeletaDto'];
 export type PapeletaOpcionDto = components['schemas']['PapeletaOpcionDto'];
+export type MiDerechoVotoDto = components['schemas']['MiDerechoVotoDto'];
 
 /**
  * vote-casting, PR5 (design.md D14, "Cambios de archivos"). Wrappers tipados sobre
@@ -27,4 +28,10 @@ export async function emitir(dto: EmitirVotoDto) {
 // contrato regenerado en PR3 (`GET /votos/comprobante/{votoId}`).
 export async function comprobante(votoId: string) {
   return client().GET('/votos/comprobante/{votoId}', { params: { path: { votoId } } });
+}
+
+// descubrimiento-derechos-voto, PR2 (#30; design.md D5/D8, tasks.md 5.1): sin parámetros — el
+// usuario sale exclusivamente de la sesión (`req.usuario`) en el backend.
+export async function misDerechos() {
+  return client().GET('/votos/mis-derechos', {});
 }

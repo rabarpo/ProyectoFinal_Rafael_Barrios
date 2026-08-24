@@ -60,6 +60,12 @@ const PANEL_JORNADA: ItemMenu = {
   etiqueta: 'Panel de jornada',
   ruta: { nombre: 'panel-jornada' },
 };
+const MIS_VOTACIONES: ItemMenu = {
+  clase: 'navegable',
+  id: 'mis-votaciones',
+  etiqueta: 'Mis votaciones',
+  ruta: { nombre: 'mis-votaciones' },
+};
 
 /**
  * design.md D3: espeja los `@Roles` reales verificados en el backend
@@ -94,11 +100,16 @@ const PANEL_JORNADA: ItemMenu = {
  * a nivel de clase). **Sin** item de proyección: requiere `procesoId` que el menú no tiene
  * (mismo criterio ya documentado para "Candidatos", spec: "Ruta de modo proyección sin item de
  * menú").
+ *
+ * `mis-votaciones` (descubrimiento-derechos-voto, PR2, #30; design.md D7, tasks.md 5.4) reemplaza
+ * el estado vacío histórico de `estudiante` con un item navegable real hacia `MisVotacionesPage`.
+ * `docente` sigue en `[]`: `DerechoVoto` nunca se genera para ese rol (proposal: "Out of Scope"),
+ * así que no recibe ningún item ni endpoint expuesto.
  */
 export const MENU_POR_ROL: Record<RolSesion, readonly ItemMenu[]> = {
   administrador: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL, PANEL_JORNADA],
   director: [PROCESOS, PROCESO_NUEVO, ACADEMICA, USUARIOS, CONFIGURACION, IMPORTACION_EXCEL, PANEL_JORNADA],
   comite: [PROCESOS, PROCESO_NUEVO, ACADEMICA, CUENTAS_BLOQUEADAS, PANEL_JORNADA],
   docente: [],
-  estudiante: [],
+  estudiante: [MIS_VOTACIONES],
 };

@@ -14,6 +14,7 @@ import { CuentasBloqueadasPage } from '../usuarios/CuentasBloqueadasPage';
 import { ConfiguracionPage } from '../configuracion/ConfiguracionPage';
 import { PanelJornadaPage } from '../panel-jornada/PanelJornadaPage';
 import { ProyeccionPage } from '../panel-jornada/ProyeccionPage';
+import { MisVotacionesPage } from '../votos/MisVotacionesPage';
 
 /**
  * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
@@ -30,6 +31,7 @@ import { ProyeccionPage } from '../panel-jornada/ProyeccionPage';
  * `UsuariosPage` y `cuentas-bloqueadas` monta `CuentasBloqueadasPage`, ambos stubs desde
  * `#27`/PR1 (design.md D1, tasks.md 2.3) reemplazados por su implementación real en PR2;
  * `configuracion` monta `ConfiguracionPage` desde `#28`/PR1 (design.md D1, tasks.md 2.2).
+ * `mis-votaciones` monta `MisVotacionesPage` real desde `#30`/PR2 (design.md D7, tasks.md 5.3).
  * `no-encontrada` se renderiza
  * dentro del shell, nunca lanza ni deja `undefined`. menu-navegacion-post-login
  * (#25; design.md D1): `/` ya NO monta `ProcesoWizardPage` — resuelve a la
@@ -81,6 +83,8 @@ export function Enrutador() {
       return <PanelJornadaPage />;
     case 'proyeccion':
       return <ProyeccionPage procesoId={ruta.procesoId} />;
+    case 'mis-votaciones':
+      return <MisVotacionesPage />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }

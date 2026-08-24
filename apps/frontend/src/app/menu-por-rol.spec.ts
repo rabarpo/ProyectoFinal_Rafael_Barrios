@@ -29,7 +29,9 @@ describe('MENU_POR_ROL', () => {
     ],
     comite: ['procesos', 'proceso-nuevo', 'academica', 'cuentas-bloqueadas', 'panel-jornada'],
     docente: [],
-    estudiante: [],
+    // descubrimiento-derechos-voto, PR2 (#30; design.md D7, tasks.md 5.4): `estudiante` deja de
+    // ser `[]` — recibe el item navegable "Mis votaciones".
+    estudiante: ['mis-votaciones'],
   };
 
   // frontend-configuracion-general, PR1 (#28; design.md D2, tasks.md 3.1-3.2). `configuracion`
@@ -71,8 +73,26 @@ describe('MENU_POR_ROL', () => {
   });
 
   it('[2.1] docente y estudiante no tienen item académica', () => {
-    expect(MENU_POR_ROL.docente).toEqual([]);
-    expect(MENU_POR_ROL.estudiante).toEqual([]);
+    expect(MENU_POR_ROL.docente.find((i) => i.id === 'academica')).toBeUndefined();
+    expect(MENU_POR_ROL.estudiante.find((i) => i.id === 'academica')).toBeUndefined();
+  });
+
+  // descubrimiento-derechos-voto, PR2 (#30; design.md D7, tasks.md 5.4; spec:
+  // descubrimiento-derechos-voto, "Aterrizaje frontend con navegación bloqueada en derechos
+  // usados"). `estudiante` pasa de placeholder vacío a item navegable real; `docente` sigue en
+  // `[]` (proposal: "Out of Scope", `DerechoVoto` nunca se genera para ese rol).
+  it('[5.4] mis-votaciones es navegable sólo para estudiante', () => {
+    const item = MENU_POR_ROL.estudiante.find((i) => i.id === 'mis-votaciones');
+    expect(item).toEqual({
+      clase: 'navegable',
+      id: 'mis-votaciones',
+      etiqueta: 'Mis votaciones',
+      ruta: { nombre: 'mis-votaciones' },
+    });
+
+    for (const rol of ['administrador', 'director', 'comite', 'docente'] as RolSesion[]) {
+      expect(MENU_POR_ROL[rol].find((i) => i.id === 'mis-votaciones')).toBeUndefined();
+    }
   });
 
   it('[4.2] ningún item "proximamente" expone una ruta', () => {

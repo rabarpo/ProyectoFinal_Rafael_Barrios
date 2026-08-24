@@ -64,6 +64,15 @@ export function IconoPanel(props: IconoProps) {
   );
 }
 
+// descubrimiento-derechos-voto (Backlog #30, PR2; design.md D7, tasks.md 5.4).
+export function IconoVotaciones(props: IconoProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M20 7 10.5 16.5 4 10" />
+    </svg>
+  );
+}
+
 export function IconoColapsar(props: IconoProps) {
   return (
     <svg {...baseProps} {...props}>

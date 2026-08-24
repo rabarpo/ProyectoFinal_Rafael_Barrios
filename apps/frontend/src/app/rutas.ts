@@ -32,6 +32,7 @@ export type Ruta =
   | { nombre: 'configuracion' }
   | { nombre: 'panel-jornada' }
   | { nombre: 'proyeccion'; procesoId: string }
+  | { nombre: 'mis-votaciones' }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -144,6 +145,14 @@ export function parsearRuta(pathname: string): Ruta {
     return { nombre: 'proyeccion', procesoId: partes[1] };
   }
 
+  // descubrimiento-derechos-voto, PR2 (#30; design.md D7, tasks.md 5.2): ruta plana
+  // `/mis-votaciones`, mismo criterio que `/academica`/`/usuarios` — sin `derechoVotoId`
+  // embebido, el listado se resuelve dentro de `MisVotacionesPage`. Cualquier
+  // `/mis-votaciones/...` cae en 'no-encontrada'.
+  if (partes.length === 1 && partes[0] === 'mis-votaciones') {
+    return { nombre: 'mis-votaciones' };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -181,6 +190,8 @@ export function rutaAPath(ruta: Ruta): string {
       return '/panel-jornada';
     case 'proyeccion':
       return `/proyeccion/${ruta.procesoId}`;
+    case 'mis-votaciones':
+      return '/mis-votaciones';
     case 'no-encontrada':
       return ruta.pathname;
   }
