@@ -5,6 +5,7 @@ import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { ComprobanteService } from './comprobante.service';
+import { MisDerechosService } from './mis-derechos.service';
 import { PapeletaService } from './papeleta.service';
 import { VotosController } from './votos.controller';
 import { VotosService } from './votos.service';
@@ -22,6 +23,10 @@ import { VotosService } from './votos.service';
  * registra acá — lectura autenticada que reutiliza `VotosService.construirComprobante()`, sin
  * auditar nada propio (el `VOTO` ya quedó registrado por `#14`).
  *
+ * descubrimiento-derechos-voto (#30, PR1, design.md D3, tarea 2.3): `MisDerechosService` se
+ * registra acá — servicio propio, desacoplado de `VotosService.emitir()`, sin auditoría propia
+ * (es UX, no la validación, mismo criterio que `PapeletaService`).
+ *
  * `cookie-parser` como middleware del propio módulo, mismo criterio que `ProcesosModule`/
  * `AcademicoModule`/`AuthModule`. Ningún provider abre conexión al instanciarse, así que
  * `pnpm openapi:extract` sigue corriendo sin Postgres ni Redis vivos tras registrar este módulo
@@ -30,7 +35,7 @@ import { VotosService } from './votos.service';
 @Module({
   imports: [AuthModule, AuditoriaModule],
   controllers: [VotosController],
-  providers: [PrismaService, VotosService, PapeletaService, ComprobanteService],
+  providers: [PrismaService, VotosService, PapeletaService, ComprobanteService, MisDerechosService],
 })
 export class VotosModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

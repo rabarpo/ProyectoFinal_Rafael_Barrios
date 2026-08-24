@@ -1,4 +1,5 @@
 import type { ComprobanteService } from './comprobante.service';
+import type { MisDerechosService } from './mis-derechos.service';
 import type { PapeletaService } from './papeleta.service';
 import { VotosController } from './votos.controller';
 import type { VotosService } from './votos.service';
@@ -31,7 +32,8 @@ describe('VotosController — POST / (D6, tarea 10.3-10.4)', () => {
     const votosService = { emitir, construirComprobante } as unknown as VotosService;
     const papeletaService = {} as unknown as PapeletaService;
     const comprobanteService = {} as unknown as ComprobanteService;
-    const controller = new VotosController(papeletaService, votosService, comprobanteService);
+    const misDerechosService = {} as unknown as MisDerechosService;
+    const controller = new VotosController(papeletaService, votosService, comprobanteService, misDerechosService);
     const res = { status: jest.fn() };
     return { controller, emitir, construirComprobante, res, comprobante };
   }
@@ -75,5 +77,52 @@ describe('VotosController — POST / (D6, tarea 10.3-10.4)', () => {
 
     expect(emitir).not.toHaveBeenCalled();
     expect(res.status).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * descubrimiento-derechos-voto, PR1 (design.md D5, tarea 1.3). `401` sin sesión ya está cubierto
+ * estructuralmente por `@UseGuards(AuthGuard)` a nivel de CLASE en `VotosController` (aplica a
+ * toda ruta del controlador, incluida esta) — no requiere unit test adicional, es el mismo criterio
+ * que las demás rutas del controlador. Acá se prueba lo único unit-testeable de D5: el handler
+ * NO declara `@Query()`/`@Param()`, así que `req.usuario` es la ÚNICA fuente del id — cualquier
+ * `usuario_id` presente en la query es estructuralmente inerte (Threat Matrix "IDOR / enumeración").
+ */
+describe('VotosController — GET /mis-derechos (D5, tarea 1.3)', () => {
+  function construirControlador(derechos: unknown[]) {
+    const listar = jest.fn().mockResolvedValue(derechos);
+    const misDerechosService = { listar } as unknown as MisDerechosService;
+    const papeletaService = {} as unknown as PapeletaService;
+    const votosService = {} as unknown as VotosService;
+    const comprobanteService = {} as unknown as ComprobanteService;
+    const controller = new VotosController(papeletaService, votosService, comprobanteService, misDerechosService);
+    return { controller, listar };
+  }
+
+  const SESION_USUARIO = { userId: 'usuario-1', rol: 'estudiante', creadoEn: 0 };
+
+  it('[1.3] el handler resuelve el usuario sólo desde req.usuario y delega en MisDerechosService.listar()', async () => {
+    const { controller, listar } = construirControlador([]);
+
+    const respuesta = await controller.misDerechos({ usuario: SESION_USUARIO } as never);
+
+    expect(listar).toHaveBeenCalledWith(SESION_USUARIO);
+    expect(respuesta).toEqual([]);
+  });
+
+  it('[1.3][adversarial] ?usuario_id=<ajeno> en la request no tiene efecto — no hay @Query() que lo lea', async () => {
+    const { controller, listar } = construirControlador([]);
+    const requestConQueryAjena = {
+      usuario: SESION_USUARIO,
+      query: { usuario_id: 'usuario-ajeno' },
+    };
+
+    await controller.misDerechos(requestConQueryAjena as never);
+
+    // El handler tiene arity 1 (solo @Req()): TypeScript no permite declarar @Query() sin
+    // parámetro adicional, así que la única forma de que `usuario_id` afectara el resultado sería
+    // leyendo `req.query` manualmente dentro del método — este assert prueba que no lo hace.
+    expect(listar).toHaveBeenCalledWith(SESION_USUARIO);
+    expect(listar).not.toHaveBeenCalledWith(expect.objectContaining({ userId: 'usuario-ajeno' }));
   });
 });

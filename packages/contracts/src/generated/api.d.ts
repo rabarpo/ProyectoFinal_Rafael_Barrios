@@ -923,6 +923,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/votos/mis-derechos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Derechos de voto vigentes del usuario autenticado, en procesos abiertos (D1/D5) */
+        get: operations["VotosController_misDerechos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/votos/papeleta/{derechoVotoId}": {
         parameters: {
             query?: never;
@@ -1671,6 +1688,22 @@ export interface components {
             proceso: components["schemas"]["ComprobanteProcesoDto"];
             en_calidad_de: string;
             eleccion_resumen: string;
+        };
+        ProcesoDerechoDto: {
+            id: string;
+            nombre: string;
+            /**
+             * @description Tipo de proceso electoral
+             * @enum {string}
+             */
+            tipo: "municipio" | "representante_aula" | "padres" | "consulta";
+            fecha_cierre_prevista: string;
+        };
+        MiDerechoVotoDto: {
+            derecho_voto_id: string;
+            en_calidad_de: string;
+            ya_voto: boolean;
+            proceso: components["schemas"]["ProcesoDerechoDto"];
         };
         PapeletaProcesoDto: {
             id: string;
@@ -5060,6 +5093,33 @@ export interface operations {
             };
             /** @description SIN_DERECHO / VOTACION_CERRADA / ELECCION_INVALIDA */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VotosController_misDerechos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Listado (vacío incluido) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiDerechoVotoDto"][];
+                };
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

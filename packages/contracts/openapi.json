@@ -3027,6 +3027,39 @@
         ]
       }
     },
+    "/votos/mis-derechos": {
+      "get": {
+        "operationId": "VotosController_misDerechos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado (vacío incluido)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MiDerechoVotoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Derechos de voto vigentes del usuario autenticado, en procesos abiertos (D1/D5)",
+        "tags": [
+          "votos"
+        ]
+      }
+    },
     "/votos/papeleta/{derechoVotoId}": {
       "get": {
         "operationId": "VotosController_papeleta",
@@ -4978,6 +5011,59 @@
           "proceso",
           "en_calidad_de",
           "eleccion_resumen"
+        ]
+      },
+      "ProcesoDerechoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de proceso electoral",
+            "enum": [
+              "municipio",
+              "representante_aula",
+              "padres",
+              "consulta"
+            ]
+          },
+          "fecha_cierre_prevista": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "tipo",
+          "fecha_cierre_prevista"
+        ]
+      },
+      "MiDerechoVotoDto": {
+        "type": "object",
+        "properties": {
+          "derecho_voto_id": {
+            "type": "string"
+          },
+          "en_calidad_de": {
+            "type": "string"
+          },
+          "ya_voto": {
+            "type": "boolean"
+          },
+          "proceso": {
+            "$ref": "#/components/schemas/ProcesoDerechoDto"
+          }
+        },
+        "required": [
+          "derecho_voto_id",
+          "en_calidad_de",
+          "ya_voto",
+          "proceso"
         ]
       },
       "PapeletaProcesoDto": {

@@ -5,7 +5,9 @@ import type { SesionUsuario } from '../auth/sesion-usuario';
 import { ComprobanteService } from './comprobante.service';
 import { ComprobanteDto } from './dto/comprobante.dto';
 import { EmitirVotoDto } from './dto/emitir-voto.dto';
+import { MiDerechoVotoDto } from './dto/mi-derecho-voto.dto';
 import { PapeletaDto } from './dto/papeleta.dto';
+import { MisDerechosService } from './mis-derechos.service';
 import { PapeletaService } from './papeleta.service';
 import { VOTOS_ERROR_CODES } from './votos.errors';
 import { VotosService } from './votos.service';
@@ -42,6 +44,7 @@ export class VotosController {
     private readonly papeletaService: PapeletaService,
     private readonly votosService: VotosService,
     private readonly comprobanteService: ComprobanteService,
+    private readonly misDerechosService: MisDerechosService,
   ) {}
 
   @Post()
@@ -65,6 +68,18 @@ export class VotosController {
     const resultado = await this.votosService.emitir(dto, req.usuario!);
     res.status(resultado.creado ? 201 : 200);
     return this.votosService.construirComprobante(resultado);
+  }
+
+  // descubrimiento-derechos-voto, PR1 (design.md D5/D6, tarea 2.2). Deliberadamente sin
+  // `@Query()`/`@Param()`: el usuario sale SOLO de `req.usuario` (sesión), así que `?usuario_id=`
+  // en la query es estructuralmente inerte — no hay forma de leerlo desde este handler (Threat
+  // Matrix "IDOR / enumeración"). Sin `@Roles`: cualquier rol responde `200 []` genérico (D5).
+  @Get('mis-derechos')
+  @ApiOperation({ summary: 'Derechos de voto vigentes del usuario autenticado, en procesos abiertos (D1/D5)' })
+  @ApiResponse({ status: 200, description: 'Listado (vacío incluido)', type: [MiDerechoVotoDto] })
+  @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
+  async misDerechos(@Req() req: RequestConUsuario): Promise<MiDerechoVotoDto[]> {
+    return this.misDerechosService.listar(req.usuario!);
   }
 
   @Get('papeleta/:derechoVotoId')
