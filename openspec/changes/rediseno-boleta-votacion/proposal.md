@@ -61,6 +61,9 @@ enriquecidos + presentación; no toca la lógica de emisión del voto.
   layout visual y un componente de barra de progreso compartido.
 - `comprobante-autenticado`: `PanelComprobante` (reusado por `ComprobantePage`) cambia de layout
   visual (ícono de check, badge "Ya has votado") sin agregar campos nuevos al `ComprobanteDto`.
+- `configuracion-institucional`: `GET /configuracion/logo` pasa de `@Roles('administrador',
+  'director')` a accesible por cualquier usuario autenticado (override a nivel de método); el
+  resto del módulo (`GET/PUT /configuracion`, comité, etc.) no cambia.
 - `sistema-diseno-visual`: se instancia el "Voting Progress Indicator" ya anticipado en
   `DESIGN-SYSTEM.md` como componente reutilizable concreto.
 
