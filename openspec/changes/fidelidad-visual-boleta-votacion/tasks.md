@@ -115,81 +115,81 @@ gate D8 usado en `rediseno-boleta-votacion`.
 ## PR 3 — `BotonSeleccion` + banner + `TarjetaVotoBlanco` (base = PR 2 branch) — PR de riesgo
 
 ### Phase 9: `BotonSeleccion` — RED (D1, contrato ARIA único)
-- [ ] 9.1 RED componente (`BotonSeleccion.spec.tsx`, nuevo): renderiza `<label>` conteniendo
+- [x] 9.1 RED componente (`BotonSeleccion.spec.tsx`, nuevo): renderiza `<label>` conteniendo
       `<input type="radio" name="eleccion" className="sr-only">`, con `getByRole('radio')` sin
       wrapper adicional [design.md D1, Interfaces/Contratos]
-- [ ] 9.2 RED componente: `aria-label` del radio es `` `${texto}: ${etiqueta}` `` cuando `etiqueta`
+- [x] 9.2 RED componente: `aria-label` del radio es `` `${texto}: ${etiqueta}` `` cuando `etiqueta`
       está definida (WCAG 2.5.3, *Label in Name*) — `getByRole('radio', { name: 'Seleccionar Lista:
       Lista A' })` [design.md D1, tabla de variantes; spec vote-casting: Modelo de interacción
       foto+cinta+doble botón]
-- [ ] 9.3 RED componente: `aria-label` es solo `texto` cuando `etiqueta` se omite (caso voto en
+- [x] 9.3 RED componente: `aria-label` es solo `texto` cuando `etiqueta` se omite (caso voto en
       blanco, ya único sin sufijo) [design.md D1, fila `TarjetaVotoBlanco`]
-- [ ] 9.4 RED componente: `fireEvent.click`/`Space`/`Enter` en el radio dispara `onSeleccionar` una
+- [x] 9.4 RED componente: `fireEvent.click`/`Space`/`Enter` en el radio dispara `onSeleccionar` una
       única vez [spec vote-casting: El botón sólido dispara la selección igual que antes el click en
       la tarjeta]
-- [ ] 9.5 RED componente: `checked={seleccionada}` refleja la prop, y el texto visible cambia a
+- [x] 9.5 RED componente: `checked={seleccionada}` refleja la prop, y el texto visible cambia a
       "Seleccionado" cuando `seleccionada = true` [design.md, render de `BotonSeleccion`]
-- [ ] 9.6 RED componente: el anillo de foco se pinta con `has-[:focus-visible]:outline-2` (no
+- [x] 9.6 RED componente: el anillo de foco se pinta con `has-[:focus-visible]:outline-2` (no
       `focus-within`, que también dispara con click de mouse) [design.md D1, "Foco visible"]
 
 ### Phase 10: GREEN `BotonSeleccion`
-- [ ] 10.1 GREEN: crear `apps/frontend/src/votos/piezas/BotonSeleccion.tsx` — pasa 9.1-9.6
+- [x] 10.1 GREEN: crear `apps/frontend/src/votos/piezas/BotonSeleccion.tsx` — pasa 9.1-9.6
 
 ### Phase 11: `BannerInstrucciones` — RED/GREEN (D6)
-- [ ] 11.1 RED componente (`BannerInstrucciones.spec.tsx`, nuevo): caja
+- [x] 11.1 RED componente (`BannerInstrucciones.spec.tsx`, nuevo): caja
       `rounded-card bg-primary p-4 text-on-primary` con `IconoInformacion`, título "Instrucciones de
       Votación" y párrafo de reglas, sin `role="alert"`/`role="status"` (contenido estático, no live
       region) [design.md D6]
-- [ ] 11.2 GREEN: crear `apps/frontend/src/votos/piezas/BannerInstrucciones.tsx` (sin props) — pasa
+- [x] 11.2 GREEN: crear `apps/frontend/src/votos/piezas/BannerInstrucciones.tsx` (sin props) — pasa
       11.1
 
 ### Phase 12: `TarjetaVotoBlanco` reescrita — RED (validación end-to-end de `BotonSeleccion`)
-- [ ] 12.1 RED componente (`TarjetaVotoBlanco.spec.tsx` reescrito): ícono circular distintivo +
+- [x] 12.1 RED componente (`TarjetaVotoBlanco.spec.tsx` reescrito): ícono circular distintivo +
       `BotonSeleccion` con texto "Votar en Blanco" [spec vote-casting: `TarjetaVotoBlanco` con ícono
       circular y botón dedicado]
-- [ ] 12.2 RED componente: el radio interno participa del mismo `radiogroup`/`name="eleccion"` que
+- [x] 12.2 RED componente: el radio interno participa del mismo `radiogroup`/`name="eleccion"` que
       las demás tarjetas — `getByRole('radio', { name: 'Votar en Blanco' })` [spec vote-casting:
       idem; design.md D1, tabla de variantes]
-- [ ] 12.3 RED componente: nunca aparece marcada como seleccionada al montar (sin estado inicial
+- [x] 12.3 RED componente: nunca aparece marcada como seleccionada al montar (sin estado inicial
       implícito) [spec vote-casting: Voto en Blanco presente en las 3 variantes, nunca
       preseleccionado — invariante D14 de #14 preservada]
-- [ ] 12.4 RED componente (`PasoBoleta.spec.tsx:105`, `TarjetaVotoBlanco.spec.tsx:12,18,23`):
+- [x] 12.4 RED componente (`PasoBoleta.spec.tsx:105`, `TarjetaVotoBlanco.spec.tsx:12,18,23`):
       ediciones puntuales `/voto en blanco/i` → `/votar en blanco/i` sobre el nombre accesible del
       botón; el título visible "Voto en Blanco" de la tarjeta permanece intacto (`getByText` no
       cambia) [design.md D1, "Ediciones de test que esto obliga"]
 
 ### Phase 13: GREEN `TarjetaVotoBlanco`
-- [ ] 13.1 GREEN: reescribir `apps/frontend/src/votos/piezas/TarjetaVotoBlanco.tsx` con ícono
+- [x] 13.1 GREEN: reescribir `apps/frontend/src/votos/piezas/TarjetaVotoBlanco.tsx` con ícono
       circular (`bg-surface-container text-on-surface-variant rounded-card h-16 w-16`, D8) +
       `BotonSeleccion` — pasa 12.1-12.4
 
 ### Phase 14: `PasoBoleta` — banner + grilla + radiogroup — RED/GREEN
-- [ ] 14.1 RED componente (`PasoBoleta.spec.tsx`): monta `BannerInstrucciones` entre el título y el
+- [x] 14.1 RED componente (`PasoBoleta.spec.tsx`): monta `BannerInstrucciones` entre el título y el
       `role="radiogroup"`, sin bloquear la interacción con tarjetas ni con "Continuar"
       [spec vote-casting: El banner se muestra al entrar al paso 2]
-- [ ] 14.2 RED componente: `role="radiogroup" aria-label="Opciones de la boleta"` se preserva en el
+- [x] 14.2 RED componente: `role="radiogroup" aria-label="Opciones de la boleta"` se preserva en el
       contenedor de la grilla [design.md, "Semántica ARIA preservada"; spec vote-casting: `PasoBoleta`
       conserva `role="radiogroup"`]
-- [ ] 14.3 RED componente (`VotacionPage.spec.tsx:84`, `PasoBoleta.spec.tsx:139`): edición de test
+- [x] 14.3 RED componente (`VotacionPage.spec.tsx:84`, `PasoBoleta.spec.tsx:139`): edición de test
       `{ name: 'Lista A' }` → `{ name: /lista a/i }` por el nuevo nombre accesible con sufijo
       [design.md D1, "Ediciones de test que esto obliga"]
-- [ ] 14.4 RED componente: grilla pasa a `grid gap-4 md:grid-cols-3` (antes `space-y-3`)
+- [x] 14.4 RED componente: grilla pasa a `grid gap-4 md:grid-cols-3` (antes `space-y-3`)
       [design.md D8, tabla de tokens]
-- [ ] 14.5 GREEN: modificar `apps/frontend/src/votos/piezas/PasoBoleta.tsx` — monta el banner, ajusta
+- [x] 14.5 GREEN: modificar `apps/frontend/src/votos/piezas/PasoBoleta.tsx` — monta el banner, ajusta
       la grilla — pasa 14.1-14.4
 
 ### Phase 15: Regresión de accesibilidad — verbatim
-- [ ] 15.1 `TarjetaLista.spec.tsx:57-74` ("Ver Propuesta Completa" es hermano del `<label>` y no marca
+- [x] 15.1 `TarjetaLista.spec.tsx:57-74` ("Ver Propuesta Completa" es hermano del `<label>` y no marca
       el radio) pasa **sin modificación** — no aplica todavía en PR3 (la tarjeta se reescribe en PR4),
       pero queda como criterio de aceptación explícito para esa PR [design.md D1, "regresión clave"]
-- [ ] 15.2 `PasoBoleta.spec.tsx:109-122` (`role="radiogroup" aria-label="Opciones de la boleta"`) se
+- [x] 15.2 `PasoBoleta.spec.tsx:109-122` (`role="radiogroup" aria-label="Opciones de la boleta"`) se
       conserva sin cambios de fondo, solo la edición puntual de 14.3
 
 ### Phase 16: Regresión y contrato PR3
-- [ ] 16.1 `pnpm --filter @seei/frontend test -- BotonSeleccion BannerInstrucciones TarjetaVotoBlanco PasoBoleta` verde
-- [ ] 16.2 `pnpm --filter @seei/frontend test -- VotacionPage` verde con la edición puntual de 14.3
-- [ ] 16.3 `pnpm typecheck` verde en `@seei/frontend`
-- [ ] 16.4 `rg -i "san alfonso" apps/frontend/src/votos/piezas/BotonSeleccion.tsx apps/frontend/src/votos/piezas/BannerInstrucciones.tsx apps/frontend/src/votos/piezas/TarjetaVotoBlanco.tsx apps/frontend/src/votos/piezas/PasoBoleta.tsx` sin resultados
+- [x] 16.1 `pnpm --filter @seei/frontend test -- BotonSeleccion BannerInstrucciones TarjetaVotoBlanco PasoBoleta` verde
+- [x] 16.2 `pnpm --filter @seei/frontend test -- VotacionPage` verde con la edición puntual de 14.3
+- [x] 16.3 `pnpm typecheck` verde en `@seei/frontend`
+- [x] 16.4 `rg -i "san alfonso" apps/frontend/src/votos/piezas/BotonSeleccion.tsx apps/frontend/src/votos/piezas/BannerInstrucciones.tsx apps/frontend/src/votos/piezas/TarjetaVotoBlanco.tsx apps/frontend/src/votos/piezas/PasoBoleta.tsx` sin resultados
 
 ## PR 4 — Adopción del patrón en `TarjetaLista`/`TarjetaCandidato`/`TarjetaOpcion` (base = PR 3 branch)
 

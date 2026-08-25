@@ -1,6 +1,7 @@
 import type { PapeletaDto, PapeletaOpcionDto } from '../votos-api';
 import { urlFotoOpcion, urlPlanTrabajoOpcion } from '../votos-api';
 import { BarraProgresoVotacion } from './BarraProgresoVotacion';
+import { BannerInstrucciones } from './BannerInstrucciones';
 import { TarjetaLista } from './TarjetaLista';
 import { TarjetaCandidato } from './TarjetaCandidato';
 import { TarjetaOpcion } from './TarjetaOpcion';
@@ -56,7 +57,11 @@ export function PasoBoleta({
 
       <h2 className="mt-4 text-headline-lg-mobile text-primary md:text-headline-lg">Elegí tu opción</h2>
 
-      <div role="radiogroup" aria-label="Opciones de la boleta" className="mt-4 space-y-3">
+      <div className="mt-4">
+        <BannerInstrucciones />
+      </div>
+
+      <div role="radiogroup" aria-label="Opciones de la boleta" className="mt-4 grid gap-4 md:grid-cols-3">
         {opciones.map((opcion) => {
           const seleccionada = seleccion?.tipo === 'opcion' && seleccion.id === opcion.id;
 

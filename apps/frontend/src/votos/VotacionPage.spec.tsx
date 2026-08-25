@@ -1,8 +1,26 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { VotacionPage } from './VotacionPage';
 import * as votosApi from './votos-api';
 import type { PapeletaDto, ComprobanteDto } from './votos-api';
+import { SesionContext } from '../auth/sesion-context';
+import type { ContextoSesion } from '../auth/sesion-context';
+
+// [Phase 27; design.md D7, "call sites"] `VotacionPage` cablea `onVolverAlInicio`/`onCerrarSesion`
+// de `PanelComprobante` con `navegar({ nombre: 'inicio' })` y `logout()` de `useSesion()` — mismo
+// patrón de `SesionContext.Provider` que `NavegacionPrincipal.spec.tsx`.
+function conSesion(logout: () => Promise<void>, hijos: ReactNode) {
+  const contexto: ContextoSesion = {
+    estado: 'autenticado',
+    sesion: { userId: 'u1', rol: 'estudiante', creadoEn: 1 },
+    login: vi.fn(),
+    google: vi.fn(),
+    logout,
+    alRecibir401: vi.fn(),
+  };
+  return <SesionContext.Provider value={contexto}>{hijos}</SesionContext.Provider>;
+}
 
 // [design.md D14; tasks.md 18.1-18.5] Único contenedor con TODOS los efectos de este batch:
 // `votos-api.papeleta()` en el paso 1, `votos-api.emitir()` en la confirmación del paso 3. El paso
@@ -73,7 +91,7 @@ describe('VotacionPage', () => {
     vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
     vi.mocked(votosApi.emitir).mockResolvedValueOnce(comprobanteMock());
 
-    render(<VotacionPage derechoVotoId="dv1" />);
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
 
     await screen.findByText(/alcaldía escolar 2026/i);
     expect(votosApi.papeleta).toHaveBeenCalledWith('dv1');
@@ -81,7 +99,7 @@ describe('VotacionPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
 
     await screen.findByRole('radiogroup');
-    fireEvent.click(screen.getByRole('radio', { name: 'Lista A' }));
+    fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
     fireEvent.click(screen.getByRole('button', { name: /siguiente paso/i }));
 
     await screen.findByRole('checkbox');
@@ -97,12 +115,40 @@ describe('VotacionPage', () => {
     await screen.findByText(/k7qm-3xz9-8htb-p4wr/i);
   });
 
+  // [Phase 27.1; design.md D7, "call sites"] `PanelComprobante` recibe
+  // `onVolverAlInicio={() => navegar({ nombre: 'inicio' })}` y `onCerrarSesion={logout}` de
+  // `useSesion()`.
+  it('[27.1] "Volver al Inicio" navega a "/" y "Cerrar Sesión" invoca logout() de useSesion()', async () => {
+    vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
+    vi.mocked(votosApi.emitir).mockResolvedValueOnce(comprobanteMock());
+    const logout = vi.fn();
+
+    render(conSesion(logout, <VotacionPage derechoVotoId="dv1" />));
+
+    await screen.findByText(/alcaldía escolar 2026/i);
+    fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
+    await screen.findByRole('radiogroup');
+    fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
+    fireEvent.click(screen.getByRole('button', { name: /siguiente paso/i }));
+    await screen.findByRole('checkbox');
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+
+    await screen.findByText(/k7qm-3xz9-8htb-p4wr/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /cerrar sesión/i }));
+    expect(logout).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /volver al inicio/i }));
+    expect(window.location.pathname).toBe('/');
+  });
+
   // [design.md D5/D6; tasks.md 20.1] Nuevo en PR4: `onVolver` de `PasoBoleta` regresa al paso 1
   // sin recargar — el contenedor sigue siendo el único con estado de paso.
   it('[20.1] "Volver al paso anterior" en el paso 2 regresa al paso 1', async () => {
     vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
 
-    render(<VotacionPage derechoVotoId="dv1" />);
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
 
     await screen.findByText(/alcaldía escolar 2026/i);
     fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
@@ -118,7 +164,7 @@ describe('VotacionPage', () => {
     vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
     vi.mocked(votosApi.emitir).mockResolvedValueOnce(comprobanteMock());
 
-    render(<VotacionPage derechoVotoId="dv1" />);
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
 
     await screen.findByText(/alcaldía escolar 2026/i);
     fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
@@ -143,7 +189,7 @@ describe('VotacionPage', () => {
     vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
     vi.mocked(votosApi.emitir).mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
-    render(<VotacionPage derechoVotoId="dv1" />);
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
 
     await screen.findByText(/alcaldía escolar 2026/i);
     fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
@@ -165,7 +211,7 @@ describe('VotacionPage', () => {
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockResolvedValueOnce(comprobanteMock());
 
-    render(<VotacionPage derechoVotoId="dv1" />);
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
 
     await screen.findByText(/alcaldía escolar 2026/i);
     fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
@@ -211,7 +257,7 @@ describe('VotacionPage', () => {
       response: { ok: false, status: 403 } as Response,
     } as never);
 
-    render(<VotacionPage derechoVotoId="dv1" />);
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
     await llegarAlPaso3();
 
     await waitFor(() => expect(window.location.pathname).toBe('/procesos/nuevo'));
@@ -225,7 +271,7 @@ describe('VotacionPage', () => {
       response: { ok: false, status: 409 } as Response,
     } as never);
 
-    render(<VotacionPage derechoVotoId="dv1" />);
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
     await llegarAlPaso3();
 
     await screen.findByText(/no estás en el padrón/i);
@@ -239,7 +285,7 @@ describe('VotacionPage', () => {
       response: { ok: false, status: 409 } as Response,
     } as never);
 
-    render(<VotacionPage derechoVotoId="dv1" />);
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
     await llegarAlPaso3();
 
     await screen.findByText(/votación cerrada/i);
@@ -254,7 +300,7 @@ describe('VotacionPage', () => {
       response: { ok: true, status: 200 } as Response,
     } as never);
 
-    render(<VotacionPage derechoVotoId="dv1" />);
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
     await llegarAlPaso3();
 
     await screen.findByText(/ya emitiste tu voto/i);

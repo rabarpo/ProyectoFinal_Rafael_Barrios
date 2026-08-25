@@ -102,8 +102,59 @@ describe('PasoBoleta', () => {
       />,
     );
 
-    const blanco = screen.getByRole('radio', { name: /voto en blanco/i });
+    const blanco = screen.getByRole('radio', { name: /votar en blanco/i });
     expect(blanco).not.toBeChecked();
+  });
+
+  it('[14.1] monta BannerInstrucciones entre el título y el radiogroup', () => {
+    render(
+      <PasoBoleta
+        opciones={OPCIONES_MUNICIPIO}
+        tipo="municipio"
+        derechoVotoId="dv1"
+        seleccion={undefined}
+        onSeleccionar={vi.fn()}
+        onContinuar={vi.fn()}
+        onVolver={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Instrucciones de Votación')).toBeInTheDocument();
+  });
+
+  it('[14.1] el banner no bloquea la interacción con las tarjetas ni con "Siguiente Paso"', () => {
+    const onSeleccionar = vi.fn();
+    render(
+      <PasoBoleta
+        opciones={OPCIONES_MUNICIPIO}
+        tipo="municipio"
+        derechoVotoId="dv1"
+        seleccion={{ tipo: 'blanco' }}
+        onSeleccionar={onSeleccionar}
+        onContinuar={vi.fn()}
+        onVolver={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
+    expect(onSeleccionar).toHaveBeenCalledWith({ tipo: 'opcion', id: 'l1' } satisfies Seleccion);
+    expect(screen.getByRole('button', { name: /siguiente paso/i })).not.toBeDisabled();
+  });
+
+  it('[14.4] la grilla de opciones usa grid gap-4 md:grid-cols-3', () => {
+    render(
+      <PasoBoleta
+        opciones={OPCIONES_MUNICIPIO}
+        tipo="municipio"
+        derechoVotoId="dv1"
+        seleccion={undefined}
+        onSeleccionar={vi.fn()}
+        onContinuar={vi.fn()}
+        onVolver={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('radiogroup')).toHaveClass('grid', 'gap-4', 'md:grid-cols-3');
   });
 
   it('[17.3] preserva role="radiogroup" aria-label="Opciones de la boleta"', () => {
@@ -136,7 +187,7 @@ describe('PasoBoleta', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Lista A' }));
+    fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
 
     expect(onSeleccionar).toHaveBeenCalledWith({ tipo: 'opcion', id: 'l1' } satisfies Seleccion);
   });
@@ -225,6 +276,32 @@ describe('PasoBoleta', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /volver al paso anterior/i }));
     expect(onVolver).toHaveBeenCalledTimes(1);
+  });
+
+  it('[21.1] "Ver Propuesta Completa" nunca puede recibir el foco de la navegación de flechas del radiogroup: no comparte name="eleccion" ni type="radio" con el grupo', () => {
+    render(
+      <PasoBoleta
+        opciones={OPCIONES_MUNICIPIO}
+        tipo="municipio"
+        derechoVotoId="dv1"
+        seleccion={undefined}
+        onSeleccionar={vi.fn()}
+        onContinuar={vi.fn()}
+        onVolver={vi.fn()}
+      />,
+    );
+
+    const boton = screen.getByRole('button', { name: /ver propuesta completa/i });
+    expect(boton.tagName).toBe('BUTTON');
+    expect(boton).not.toHaveAttribute('name', 'eleccion');
+
+    // La navegación de flechas del radiogroup nativo del navegador solo recorre elementos
+    // type="radio" que comparten el mismo name — "Ver Propuesta Completa" no es uno de ellos, así
+    // que queda estructuralmente fuera de esa navegación (design.md D1; spec vote-casting:
+    // "Ver Propuesta Completa" no interfiere con la navegación de flechas del grupo).
+    const radios = screen.getAllByRole('radio');
+    expect(radios.every((radio) => radio.getAttribute('name') === 'eleccion')).toBe(true);
+    expect(radios).not.toContain(boton);
   });
 
   it('[17.6] "Siguiente Paso" con selección invoca onContinuar', () => {
