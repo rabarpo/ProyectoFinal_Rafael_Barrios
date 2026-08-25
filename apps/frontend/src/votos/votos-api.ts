@@ -12,8 +12,12 @@ export type MiDerechoVotoDto = components['schemas']['MiDerechoVotoDto'];
  * `createSeeiClient('/api')`, mismo estilo que `procesos/procesos-api.ts` — se tipan contra
  * `packages/contracts` regenerado en PR3 (`GET /votos/papeleta/:id`, `POST /votos`).
  */
+function baseUrl(): string {
+  return import.meta.env.VITE_API_BASE_URL ?? '/api';
+}
+
 function client() {
-  return createSeeiClient(import.meta.env.VITE_API_BASE_URL ?? '/api');
+  return createSeeiClient(baseUrl());
 }
 
 export async function papeleta(derechoVotoId: string) {
@@ -34,4 +38,23 @@ export async function comprobante(votoId: string) {
 // usuario sale exclusivamente de la sesión (`req.usuario`) en el backend.
 export async function misDerechos() {
   return client().GET('/votos/mis-derechos', {});
+}
+
+/**
+ * rediseno-boleta-votacion, PR3 (design.md D3/D7, tasks.md 12.1). `<img src>`/`window.open`, no
+ * `fetch`+`Blob`: la cookie de sesión viaja sola en same-origin, mismo patrón de `urlFoto` de
+ * #12/`candidatos-api.ts`. Autorización por pertenencia la resuelve `PapeletaArchivosService`
+ * (403 idéntico para ajeno/inexistente, D3 de `design.md`) — este cliente solo arma la URL.
+ */
+export function urlFotoOpcion(derechoVotoId: string, id: string): string {
+  return `${baseUrl()}/votos/papeleta/${derechoVotoId}/opciones/${id}/foto`;
+}
+
+/**
+ * `window.open(url, '_blank', 'noopener')` desde `TarjetaLista` (design.md D7): el
+ * `Content-Disposition: attachment` del backend gobierna la descarga/apertura, sin un ciclo de
+ * vida de object URL en una pieza presentacional.
+ */
+export function urlPlanTrabajoOpcion(derechoVotoId: string, id: string): string {
+  return `${baseUrl()}/votos/papeleta/${derechoVotoId}/opciones/${id}/plan-trabajo`;
 }

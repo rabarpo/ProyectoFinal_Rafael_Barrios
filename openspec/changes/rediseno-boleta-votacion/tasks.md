@@ -155,42 +155,42 @@ enriquecido — mismo gate D8 que en `vote-casting`.
 ## PR 3 — Cliente API y 4 piezas nuevas del Paso 2 (base = PR 2 branch)
 
 ### Phase 12: Cliente API
-- [ ] 12.1 Modificar `apps/frontend/src/votos/votos-api.ts`: agregar `urlFotoOpcion(derechoVotoId,
+- [x] 12.1 Modificar `apps/frontend/src/votos/votos-api.ts`: agregar `urlFotoOpcion(derechoVotoId,
       id)` y `urlPlanTrabajoOpcion(derechoVotoId, id)` tipados contra `@seei/contracts` regenerado
       (D3/D7 — same-origin, cookie de sesión viaja sola, sin `fetch`+`Blob`)
 
 ### Phase 13: `BarraProgresoVotacion` — RED/GREEN (D5)
-- [ ] 13.1 RED componente (`BarraProgresoVotacion.spec.tsx`): `role="progressbar"` con
+- [x] 13.1 RED componente (`BarraProgresoVotacion.spec.tsx`): `role="progressbar"` con
       `aria-valuemin=1`, `aria-valuemax={totalPasos}`, `aria-valuenow={pasoActual}` [spec: La barra
       refleja el paso actual en cada uno de los 3 pasos]
-- [ ] 13.2 RED componente: texto visible "Paso {pasoActual} de {totalPasos}" y
+- [x] 13.2 RED componente: texto visible "Paso {pasoActual} de {totalPasos}" y
       "{porcentaje}% Completado" con `porcentaje = round((pasoActual/totalPasos)*100)`
-- [ ] 13.3 RED componente: las clases Tailwind usadas mapean únicamente a tokens ya definidos en
+- [x] 13.3 RED componente: las clases Tailwind usadas mapean únicamente a tokens ya definidos en
       `@theme` (grep de clases arbitrarias) [spec: `BarraProgresoVotacion` usa únicamente tokens
       existentes]
-- [ ] 13.4 GREEN: crear `apps/frontend/src/votos/piezas/BarraProgresoVotacion.tsx` — pasa
+- [x] 13.4 GREEN: crear `apps/frontend/src/votos/piezas/BarraProgresoVotacion.tsx` — pasa
       13.1-13.3
 
 ### Phase 14: 4 tarjetas del Paso 2 — RED/GREEN (D6)
-- [ ] 14.1 RED componente (`TarjetaLista.spec.tsx`): renderiza etiqueta, símbolo, lema, propuesta
+- [x] 14.1 RED componente (`TarjetaLista.spec.tsx`): renderiza etiqueta, símbolo, lema, propuesta
       corta y foto+nombres+cargo del cabeza de lista; botón "Ver Propuesta Completa" presente solo
       si `plan_trabajo_presente = true` [spec: Proceso `municipio` renderiza tarjetas de Lista]
-- [ ] 14.2 RED componente: click en "Ver Propuesta Completa" NO marca la tarjeta como seleccionada
+- [x] 14.2 RED componente: click en "Ver Propuesta Completa" NO marca la tarjeta como seleccionada
       (botón hermano del `<label>`, no anidado) [design.md D6, "Semántica ARIA preservada"]
-- [ ] 14.3 RED componente (`TarjetaCandidato.spec.tsx`): renderiza foto, nombres y cargo, sin botón
+- [x] 14.3 RED componente (`TarjetaCandidato.spec.tsx`): renderiza foto, nombres y cargo, sin botón
       de propuesta [spec: Proceso `representante_aula`/`padres` renderiza tarjetas de Candidato]
-- [ ] 14.4 RED componente (`TarjetaOpcion.spec.tsx`): renderiza únicamente etiqueta y descripción,
+- [x] 14.4 RED componente (`TarjetaOpcion.spec.tsx`): renderiza únicamente etiqueta y descripción,
       sin foto [spec: Proceso `consulta` renderiza tarjetas de Opción simple]
-- [ ] 14.5 RED componente (`TarjetaVotoBlanco.spec.tsx`): texto fijo, `border-dashed` en el
+- [x] 14.5 RED componente (`TarjetaVotoBlanco.spec.tsx`): texto fijo, `border-dashed` en el
       `<label>`, nunca marcada como seleccionada al montar [spec: Voto en Blanco presente en las 3
       variantes, nunca preseleccionado]
-- [ ] 14.6 RED componente (las 4 tarjetas): patrón "Candidate Cards" — borde se engruesa y aparece
+- [x] 14.6 RED componente (las 4 tarjetas): patrón "Candidate Cards" — borde se engruesa y aparece
       el check al seleccionar, mismo comportamiento en las 4 [spec: Selección de tarjeta usa el
       patrón Candidate Cards]
-- [ ] 14.7 RED componente (las 4 tarjetas): cada una contiene `<input type="radio"
+- [x] 14.7 RED componente (las 4 tarjetas): cada una contiene `<input type="radio"
       name="eleccion" className="sr-only">` dentro de un `<label>`, preservando
       `getByRole('radio')` [design.md D6, "Semántica ARIA preservada"]
-- [ ] 14.8 GREEN: crear `apps/frontend/src/votos/piezas/Tarjeta{Lista,Candidato,Opcion,
+- [x] 14.8 GREEN: crear `apps/frontend/src/votos/piezas/Tarjeta{Lista,Candidato,Opcion,
       VotoBlanco}.tsx` — pasa 14.1-14.7
 
 **Paralelizable**: 13.1-13.4 (`BarraProgresoVotacion`) y 14.1-14.8 (las 4 tarjetas) son
@@ -198,8 +198,10 @@ independientes entre sí una vez completado 12.1; pueden implementarse en parale
 colaboradores dentro del mismo PR3.
 
 ### Phase 15: Regresión PR3
-- [ ] 15.1 `pnpm --filter @seei/frontend test -- BarraProgresoVotacion Tarjeta` verde
-- [ ] 15.2 `pnpm typecheck` verde en los 4 paquetes
+- [x] 15.1 `pnpm --filter @seei/frontend test -- BarraProgresoVotacion Tarjeta` verde
+- [x] 15.2 `pnpm typecheck` verde en los 4 paquetes (`@seei/frontend#typecheck` verde; el fallo de
+      `@seei/backend#typecheck` en `mis-derechos.service.spec.ts` es preexistente de backlog #30,
+      no tocado por PR3 — mismo hallazgo ya documentado en la tarea 4.2 de PR1)
 
 ## PR 4 — Rediseño de los 3 pasos existentes y wiring (base = PR 3 branch)
 
