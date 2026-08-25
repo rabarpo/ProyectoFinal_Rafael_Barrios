@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // vote-casting, PR1 (design.md D13, "DTO planos con @ApiProperty, sin class-validator" — mismo
 // idioma que #11-#13). Respuesta de `GET /votos/papeleta/:derechoVotoId`: todo lo que necesitan
@@ -37,12 +37,49 @@ export class PapeletaProcesoDto {
   tipo!: 'municipio' | 'representante_aula' | 'padres' | 'consulta';
 }
 
+// rediseno-boleta-votacion, PR1 (design.md D1). Campos opcionales homogéneos, sin unión
+// discriminada: el discriminante ya existe en el padre (`PapeletaProcesoDto.tipo`), así que el
+// cliente estrecha por `datos.proceso.tipo`, no por elemento. Ver design.md D1 para el fundamento
+// completo (riesgo de `oneOf`/`discriminator` con `@nestjs/swagger` 8.1 bajo `tsx`).
 export class PapeletaOpcionDto {
   @ApiProperty({ type: String })
   id!: string;
 
   @ApiProperty({ type: String })
   etiqueta!: string;
+
+  // --- OpcionConsulta (tipo === 'consulta') ---
+  @ApiPropertyOptional({ type: String })
+  descripcion?: string;
+
+  // --- Lista (tipo === 'municipio') ---
+  @ApiPropertyOptional({ type: String })
+  simbolo?: string;
+
+  @ApiPropertyOptional({ type: String })
+  lema?: string;
+
+  @ApiPropertyOptional({ type: String })
+  propuesta?: string;
+
+  @ApiPropertyOptional({ type: Boolean })
+  plan_trabajo_presente?: boolean;
+
+  // --- Candidato representante de la opción ---
+  // municipio: cabeza de lista (convención de desempate D2, NO una designación real de dominio).
+  // representante_aula/padres: la opción misma (candidato_id === id). consulta: los cuatro
+  // ausentes. Los cuatro campos se emiten juntos siempre que exista un Candidato resuelto.
+  @ApiPropertyOptional({ type: String })
+  candidato_id?: string;
+
+  @ApiPropertyOptional({ type: String })
+  candidato_nombres?: string;
+
+  @ApiPropertyOptional({ type: String })
+  cargo?: string;
+
+  @ApiPropertyOptional({ type: Boolean })
+  foto_presente?: boolean;
 }
 
 export class PapeletaComprobanteDto {
