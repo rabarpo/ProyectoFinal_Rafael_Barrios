@@ -90,4 +90,36 @@ describe('ComprobanteService (design.md D11, tareas 10.1-10.3)', () => {
     await expect(servicio.obtener(VOTO_ID, SESION)).rejects.toBeInstanceOf(ForbiddenException);
     expect(construirComprobante).not.toHaveBeenCalled();
   });
+
+  // fidelidad-visual-boleta-votacion, PR1 (design.md D2, tarea 3.1). El camino de relectura
+  // autenticada hereda `periodo_lectivo` sin lógica propia: `obtener()` no lo filtra ni lo
+  // recalcula, solo delega en `construirComprobante()` (ya poblado en `#14`/VotosService).
+  it('[3.1] el DTO devuelto por obtener() incluye periodo_lectivo cuando construirComprobante() lo trae (delegación, D2)', async () => {
+    const voto = {
+      id: VOTO_ID,
+      proceso_id: 'proceso-1',
+      derecho_voto_id: 'derecho-1',
+      codigo_comprobante: 'K7QM-3XZ9-8HTB-P4WR',
+      hora_servidor: new Date('2026-08-14T12:00:00.000Z'),
+      derechoVoto: { usuario_id: 'usuario-1' },
+    };
+    const comprobante = {
+      codigo_comprobante: 'K7QM-3XZ9-8HTB-P4WR',
+      hora_servidor: '2026-08-14T12:00:00.000Z',
+      proceso: { id: 'proceso-1', nombre: 'Proceso E2E' },
+      en_calidad_de: 'estudiante',
+      eleccion_resumen: 'Lista A',
+      periodo_lectivo: '2026',
+    };
+    const { servicio, construirComprobante } = construirServicio({
+      votoFindUnique: construirVotoFindUnique(voto),
+      construirComprobante: jest.fn().mockResolvedValue(comprobante),
+    });
+
+    const resultado = await servicio.obtener(VOTO_ID, SESION);
+
+    expect(construirComprobante).toHaveBeenCalledTimes(1);
+    expect(resultado.periodo_lectivo).toBe('2026');
+    expect(resultado).toEqual(comprobante);
+  });
 });

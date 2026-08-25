@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // vote-casting, PR3 (design.md D6/D13, "Contratos HTTP", tarea 10.1). Respuesta de `POST /votos`:
 // idéntica en `201` (creado) y `200` (reintento o colisión, D6) — el cliente nunca distingue el
@@ -31,4 +31,11 @@ export class ComprobanteDto {
 
   @ApiProperty({ type: String })
   eleccion_resumen!: string;
+
+  // fidelidad-visual-boleta-votacion, PR1 (design.md D2). Nombre del `AnioEscolar` con
+  // `activo = true` al momento de construir el comprobante — lectura independiente, sin relación
+  // con `Voto`/`DerechoVoto`/`ProcesoElectoral`. Ausente (`undefined`) si no hay ningún año activo;
+  // un estado de configuración inconsistente no debe impedir ver un comprobante ya emitido.
+  @ApiPropertyOptional({ type: String })
+  periodo_lectivo?: string;
 }

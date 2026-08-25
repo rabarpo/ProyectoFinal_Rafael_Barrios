@@ -465,3 +465,92 @@ describe('VotosService.emitir() — insert de JobCorreo en el marcador [#15] (D2
     await expect(servicio.emitir(DTO_BASE, SESION)).rejects.toBe(errorInsert);
   });
 });
+
+// fidelidad-visual-boleta-votacion, PR1 (design.md D2, tareas 1.1-1.4). Unit tests de
+// `construirComprobante()` con `PrismaService` mockeado directamente (sin pasar por `emitir()`
+// ni por `$transaction`) — es una lectura de presentación fuera de la transacción crítica.
+describe('VotosService.construirComprobante() — período lectivo (design.md D2)', () => {
+  const RESULTADO_BASE = {
+    creado: true,
+    codigo_comprobante: 'K7QM-3XZ9-8HTB-P4WR',
+    hora_servidor: '2026-08-14T12:00:00.000Z',
+    proceso_id: 'proceso-1',
+    derecho_voto_id: 'dv-1',
+  };
+
+  function construirPrismaComprobante(overrides: { anioEscolarFindFirst?: jest.Mock } = {}) {
+    const anioEscolarFindFirst = overrides.anioEscolarFindFirst ?? jest.fn().mockResolvedValue(null);
+    const prisma = {
+      derechoVoto: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ en_calidad_de: 'estudiante' }),
+      },
+      procesoElectoral: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ nombre: 'Proceso E2E de prueba' }),
+      },
+      voto: {
+        findFirstOrThrow: jest.fn().mockResolvedValue({
+          lista_id: 'lista-1',
+          opcion_id: null,
+          candidato_id: null,
+          blanco: false,
+        }),
+      },
+      lista: { findUnique: jest.fn().mockResolvedValue({ nombre: 'Lista A' }) },
+      opcionConsulta: { findUnique: jest.fn() },
+      candidato: { findUnique: jest.fn() },
+      anioEscolar: { findFirst: anioEscolarFindFirst },
+    };
+    return { prisma, anioEscolarFindFirst };
+  }
+
+  // 1.1: existe un AnioEscolar activo -> periodo_lectivo === "2026"
+  it('[1.1] AnioEscolar activo con nombre "2026" -> ComprobanteDto.periodo_lectivo === "2026"', async () => {
+    const { prisma } = construirPrismaComprobante({
+      anioEscolarFindFirst: jest.fn().mockResolvedValue({ nombre: '2026' }),
+    });
+    const { servicio } = construirServicio(prisma);
+
+    const comprobante = await servicio.construirComprobante(RESULTADO_BASE);
+
+    expect(comprobante.periodo_lectivo).toBe('2026');
+  });
+
+  // 1.2: anioEscolar.findFirst se invoca con where/orderBy/select exactos (determinismo, D2)
+  it('[1.2] anioEscolar.findFirst se invoca con where activo:true, orderBy nombre desc y select nombre', async () => {
+    const { prisma, anioEscolarFindFirst } = construirPrismaComprobante();
+    const { servicio } = construirServicio(prisma);
+
+    await servicio.construirComprobante(RESULTADO_BASE);
+
+    expect(anioEscolarFindFirst).toHaveBeenCalledWith({
+      where: { activo: true },
+      orderBy: { nombre: 'desc' },
+      select: { nombre: true },
+    });
+  });
+
+  // 1.3: ningún AnioEscolar activo -> periodo_lectivo undefined, resto del DTO íntegro
+  it('[1.3] ningún AnioEscolar activo -> periodo_lectivo es undefined y el resto del DTO sale íntegro', async () => {
+    const { prisma } = construirPrismaComprobante({ anioEscolarFindFirst: jest.fn().mockResolvedValue(null) });
+    const { servicio } = construirServicio(prisma);
+
+    const comprobante = await servicio.construirComprobante(RESULTADO_BASE);
+
+    expect(comprobante.periodo_lectivo).toBeUndefined();
+    expect(comprobante.codigo_comprobante).toBe('K7QM-3XZ9-8HTB-P4WR');
+    expect(comprobante.hora_servidor).toBe('2026-08-14T12:00:00.000Z');
+    expect(comprobante.eleccion_resumen).toBe('Lista A');
+  });
+
+  // 1.4: la lectura de anioEscolar no recibe ningún filtro derivado del voto (sin join con
+  // Voto/DerechoVoto)
+  it('[1.4] anioEscolar.findFirst no recibe ningún filtro derivado de Voto/DerechoVoto', async () => {
+    const { prisma, anioEscolarFindFirst } = construirPrismaComprobante();
+    const { servicio } = construirServicio(prisma);
+
+    await servicio.construirComprobante(RESULTADO_BASE);
+
+    const { where } = anioEscolarFindFirst.mock.calls[0][0];
+    expect(Object.keys(where)).toEqual(['activo']);
+  });
+});

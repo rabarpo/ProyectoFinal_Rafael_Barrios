@@ -389,7 +389,7 @@ export class VotosService {
    * la transacción atómica.
    */
   async construirComprobante(resultado: ResultadoEmision): Promise<ComprobanteDto> {
-    const [derecho, proceso, voto] = await Promise.all([
+    const [derecho, proceso, voto, anioActivo] = await Promise.all([
       this.prisma.derechoVoto.findUniqueOrThrow({
         where: { id: resultado.derecho_voto_id },
         select: { en_calidad_de: true },
@@ -402,6 +402,15 @@ export class VotosService {
         where: { proceso_id: resultado.proceso_id, derecho_voto_id: resultado.derecho_voto_id },
         select: { lista_id: true, opcion_id: true, candidato_id: true, blanco: true },
       }),
+      // fidelidad-visual-boleta-votacion, PR1 (design.md D2). Lectura independiente del año
+      // escolar vigente, sin join con Voto/DerechoVoto/ProcesoElectoral. `orderBy` explícito
+      // porque `activo` no tiene restricción de unicidad — con dos filas activas, `findFirst`
+      // sin orden sería no determinístico entre ejecuciones.
+      this.prisma.anioEscolar.findFirst({
+        where: { activo: true },
+        orderBy: { nombre: 'desc' },
+        select: { nombre: true },
+      }),
     ]);
 
     return {
@@ -410,6 +419,7 @@ export class VotosService {
       proceso: { id: resultado.proceso_id, nombre: proceso.nombre },
       en_calidad_de: derecho.en_calidad_de,
       eleccion_resumen: await resolverEleccionResumen(this.prisma, voto),
+      periodo_lectivo: anioActivo?.nombre,
     };
   }
 

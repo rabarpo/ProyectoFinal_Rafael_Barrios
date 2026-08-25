@@ -1722,6 +1722,7 @@ export interface components {
             proceso: components["schemas"]["ComprobanteProcesoDto"];
             en_calidad_de: string;
             eleccion_resumen: string;
+            periodo_lectivo?: string;
         };
         ProcesoDerechoDto: {
             id: string;
