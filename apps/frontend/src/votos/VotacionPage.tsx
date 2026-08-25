@@ -3,6 +3,7 @@ import { emitir, papeleta } from './votos-api';
 import type { ComprobanteDto, EmitirVotoDto, PapeletaDto } from './votos-api';
 import { useClaveIdempotencia } from './clave-idempotencia';
 import { navegar } from '../app/useRuta';
+import { useSesion } from '../auth/sesion-context';
 import { PasoInformacionProceso } from './piezas/PasoInformacionProceso';
 import { PasoBoleta } from './piezas/PasoBoleta';
 import type { Seleccion } from './piezas/PasoBoleta';
@@ -79,8 +80,14 @@ type Estado =
  *   exacta de cierre que envió el servidor (`detalle.cierre`).
  * - Fallo de red/lo respuesta perdida (18.4, estado del CLIENTE) -> `PantallaRechazo
  *   variante="sin-conexion"`, con reintento que reusa la MISMA clave de idempotencia.
+ *
+ * fidelidad-visual-boleta-votacion, PR5 (design.md D7, tasks.md 27.1): cablea las acciones de
+ * `PanelComprobante` — `onVolverAlInicio={() => navegar({ nombre: 'inicio' })}` y
+ * `onCerrarSesion={logout}` de `useSesion()` — sin que `PanelComprobante` deje de ser
+ * presentacional puro.
  */
 export function VotacionPage({ derechoVotoId }: VotacionPageProps) {
+  const { logout } = useSesion();
   const [estado, setEstado] = useState<Estado>({ fase: 'cargando' });
   const procesoId = estado.fase !== 'cargando' && estado.fase !== 'no-disponible' && 'datos' in estado
     ? estado.datos.proceso.id
@@ -188,7 +195,13 @@ export function VotacionPage({ derechoVotoId }: VotacionPageProps) {
   }
 
   if (estado.fase === 'exito') {
-    return <PanelComprobante comprobante={estado.comprobante} />;
+    return (
+      <PanelComprobante
+        comprobante={estado.comprobante}
+        onVolverAlInicio={() => navegar({ nombre: 'inicio' })}
+        onCerrarSesion={logout}
+      />
+    );
   }
 
   if (estado.fase === 'ya-votaste') {

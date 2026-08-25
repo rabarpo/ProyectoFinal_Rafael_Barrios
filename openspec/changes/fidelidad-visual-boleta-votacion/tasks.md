@@ -249,63 +249,63 @@ gate D8 usado en `rediseno-boleta-votacion`.
 ## PR 5 — Paso 3: período lectivo, sincronizado, cerrar sesión (base = PR 4 branch, depende de PR1)
 
 ### Phase 23: `PanelComprobante` — período lectivo — RED (D2/D7)
-- [ ] 23.1 RED componente (`PanelComprobante.spec.tsx`): con `periodo_lectivo = "2026"` en el DTO,
+- [x] 23.1 RED componente (`PanelComprobante.spec.tsx`): con `periodo_lectivo = "2026"` en el DTO,
       se muestra la fila "Período Lectivo" con ese valor, sin afectar el resto del comprobante
       [spec comprobante-autenticado: "Período Lectivo" se muestra cuando el DTO lo trae]
-- [ ] 23.2 RED componente: sin `periodo_lectivo` (`undefined`), la fila no se renderiza y el resto
+- [x] 23.2 RED componente: sin `periodo_lectivo` (`undefined`), la fila no se renderiza y el resto
       del comprobante se muestra completo [spec comprobante-autenticado: Sin `periodo_lectivo`, el
       comprobante no rompe]
 
 ### Phase 24: `PanelComprobante` — indicador estático — RED (D3)
-- [ ] 24.1 RED componente: "Estado del Sistema: Sincronizado" se muestra igual en cualquier estado
+- [x] 24.1 RED componente: "Estado del Sistema: Sincronizado" se muestra igual en cualquier estado
       (con/sin `periodo_lectivo`, recién emitido o reintento con `yaRegistrado`), sin condicionarse a
       ningún dato [spec comprobante-autenticado: "Estado del Sistema: Sincronizado" siempre estático]
-- [ ] 24.2 RED componente: el punto de color va `aria-hidden="true"`, el par etiqueta/valor se lee
+- [x] 24.2 RED componente: el punto de color va `aria-hidden="true"`, el par etiqueta/valor se lee
       normalmente [design.md D3]
 
 ### Phase 25: `PanelComprobante` — botón "Cerrar Sesión" — RED (D7)
-- [ ] 25.1 RED componente: botón "Cerrar Sesión" aparece junto a "Volver al Inicio" e invoca la prop
+- [x] 25.1 RED componente: botón "Cerrar Sesión" aparece junto a "Volver al Inicio" e invoca la prop
       `onCerrarSesion` al hacer click [spec comprobante-autenticado: "Cerrar Sesión" disponible en el
       camino post-voto]
-- [ ] 25.2 RED componente: `onVolverAlInicio`/`onCerrarSesion` son props obligatorias — `PanelComprobante`
+- [x] 25.2 RED componente: `onVolverAlInicio`/`onCerrarSesion` son props obligatorias — `PanelComprobante`
       no llama `useSesion()`/`navegar()` internamente (sigue presentacional puro) [design.md D7]
-- [ ] 25.3 RED componente: el badge `yaRegistrado` existente no se rompe con las props nuevas
+- [x] 25.3 RED componente: el badge `yaRegistrado` existente no se rompe con las props nuevas
       [spec comprobante-autenticado: "Cerrar Sesión" disponible en la relectura autenticada, sin
       romper `yaRegistrado`]
 
 ### Phase 26: GREEN `PanelComprobante`
-- [ ] 26.1 GREEN: modificar `apps/frontend/src/votos/piezas/PanelComprobante.tsx` — período lectivo
+- [x] 26.1 GREEN: modificar `apps/frontend/src/votos/piezas/PanelComprobante.tsx` — período lectivo
       condicional (D2), indicador estático (D3), botón "Cerrar Sesión" vía prop (D7) — pasa 23.1-25.3
 
 ### Phase 27: Wiring `VotacionPage`/`ComprobantePage` — RED/GREEN
-- [ ] 27.1 RED integración (`VotacionPage.spec.tsx`): `PanelComprobante` recibe
+- [x] 27.1 RED integración (`VotacionPage.spec.tsx`): `PanelComprobante` recibe
       `onVolverAlInicio={() => navegar({ nombre: 'inicio' })}` y `onCerrarSesion={logout}` de
       `useSesion()` [design.md D7, "call sites"]
-- [ ] 27.2 RED integración (`ComprobantePage.spec.tsx`): mismo wiring, badge `yaRegistrado` intacto
+- [x] 27.2 RED integración (`ComprobantePage.spec.tsx`): mismo wiring, badge `yaRegistrado` intacto
       [proposal.md Success Criteria: "`ComprobantePage` sigue funcionando en ambos caminos"]
-- [ ] 27.3 GREEN: modificar `apps/frontend/src/votos/VotacionPage.tsx` y
+- [x] 27.3 GREEN: modificar `apps/frontend/src/votos/VotacionPage.tsx` y
       `apps/frontend/src/votos/ComprobantePage.tsx` (agrega `useSesion()` en este último) — pasa
       27.1-27.2
 
 ### Phase 28: Regresión y contrato PR5
-- [ ] 28.1 `pnpm --filter @seei/frontend test -- PanelComprobante VotacionPage ComprobantePage` verde
-- [ ] 28.2 `pnpm typecheck` verde en `@seei/frontend`
-- [ ] 28.3 `rg -i "san alfonso" apps/frontend/src/votos/piezas/PanelComprobante.tsx` sin resultados
+- [x] 28.1 `pnpm --filter @seei/frontend test -- PanelComprobante VotacionPage ComprobantePage` verde
+- [x] 28.2 `pnpm typecheck` verde en `@seei/frontend`
+- [x] 28.3 `rg -i "san alfonso" apps/frontend/src/votos/piezas/PanelComprobante.tsx` sin resultados
 
 ## Phase 29: Checklist final de branding y regresión completa del change
 
-- [ ] 29.1 `rg -i "san alfonso" apps/` sin resultados sobre todo el árbol de `apps/`
+- [x] 29.1 `rg -i "san alfonso" apps/` sin resultados sobre todo el árbol de `apps/`
       [proposal.md Out of Scope: "el nombre 'San Alfonso'... no debe filtrarse a ningún componente ni
       copy"]
-- [ ] 29.2 `pnpm --filter @seei/backend test` verde — incluidos los 19 tests de
+- [x] 29.2 `pnpm --filter @seei/backend test` verde — incluidos los 19 tests de
       `VotosService.emitir()` sin modificar [proposal.md Success Criteria]
-- [ ] 29.3 `pnpm --filter @seei/frontend test` verde — suite completa, incluidos todos los specs
+- [x] 29.3 `pnpm --filter @seei/frontend test` verde — suite completa, incluidos todos los specs
       reescritos/actualizados de PR2-PR5
-- [ ] 29.4 `pnpm typecheck` verde en los 4 paquetes
-- [ ] 29.5 Confirmar visualmente (o con specs de snapshot si existieran) que el Paso 1, Paso 2 y
+- [x] 29.4 `pnpm typecheck` verde en los 4 paquetes
+- [x] 29.5 Confirmar visualmente (o con specs de snapshot si existieran) que el Paso 1, Paso 2 y
       Paso 3 se acercan al patrón de las 3 capturas de referencia (`paso01.jpg`, `paso02.jpg`,
       `paso03.jpg`) dentro del `AppShell`/sidebar existente, sin reproducir la navegación de
       header+tabs (desviación aceptada, proposal.md Scope/Risks)
-- [ ] 29.6 Confirmar que `AppShell.tsx`, `NavegacionPrincipal.tsx` y `menu-por-rol.ts` no fueron
+- [x] 29.6 Confirmar que `AppShell.tsx`, `NavegacionPrincipal.tsx` y `menu-por-rol.ts` no fueron
       tocados por ninguna PR de este change (`git diff` acumulado del change contra esos 3 archivos
       vacío) [proposal.md Out of Scope]

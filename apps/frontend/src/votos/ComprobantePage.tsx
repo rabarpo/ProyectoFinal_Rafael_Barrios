@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { comprobante } from './votos-api';
 import type { ComprobanteDto } from './votos-api';
 import { PanelComprobante } from './piezas/PanelComprobante';
+import { navegar } from '../app/useRuta';
+import { useSesion } from '../auth/sesion-context';
 
 interface ComprobantePageProps {
   votoId: string;
@@ -27,8 +29,13 @@ type Estado =
  *
  * rediseno-boleta-votacion, PR4 (design.md D6, tasks.md 20.3): siempre pasa `yaRegistrado` —
  * esta relectura autenticada solo ocurre para un voto ya emitido, nunca para uno recién creado.
+ *
+ * fidelidad-visual-boleta-votacion, PR5 (design.md D7, tasks.md 27.2): mismo wiring que
+ * `VotacionPage` para las acciones de `PanelComprobante` — `onVolverAlInicio`/`onCerrarSesion` de
+ * `useSesion()` — sin romper el badge `yaRegistrado`.
  */
 export function ComprobantePage({ votoId }: ComprobantePageProps) {
+  const { logout } = useSesion();
   const [estado, setEstado] = useState<Estado>({ fase: 'cargando' });
 
   useEffect(() => {
@@ -77,5 +84,12 @@ export function ComprobantePage({ votoId }: ComprobantePageProps) {
     );
   }
 
-  return <PanelComprobante comprobante={estado.comprobante} yaRegistrado />;
+  return (
+    <PanelComprobante
+      comprobante={estado.comprobante}
+      yaRegistrado
+      onVolverAlInicio={() => navegar({ nombre: 'inicio' })}
+      onCerrarSesion={logout}
+    />
+  );
 }
