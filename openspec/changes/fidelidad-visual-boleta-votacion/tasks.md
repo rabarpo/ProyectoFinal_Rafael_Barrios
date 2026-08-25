@@ -194,57 +194,57 @@ gate D8 usado en `rediseno-boleta-votacion`.
 ## PR 4 — Adopción del patrón en `TarjetaLista`/`TarjetaCandidato`/`TarjetaOpcion` (base = PR 3 branch)
 
 ### Phase 17: `TarjetaLista` reescrita — RED (D1/D8)
-- [ ] 17.1 RED componente (`TarjetaLista.spec.tsx` reescrito): foto arriba, cinta "Lista N°" absoluta
+- [x] 17.1 RED componente (`TarjetaLista.spec.tsx` reescrito): foto arriba, cinta "Lista N°" absoluta
       sobre la foto, símbolo, lema, propuesta corta, botón outline "Ver Propuesta Completa" condicionado
       a `plan_trabajo_presente`, `BotonSeleccion` con texto "Seleccionar Lista" [spec vote-casting:
       Proceso `municipio` renderiza tarjetas de Lista con cinta y doble botón]
-- [ ] 17.2 RED componente (`TarjetaLista.spec.tsx:88-94` conservado verbatim): `name="eleccion"`,
+- [x] 17.2 RED componente (`TarjetaLista.spec.tsx:88-94` conservado verbatim): `name="eleccion"`,
       clase `sr-only`, dentro de un `<label>` — pasa sin modificación de fondo [design.md D1,
       "pasan sin modificación"]
-- [ ] 17.3 RED componente (`TarjetaLista.spec.tsx:57-74` conservado verbatim): "Ver Propuesta
+- [x] 17.3 RED componente (`TarjetaLista.spec.tsx:57-74` conservado verbatim): "Ver Propuesta
       Completa" hermano del `<label>`, no marca el radio [design.md D1, "regresión clave"]
-- [ ] 17.4 RED componente (`TarjetaLista.spec.tsx:76-86` conservado): indicador `✓` y
+- [x] 17.4 RED componente (`TarjetaLista.spec.tsx:76-86` conservado): indicador `✓` y
       `border-2 border-primary` de estado seleccionado se conservan, reubicado junto a la cinta
       [design.md D1, "el `✓` se reubica junto a la cinta/badge"]
-- [ ] 17.5 RED componente: nombre accesible del radio es
+- [x] 17.5 RED componente: nombre accesible del radio es
       `` `Seleccionar Lista: ${opcion.etiqueta}` `` [design.md D1, tabla de variantes]
 
 ### Phase 18: GREEN `TarjetaLista`
-- [ ] 18.1 GREEN: reescribir `apps/frontend/src/votos/piezas/TarjetaLista.tsx` consumiendo
+- [x] 18.1 GREEN: reescribir `apps/frontend/src/votos/piezas/TarjetaLista.tsx` consumiendo
       `BotonSeleccion` de PR3 — pasa 17.1-17.5
 
 ### Phase 19: `TarjetaCandidato` reescrita — RED/GREEN
-- [ ] 19.1 RED componente (`TarjetaCandidato.spec.tsx` reescrito): foto, cinta con cargo, nombres,
+- [x] 19.1 RED componente (`TarjetaCandidato.spec.tsx` reescrito): foto, cinta con cargo, nombres,
       sin botón de propuesta, `BotonSeleccion` con texto "Seleccionar Candidato"
       [spec vote-casting: Proceso `representante_aula`/`padres` renderiza tarjetas de Candidato]
-- [ ] 19.2 RED componente (`TarjetaCandidato.spec.tsx:34` conservado): aserción de `<label>`/radio
+- [x] 19.2 RED componente (`TarjetaCandidato.spec.tsx:34` conservado): aserción de `<label>`/radio
       pasa sin modificación [design.md D1]
-- [ ] 19.3 RED componente: nombre accesible es `` `Seleccionar Candidato: ${etiqueta}` ``
+- [x] 19.3 RED componente: nombre accesible es `` `Seleccionar Candidato: ${etiqueta}` ``
       [design.md D1, tabla de variantes]
-- [ ] 19.4 GREEN: reescribir `apps/frontend/src/votos/piezas/TarjetaCandidato.tsx` — pasa 19.1-19.3
+- [x] 19.4 GREEN: reescribir `apps/frontend/src/votos/piezas/TarjetaCandidato.tsx` — pasa 19.1-19.3
 
 ### Phase 20: `TarjetaOpcion` reescrita — RED/GREEN
-- [ ] 20.1 RED componente (`TarjetaOpcion.spec.tsx` reescrito): sin foto, cinta de etiqueta y
+- [x] 20.1 RED componente (`TarjetaOpcion.spec.tsx` reescrito): sin foto, cinta de etiqueta y
       descripción, `BotonSeleccion` con texto "Seleccionar esta Opción" [spec vote-casting: Proceso
       `consulta` renderiza tarjetas de Opción simple]
-- [ ] 20.2 RED componente (`TarjetaOpcion.spec.tsx:25` conservado): aserción de radio pasa sin
+- [x] 20.2 RED componente (`TarjetaOpcion.spec.tsx:25` conservado): aserción de radio pasa sin
       modificación [design.md D1]
-- [ ] 20.3 RED componente: nombre accesible es `` `Seleccionar esta Opción: ${etiqueta}` ``
+- [x] 20.3 RED componente: nombre accesible es `` `Seleccionar esta Opción: ${etiqueta}` ``
       [design.md D1, tabla de variantes]
-- [ ] 20.4 GREEN: reescribir `apps/frontend/src/votos/piezas/TarjetaOpcion.tsx` — pasa 20.1-20.3
+- [x] 20.4 GREEN: reescribir `apps/frontend/src/votos/piezas/TarjetaOpcion.tsx` — pasa 20.1-20.3
 
 ### Phase 21: Regresión de accesibilidad final del Paso 2
-- [ ] 21.1 RED/GREEN integración (`PasoBoleta.spec.tsx`): navegación por flecha derecha/abajo mueve
+- [x] 21.1 RED/GREEN integración (`PasoBoleta.spec.tsx`): navegación por flecha derecha/abajo mueve
       el foco al `BotonSeleccion` de la siguiente tarjeta del `radiogroup`, "Ver Propuesta Completa"
       nunca recibe foco por esa navegación [spec vote-casting: "Ver Propuesta Completa" no interfiere
       con la navegación de flechas del grupo]
-- [ ] 21.2 `VotacionPage.spec.tsx:127` (`{ name: /blanco/i }`) sigue matcheando sin cambios
+- [x] 21.2 `VotacionPage.spec.tsx:127` (`{ name: /blanco/i }`) sigue matcheando sin cambios
       [design.md D1, "no se toca"]
 
 ### Phase 22: Regresión y contrato PR4
-- [ ] 22.1 `pnpm --filter @seei/frontend test -- TarjetaLista TarjetaCandidato TarjetaOpcion PasoBoleta VotacionPage` verde
-- [ ] 22.2 `pnpm typecheck` verde en `@seei/frontend`
-- [ ] 22.3 `rg -i "san alfonso" apps/frontend/src/votos/piezas/Tarjeta{Lista,Candidato,Opcion}.tsx` sin resultados
+- [x] 22.1 `pnpm --filter @seei/frontend test -- TarjetaLista TarjetaCandidato TarjetaOpcion PasoBoleta VotacionPage` verde
+- [x] 22.2 `pnpm typecheck` verde en `@seei/frontend`
+- [x] 22.3 `rg -i "san alfonso" apps/frontend/src/votos/piezas/Tarjeta{Lista,Candidato,Opcion}.tsx` sin resultados
 
 ## PR 5 — Paso 3: período lectivo, sincronizado, cerrar sesión (base = PR 4 branch, depende de PR1)
 

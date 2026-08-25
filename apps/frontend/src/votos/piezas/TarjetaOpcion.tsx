@@ -1,4 +1,5 @@
 import type { PapeletaOpcionDto } from '../votos-api';
+import { BotonSeleccion } from './BotonSeleccion';
 
 interface TarjetaSeleccionableProps {
   seleccionada: boolean;
@@ -10,8 +11,10 @@ interface TarjetaOpcionProps extends TarjetaSeleccionableProps {
 }
 
 /**
- * rediseno-boleta-votacion, PR3 (design.md D6, tasks.md 14.4). Variante para `tipo === 'consulta'`:
- * únicamente etiqueta y `descripcion`, sin foto.
+ * fidelidad-visual-boleta-votacion, PR4 (design.md D1/D8, tasks.md 20.1-20.4). Variante para
+ * `tipo === 'consulta'`: sin foto, cinta de etiqueta (el indicador `✓` de estado seleccionado se
+ * reubica junto a ella) y `descripcion`. Consume `BotonSeleccion` (PR3) como único dueño del
+ * contrato ARIA del radio compartido.
  */
 export function TarjetaOpcion({ opcion, seleccionada, onSeleccionar }: TarjetaOpcionProps) {
   return (
@@ -20,29 +23,23 @@ export function TarjetaOpcion({ opcion, seleccionada, onSeleccionar }: TarjetaOp
         seleccionada ? 'border-2 border-primary' : 'border border-border-gray'
       }`}
     >
-      <label className="flex cursor-pointer items-start gap-3">
-        <input
-          type="radio"
-          name="eleccion"
-          aria-label={opcion.etiqueta}
-          checked={seleccionada}
-          onChange={onSeleccionar}
-          className="sr-only"
+      <div className="inline-flex items-center gap-1 rounded-control bg-secondary px-2 py-1 text-label-md text-on-secondary">
+        <span>{opcion.etiqueta}</span>
+        {seleccionada && <span aria-hidden="true">✓</span>}
+      </div>
+
+      {opcion.descripcion && (
+        <p className="mt-2 text-body-md text-on-surface-variant">{opcion.descripcion}</p>
+      )}
+
+      <div className="mt-3">
+        <BotonSeleccion
+          texto="Seleccionar esta Opción"
+          etiqueta={opcion.etiqueta}
+          seleccionada={seleccionada}
+          onSeleccionar={onSeleccionar}
         />
-        <div className="flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-title-md text-on-surface">{opcion.etiqueta}</span>
-            {seleccionada && (
-              <span aria-hidden="true" className="text-primary">
-                ✓
-              </span>
-            )}
-          </div>
-          {opcion.descripcion && (
-            <p className="mt-1 text-body-md text-on-surface-variant">{opcion.descripcion}</p>
-          )}
-        </div>
-      </label>
+      </div>
     </div>
   );
 }

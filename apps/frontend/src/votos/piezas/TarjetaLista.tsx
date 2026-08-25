@@ -1,4 +1,5 @@
 import type { PapeletaOpcionDto } from '../votos-api';
+import { BotonSeleccion } from './BotonSeleccion';
 
 interface TarjetaSeleccionableProps {
   seleccionada: boolean;
@@ -12,13 +13,15 @@ interface TarjetaListaProps extends TarjetaSeleccionableProps {
 }
 
 /**
- * rediseno-boleta-votacion, PR3 (design.md D6, tasks.md 14.1-14.2). Variante de tarjeta para
- * `tipo === 'municipio'`: etiqueta, símbolo, lema, propuesta corta y foto+nombres+cargo del
- * candidato cabeza de lista (convención de desempate D2 — nunca una designación real de dominio).
- * "Ver Propuesta Completa" es un `<button>` HERMANO del `<label>` (no anidado): el click no debe
- * activar el radio por propagación de label (design.md, "Semántica ARIA preservada").
- * Invariante D6: el `id` de selección lo decide el consumidor (`PasoBoleta`) vía `onSeleccionar`
- * usando siempre `opcion.id`, nunca `opcion.candidato_id` — esta pieza no conoce ids, solo notifica.
+ * fidelidad-visual-boleta-votacion, PR4 (design.md D1/D8, tasks.md 17.1-18.1). Variante de tarjeta
+ * para `tipo === 'municipio'`: foto del candidato cabeza de lista arriba, cinta "Lista N°" absoluta
+ * sobre la foto (el indicador `✓` de estado seleccionado se reubica junto a ella), símbolo, lema,
+ * propuesta corta y botón outline "Ver Propuesta Completa" condicionado a `plan_trabajo_presente`.
+ * "Ver Propuesta Completa" es un `<button>` HERMANO del `<label>` de `BotonSeleccion` (no anidado):
+ * el click no debe activar el radio por propagación de label (design.md D1, "regresión clave").
+ * Consume `BotonSeleccion` (PR3) como único dueño del contrato ARIA del radio compartido.
+ * Invariante D6 heredada: el `id` de selección lo decide el consumidor (`PasoBoleta`) vía
+ * `onSeleccionar` usando siempre `opcion.id`, nunca `opcion.candidato_id` — esta pieza no conoce ids.
  */
 export function TarjetaLista({
   opcion,
@@ -29,62 +32,55 @@ export function TarjetaLista({
 }: TarjetaListaProps) {
   return (
     <div
-      className={`rounded-card bg-surface-white p-4 shadow-elevation transition-colors ${
+      className={`overflow-hidden rounded-card bg-surface-white shadow-elevation transition-colors ${
         seleccionada ? 'border-2 border-primary' : 'border border-border-gray'
       }`}
     >
-      <label className="flex cursor-pointer items-start gap-3">
-        <input
-          type="radio"
-          name="eleccion"
-          aria-label={opcion.etiqueta}
-          checked={seleccionada}
-          onChange={onSeleccionar}
-          className="sr-only"
-        />
-        <div className="flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-title-md text-on-surface">{opcion.etiqueta}</span>
-            {seleccionada && (
-              <span aria-hidden="true" className="text-primary">
-                ✓
-              </span>
-            )}
-          </div>
-          {opcion.simbolo && (
-            <p className="mt-1 text-body-md text-on-surface-variant">{opcion.simbolo}</p>
-          )}
-          {opcion.lema && <p className="text-body-md text-on-surface-variant italic">{opcion.lema}</p>}
-          {opcion.propuesta && (
-            <p className="mt-2 text-caption text-on-surface-variant">{opcion.propuesta}</p>
-          )}
-          {opcion.candidato_nombres && (
-            <div className="mt-3 flex items-center gap-2">
-              {urlFoto && (
-                <img
-                  src={urlFoto}
-                  alt={opcion.candidato_nombres}
-                  className="h-10 w-10 rounded-control object-cover"
-                />
-              )}
-              <div>
-                <p className="text-label-md text-on-surface">{opcion.candidato_nombres}</p>
-                {opcion.cargo && <p className="text-caption text-on-surface-variant">{opcion.cargo}</p>}
-              </div>
-            </div>
+      <div className="relative">
+        {urlFoto && (
+          <img
+            src={urlFoto}
+            alt={opcion.candidato_nombres ?? opcion.etiqueta}
+            className="h-40 w-full object-cover"
+          />
+        )}
+        <div className="absolute left-2 top-2 flex items-center gap-1 rounded-control bg-secondary px-2 py-1 text-label-md text-on-secondary">
+          <span>{opcion.etiqueta}</span>
+          {seleccionada && (
+            <span aria-hidden="true">✓</span>
           )}
         </div>
-      </label>
+      </div>
 
-      {opcion.plan_trabajo_presente && (
-        <button
-          type="button"
-          onClick={onVerPropuesta}
-          className="mt-3 text-label-md text-primary underline"
-        >
-          Ver Propuesta Completa
-        </button>
-      )}
+      <div className="p-4">
+        {opcion.simbolo && <p className="text-body-md text-on-surface-variant">{opcion.simbolo}</p>}
+        {opcion.lema && <p className="text-body-md text-on-surface-variant italic">{opcion.lema}</p>}
+        {opcion.propuesta && (
+          <p className="mt-2 text-caption text-on-surface-variant">{opcion.propuesta}</p>
+        )}
+        {opcion.candidato_nombres && (
+          <p className="mt-3 text-label-md text-on-surface">{opcion.candidato_nombres}</p>
+        )}
+        {opcion.cargo && <p className="text-caption text-on-surface-variant">{opcion.cargo}</p>}
+
+        <div className="mt-3 flex flex-col gap-2">
+          {opcion.plan_trabajo_presente && (
+            <button
+              type="button"
+              onClick={onVerPropuesta}
+              className="rounded-control border border-border-gray bg-surface-white px-4 py-3 text-label-md text-primary"
+            >
+              Ver Propuesta Completa
+            </button>
+          )}
+          <BotonSeleccion
+            texto="Seleccionar Lista"
+            etiqueta={opcion.etiqueta}
+            seleccionada={seleccionada}
+            onSeleccionar={onSeleccionar}
+          />
+        </div>
+      </div>
     </div>
   );
 }
