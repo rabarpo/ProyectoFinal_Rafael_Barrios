@@ -72,7 +72,7 @@ enriquecidos + presentación; no toca la lógica de emisión del voto.
 1. **Backend — DTOs enriquecidos**: extender `PapeletaOpcionDto` con campos opcionales según
    `tipo` (unión discriminada o campos opcionales homogéneos, a definir en `sdd-design`).
    `PapeletaService.obtenerOpciones()` mapea `simbolo/lema/propuesta/plan_trabajo_presente` para
-   `Lista`, `foto`(bool)/`cargo` para `Candidato`, y nada adicional para `OpcionConsulta`.
+   `Lista`, `foto`(bool)/`cargo` para `Candidato`, y `descripcion` para `OpcionConsulta`.
    `plan_trabajo_presente` se deriva (`!== null`) sin exponer bytes, igual que
    `ListaRespuestaDto`.
 2. **Backend — autorización de binarios**: nuevo `VotosArchivosController` (o método en
@@ -112,7 +112,7 @@ enriquecidos + presentación; no toca la lógica de emisión del voto.
 | `apps/backend/src/votos/votos.controller.ts` | Modified | 2 endpoints nuevos de archivo (foto/plan de trabajo) |
 | `apps/backend/src/votos/votos.controller.spec.ts` | Modified | Cobertura de los 2 endpoints nuevos (403 ajeno/inexistente) |
 | `apps/backend/src/votos/papeleta.service.spec.ts` | Modified | Actualizar `toEqual` de `opciones` |
-| `apps/backend/src/configuracion/configuracion.controller.ts` | Modified | `GET /configuracion/logo` pasa de `@Roles('administrador','director')` a accesible por cualquier usuario autenticado (`@UseGuards(AuthGuard)` a nivel de método, override del guard de clase) — ver Risks |
+| `apps/backend/src/configuracion/configuracion.controller.ts` | Modified | `GET /configuracion/logo` pasa de `@Roles('administrador','director')` a accesible por cualquier usuario autenticado vía `@SinRestriccionDeRol()` (ver `design.md` D4 — `@UseGuards` a nivel de método NO revierte el `@Roles` de clase en este `RolesGuard`) — ver Risks |
 | `apps/frontend/src/votos/PasoInformacionProceso.tsx` | Modified | Barra de progreso, portada, tarjetas de reglas |
 | `apps/frontend/src/votos/PasoBoleta.tsx` | Modified | Grilla de tarjetas por variante, % completado, footer |
 | `apps/frontend/src/votos/PasoBoleta.spec.tsx` | Modified | Nuevas fixtures/roles de tarjeta |
@@ -126,7 +126,7 @@ enriquecidos + presentación; no toca la lógica de emisión del voto.
 | Risk | Likelihood | Mitigation |
 |------|------------|------------|
 | Nuevo endpoint de archivo introduce un oráculo de enumeración distinto al de `PapeletaService` | Medium | Reusar exactamente el mismo criterio de pertenencia y el mismo código/mensaje 403 para ajeno e inexistente (D9/D13) |
-| `GET /configuracion/logo` tiene el mismo gap de autorización que `/candidatos/:id/foto`/`/listas/:id/plan-trabajo` (descubierto al revisar la decisión de imagen institucional del Paso 1): gateado a `@Roles('administrador','director')`, inalcanzable por votantes | Medium (bloqueante si no se resuelve) | A diferencia de foto de candidato/plan de trabajo (datos ligados a un proceso/derecho de voto concreto, con posible sensibilidad electoral), el logo institucional es un dato público no sensible sin relación con ningún voto — se relaja el guard de ese único método a "cualquier usuario autenticado" (`@UseGuards(AuthGuard)`, sin `@Roles`) en vez de crear un endpoint espejo bajo `/votos/...`; el resto de `ConfiguracionController` mantiene `@Roles('administrador','director')` sin cambios |
+| `GET /configuracion/logo` tiene el mismo gap de autorización que `/candidatos/:id/foto`/`/listas/:id/plan-trabajo` (descubierto al revisar la decisión de imagen institucional del Paso 1): gateado a `@Roles('administrador','director')`, inalcanzable por votantes | Medium (bloqueante si no se resuelve) | A diferencia de foto de candidato/plan de trabajo (datos ligados a un proceso/derecho de voto concreto, con posible sensibilidad electoral), el logo institucional es un dato público no sensible sin relación con ningún voto — se relaja el guard de ese único método a "cualquier usuario autenticado" vía el decorador `@SinRestriccionDeRol()` (`design.md` D4) en vez de crear un endpoint espejo bajo `/votos/...`; el resto de `ConfiguracionController` mantiene `@Roles('administrador','director')` sin cambios |
 | Romper tests existentes con `toEqual` literal sobre `opciones` | High (conocido) | Actualizar fixtures en la misma PR; ningún cambio en la lógica de `emitir()` |
 | Confusión de UX si se omite "periodo lectivo"/"Sincronizado" respecto a la captura de referencia | Low | Documentado como decisión de producto: solo datos reales del dominio, sin campos fabricados |
 | Filtración del nombre "San Alfonso" del front-matter de `DESIGN-SYSTEM.md` a la UI | Low | Checklist de revisión: grep de "San Alfonso" en componentes/copy antes de cerrar el change |
