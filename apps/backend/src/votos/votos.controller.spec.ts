@@ -1,5 +1,7 @@
+import { ParseUUIDPipe } from '@nestjs/common';
 import type { ComprobanteService } from './comprobante.service';
 import type { MisDerechosService } from './mis-derechos.service';
+import type { PapeletaArchivosService } from './papeleta-archivos.service';
 import type { PapeletaService } from './papeleta.service';
 import { VotosController } from './votos.controller';
 import type { VotosService } from './votos.service';
@@ -33,7 +35,14 @@ describe('VotosController — POST / (D6, tarea 10.3-10.4)', () => {
     const papeletaService = {} as unknown as PapeletaService;
     const comprobanteService = {} as unknown as ComprobanteService;
     const misDerechosService = {} as unknown as MisDerechosService;
-    const controller = new VotosController(papeletaService, votosService, comprobanteService, misDerechosService);
+    const papeletaArchivosService = {} as unknown as PapeletaArchivosService;
+    const controller = new VotosController(
+      papeletaService,
+      votosService,
+      comprobanteService,
+      misDerechosService,
+      papeletaArchivosService,
+    );
     const res = { status: jest.fn() };
     return { controller, emitir, construirComprobante, res, comprobante };
   }
@@ -95,7 +104,14 @@ describe('VotosController — GET /mis-derechos (D5, tarea 1.3)', () => {
     const papeletaService = {} as unknown as PapeletaService;
     const votosService = {} as unknown as VotosService;
     const comprobanteService = {} as unknown as ComprobanteService;
-    const controller = new VotosController(papeletaService, votosService, comprobanteService, misDerechosService);
+    const papeletaArchivosService = {} as unknown as PapeletaArchivosService;
+    const controller = new VotosController(
+      papeletaService,
+      votosService,
+      comprobanteService,
+      misDerechosService,
+      papeletaArchivosService,
+    );
     return { controller, listar };
   }
 
@@ -124,5 +140,102 @@ describe('VotosController — GET /mis-derechos (D5, tarea 1.3)', () => {
     // leyendo `req.query` manualmente dentro del método — este assert prueba que no lo hace.
     expect(listar).toHaveBeenCalledWith(SESION_USUARIO);
     expect(listar).not.toHaveBeenCalledWith(expect.objectContaining({ userId: 'usuario-ajeno' }));
+  });
+});
+
+/**
+ * rediseno-boleta-votacion, PR2 (design.md D3, tareas 7.1-7.4). Las 2 rutas nuevas delegan
+ * íntegramente en `PapeletaArchivosService` (unit tests de pertenencia en
+ * `papeleta-archivos.service.spec.ts`) — acá sólo se prueba la orquestación HTTP del handler:
+ * `ParseUUIDPipe` corre en el nivel del framework (no unit-testeable sin levantar Nest), así que
+ * estos tests invocan el método directamente con params ya validados y verifican headers/
+ * `Content-Disposition`/`StreamableFile`.
+ */
+describe('VotosController — GET /votos/papeleta/:derechoVotoId/opciones/:id/{foto,plan-trabajo} (D3, tareas 7.1-7.4)', () => {
+  function construirControlador(overrides: {
+    obtenerFoto?: jest.Mock;
+    obtenerPlanTrabajo?: jest.Mock;
+  } = {}) {
+    const obtenerFoto =
+      overrides.obtenerFoto ?? jest.fn().mockResolvedValue({ buffer: Buffer.from('foto'), mime: 'image/png' });
+    const obtenerPlanTrabajo =
+      overrides.obtenerPlanTrabajo ??
+      jest.fn().mockResolvedValue({ buffer: Buffer.from('%PDF'), mime: 'application/pdf', nombre: 'plan.pdf' });
+    const papeletaArchivosService = { obtenerFoto, obtenerPlanTrabajo } as unknown as PapeletaArchivosService;
+    const papeletaService = {} as unknown as PapeletaService;
+    const votosService = {} as unknown as VotosService;
+    const comprobanteService = {} as unknown as ComprobanteService;
+    const misDerechosService = {} as unknown as MisDerechosService;
+    const controller = new VotosController(
+      papeletaService,
+      votosService,
+      comprobanteService,
+      misDerechosService,
+      papeletaArchivosService,
+    );
+    return { controller, obtenerFoto, obtenerPlanTrabajo };
+  }
+
+  const SESION = { usuario: { userId: 'usuario-1', rol: 'estudiante', creadoEn: 0 } };
+
+  it('[7.1][adversarial] ParseUUIDPipe rechaza derechoVotoId/id no-UUID antes de invocar el servicio [threat matrix: Enrutamiento (servidor)]', async () => {
+    const pipe = new ParseUUIDPipe();
+    const { obtenerFoto } = construirControlador();
+
+    await expect(pipe.transform('no-es-un-uuid', { type: 'param', data: 'derechoVotoId' })).rejects.toThrow();
+    await expect(pipe.transform("'; DROP TABLE \"Voto\"; --", { type: 'param', data: 'id' })).rejects.toThrow();
+
+    // El pipe corre en la tubería de Nest ANTES del handler: si rechaza, el controlador — y por lo
+    // tanto `PapeletaArchivosService` — nunca se invoca.
+    expect(obtenerFoto).not.toHaveBeenCalled();
+  });
+
+  it('[7.2] GET .../foto responde 200 con nosniff + CSP default-src none', async () => {
+    const { controller } = construirControlador();
+    const res = { set: jest.fn() };
+
+    const resultado = await controller.obtenerFotoOpcion('dv-1', 'candidato-1', SESION as never, res as never);
+
+    expect(res.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'",
+      }),
+    );
+    expect(resultado).toBeDefined();
+  });
+
+  it('[7.4] GET .../foto construye el StreamableFile con el mime exacto persistido', async () => {
+    const buffer = Buffer.from('bytes-jpeg');
+    const { controller } = construirControlador({
+      obtenerFoto: jest.fn().mockResolvedValue({ buffer, mime: 'image/jpeg' }),
+    });
+    const res = { set: jest.fn() };
+
+    const resultado = await controller.obtenerFotoOpcion('dv-1', 'candidato-1', SESION as never, res as never);
+
+    expect(resultado).toEqual(expect.objectContaining({ options: expect.objectContaining({ type: 'image/jpeg' }) }));
+  });
+
+  it('[7.1/7.2/7.3] GET .../plan-trabajo delega en el servicio con (derechoVotoId, id, sesión), setea headers y sanea Content-Disposition', async () => {
+    const { controller, obtenerPlanTrabajo } = construirControlador({
+      obtenerPlanTrabajo: jest.fn().mockResolvedValue({
+        buffer: Buffer.from('%PDF'),
+        mime: 'application/pdf',
+        nombre: 'plan "malicioso"\r\n.pdf',
+      }),
+    });
+    const res = { set: jest.fn() };
+
+    await controller.obtenerPlanTrabajoOpcion('dv-1', 'lista-1', SESION as never, res as never);
+
+    expect(obtenerPlanTrabajo).toHaveBeenCalledWith('dv-1', 'lista-1', SESION.usuario);
+    expect(res.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'",
+        'Content-Disposition': 'attachment; filename="plan _malicioso___.pdf"',
+      }),
+    );
   });
 });

@@ -1740,9 +1740,6 @@
           "401": {
             "description": "Sin cookie de sesión válida"
           },
-          "403": {
-            "description": "Rol distinto de administrador/director"
-          },
           "404": {
             "description": "No hay logo institucional persistido"
           }
@@ -1752,7 +1749,7 @@
             "cookie": []
           }
         ],
-        "summary": "Descarga el logo institucional",
+        "summary": "Descarga el logo institucional (accesible a cualquier usuario autenticado)",
         "tags": [
           "configuracion"
         ]
@@ -3145,6 +3142,104 @@
           }
         ],
         "summary": "Comprobante completo (con eleccion_resumen) de un voto propio, tras autenticación (D11)",
+        "tags": [
+          "votos"
+        ]
+      }
+    },
+    "/votos/papeleta/{derechoVotoId}/opciones/{id}/foto": {
+      "get": {
+        "operationId": "VotosController_obtenerFotoOpcion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "derechoVotoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Binario de la foto con el Content-Type persistido"
+          },
+          "400": {
+            "description": "derechoVotoId o id no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Opción ajena o inexistente (mismo cuerpo para ambos casos)"
+          },
+          "404": {
+            "description": "Opción propia sin foto almacenada"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Descarga la foto del candidato cabeza de lista/candidato de una opción propia (D3)",
+        "tags": [
+          "votos"
+        ]
+      }
+    },
+    "/votos/papeleta/{derechoVotoId}/opciones/{id}/plan-trabajo": {
+      "get": {
+        "operationId": "VotosController_obtenerPlanTrabajoOpcion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "derechoVotoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF del plan de trabajo"
+          },
+          "400": {
+            "description": "derechoVotoId o id no-UUID"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Opción ajena o inexistente (mismo cuerpo para ambos casos)"
+          },
+          "404": {
+            "description": "Opción propia sin plan de trabajo almacenado"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Descarga el plan de trabajo de una opción (Lista) propia (D3)",
         "tags": [
           "votos"
         ]
@@ -5109,6 +5204,33 @@
           },
           "etiqueta": {
             "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "simbolo": {
+            "type": "string"
+          },
+          "lema": {
+            "type": "string"
+          },
+          "propuesta": {
+            "type": "string"
+          },
+          "plan_trabajo_presente": {
+            "type": "boolean"
+          },
+          "candidato_id": {
+            "type": "string"
+          },
+          "candidato_nombres": {
+            "type": "string"
+          },
+          "cargo": {
+            "type": "string"
+          },
+          "foto_presente": {
+            "type": "boolean"
           }
         },
         "required": [

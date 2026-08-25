@@ -1,5 +1,17 @@
-import { BadRequestException, Body, Controller, Get, Param, ParseUUIDPipe, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBody, ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Req,
+  Res,
+  StreamableFile,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBody, ApiCookieAuth, ApiOperation, ApiParam, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import type { SesionUsuario } from '../auth/sesion-usuario';
 import { ComprobanteService } from './comprobante.service';
@@ -8,6 +20,7 @@ import { EmitirVotoDto } from './dto/emitir-voto.dto';
 import { MiDerechoVotoDto } from './dto/mi-derecho-voto.dto';
 import { PapeletaDto } from './dto/papeleta.dto';
 import { MisDerechosService } from './mis-derechos.service';
+import { PapeletaArchivosService } from './papeleta-archivos.service';
 import { PapeletaService } from './papeleta.service';
 import { VOTOS_ERROR_CODES } from './votos.errors';
 import { VotosService } from './votos.service';
@@ -18,6 +31,19 @@ interface RequestConUsuario {
 
 interface RespuestaConEstado {
   status(codigo: number): void;
+}
+
+interface RespuestaConCabeceras {
+  set(cabeceras: Record<string, string>): void;
+}
+
+// rediseno-boleta-votacion, PR2 (design.md D3, "Mejora deliberada"). El nombre viaja en
+// `Content-Disposition` interpolado entre comillas: se sanea ANTES de interpolar (a diferencia de
+// `ListasController.obtenerPlanTrabajo()`, que lo interpola crudo desde `originalname` de multer)
+// porque acá la audiencia es cualquier votante — no se retro-corrige `ListasController` en este
+// change (queda como hallazgo para backlog).
+function sanearNombreArchivo(nombre: string): string {
+  return nombre.replace(/[^\w.\- ]/g, '_');
 }
 
 // design.md threat matrix "SQL crudo parametrizado (D4)": `derecho_voto_id` viaja en el body (no
@@ -45,6 +71,7 @@ export class VotosController {
     private readonly votosService: VotosService,
     private readonly comprobanteService: ComprobanteService,
     private readonly misDerechosService: MisDerechosService,
+    private readonly papeletaArchivosService: PapeletaArchivosService,
   ) {}
 
   @Post()
@@ -112,5 +139,64 @@ export class VotosController {
     @Req() req: RequestConUsuario,
   ): Promise<ComprobanteDto> {
     return this.comprobanteService.obtener(votoId, req.usuario!);
+  }
+
+  // rediseno-boleta-votacion, PR2 (design.md D3, tareas 7.1-7.4). Autorización por pertenencia
+  // delegada íntegramente en `PapeletaArchivosService` (reusa `PapeletaService.obtenerOpciones()`
+  // como fuente única de verdad) — mismo `403` sin cuerpo discriminante para derecho ajeno, derecho
+  // inexistente, id de otro proceso, id de baja o tipo `consulta` (D9/D13 de #14). `ParseUUIDPipe`
+  // en ambos params corre antes del handler, sin abrir un oráculo de enumeración (threat matrix
+  // "Enrutamiento (servidor)").
+  @Get('papeleta/:derechoVotoId/opciones/:id/foto')
+  @ApiProduces('image/png', 'image/jpeg')
+  @ApiOperation({ summary: 'Descarga la foto del candidato cabeza de lista/candidato de una opción propia (D3)' })
+  @ApiParam({ name: 'derechoVotoId', type: String })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'Binario de la foto con el Content-Type persistido' })
+  @ApiResponse({ status: 400, description: 'derechoVotoId o id no-UUID' })
+  @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
+  @ApiResponse({ status: 403, description: 'Opción ajena o inexistente (mismo cuerpo para ambos casos)' })
+  @ApiResponse({ status: 404, description: 'Opción propia sin foto almacenada' })
+  async obtenerFotoOpcion(
+    @Param('derechoVotoId', ParseUUIDPipe) derechoVotoId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: RequestConUsuario,
+    @Res({ passthrough: true }) res: RespuestaConCabeceras,
+  ): Promise<StreamableFile> {
+    const foto = await this.papeletaArchivosService.obtenerFoto(derechoVotoId, id, req.usuario!);
+
+    res.set({
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'",
+    });
+
+    return new StreamableFile(foto.buffer, { type: foto.mime });
+  }
+
+  @Get('papeleta/:derechoVotoId/opciones/:id/plan-trabajo')
+  @ApiProduces('application/pdf')
+  @ApiOperation({ summary: 'Descarga el plan de trabajo de una opción (Lista) propia (D3)' })
+  @ApiParam({ name: 'derechoVotoId', type: String })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'PDF del plan de trabajo' })
+  @ApiResponse({ status: 400, description: 'derechoVotoId o id no-UUID' })
+  @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
+  @ApiResponse({ status: 403, description: 'Opción ajena o inexistente (mismo cuerpo para ambos casos)' })
+  @ApiResponse({ status: 404, description: 'Opción propia sin plan de trabajo almacenado' })
+  async obtenerPlanTrabajoOpcion(
+    @Param('derechoVotoId', ParseUUIDPipe) derechoVotoId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: RequestConUsuario,
+    @Res({ passthrough: true }) res: RespuestaConCabeceras,
+  ): Promise<StreamableFile> {
+    const planTrabajo = await this.papeletaArchivosService.obtenerPlanTrabajo(derechoVotoId, id, req.usuario!);
+
+    res.set({
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'",
+      'Content-Disposition': `attachment; filename="${sanearNombreArchivo(planTrabajo.nombre)}"`,
+    });
+
+    return new StreamableFile(planTrabajo.buffer, { type: planTrabajo.mime });
   }
 }

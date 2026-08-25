@@ -78,78 +78,78 @@ enriquecido — mismo gate D8 que en `vote-casting`.
 ## PR 2 — Endpoints de archivo y relajación de `/configuracion/logo` (base = PR 1 branch)
 
 ### Phase 5: `PapeletaArchivosService` — RED (D3)
-- [ ] 5.1 RED unit (`papeleta-archivos.service.spec.ts`): derecho ajeno (`dv.usuario_id !==
+- [x] 5.1 RED unit (`papeleta-archivos.service.spec.ts`): derecho ajeno (`dv.usuario_id !==
       sesion.userId`) → `ForbiddenException()` sin cuerpo [spec: Opción ajena responde 403
       idéntico]
-- [ ] 5.2 RED unit: `derechoVotoId` inexistente → mismo `ForbiddenException()` byte-a-byte que 5.1
+- [x] 5.2 RED unit: `derechoVotoId` inexistente → mismo `ForbiddenException()` byte-a-byte que 5.1
       [spec: Opción inexistente responde 403 idéntico al de opción ajena]
-- [ ] 5.3 RED unit: `id` de una opción de otro proceso → mismo `403` que 5.1/5.2 [threat matrix:
+- [x] 5.3 RED unit: `id` de una opción de otro proceso → mismo `403` que 5.1/5.2 [threat matrix:
       IDOR/enumeración]
-- [ ] 5.4 RED unit: `id` de una opción dada de baja (no presente en `obtenerOpciones()`) → mismo
+- [x] 5.4 RED unit: `id` de una opción dada de baja (no presente en `obtenerOpciones()`) → mismo
       `403` que 5.1-5.3
-- [ ] 5.5 RED unit: `tipo === 'consulta'` (ninguna opción lleva `candidato_id`/
+- [x] 5.5 RED unit: `tipo === 'consulta'` (ninguna opción lleva `candidato_id`/
       `plan_trabajo_presente`) → mismo `403` que 5.1-5.4, sin rama especial [design.md D3 paso 4]
-- [ ] 5.6 RED unit: comparación de los 5 cuerpos `403` anteriores — son literalmente idénticos
+- [x] 5.6 RED unit: comparación de los 5 cuerpos `403` anteriores — son literalmente idénticos
       (`toEqual`), sin oráculo de enumeración [spec: Autorización por pertenencia — sin distinguir
       casos]
-- [ ] 5.7 RED unit: pertenencia válida pero `foto_presente === false` → `404`, no `403` [spec: Plan
+- [x] 5.7 RED unit: pertenencia válida pero `foto_presente === false` → `404`, no `403` [spec: Plan
       de trabajo ausente responde 404, no 403]
-- [ ] 5.8 RED unit: pertenencia válida pero `plan_trabajo_presente === false` → `404` [spec: Lista
+- [x] 5.8 RED unit: pertenencia válida pero `plan_trabajo_presente === false` → `404` [spec: Lista
       propia sin plan de trabajo responde 404]
-- [ ] 5.9 RED unit: camino feliz — foto de candidato cabeza de lista servida `200` con
+- [x] 5.9 RED unit: camino feliz — foto de candidato cabeza de lista servida `200` con
       `buffer`+`mime` [spec: Foto de opción propia se sirve correctamente]
-- [ ] 5.10 RED unit: en los 5 caminos `403` (5.1-5.5), los bytes (`candidato.findUnique`/
+- [x] 5.10 RED unit: en los 5 caminos `403` (5.1-5.5), los bytes (`candidato.findUnique`/
       `lista.findUnique` con `select: foto/plan_trabajo`) NUNCA se leen — autorizar primero, cargar
       después [design.md D3, "autorizar primero, cargar bytes después"]
 
 ### Phase 6: `PapeletaArchivosService` — GREEN
-- [ ] 6.1 GREEN: crear `apps/backend/src/votos/papeleta-archivos.service.ts` con el algoritmo de
+- [x] 6.1 GREEN: crear `apps/backend/src/votos/papeleta-archivos.service.ts` con el algoritmo de
       D3 (`ParseUUIDPipe` en el controller, `derechoVoto.findUnique` + `obtenerOpciones()` como
       fuente única de pertenencia, lectura de bytes solo tras autorizar) — pasa 5.1-5.10
 
 ### Phase 7: Rutas de `VotosController` — RED
-- [ ] 7.1 RED unit (`votos.controller.spec.ts`): `GET
+- [x] 7.1 RED unit (`votos.controller.spec.ts`): `GET
       /votos/papeleta/:derechoVotoId/opciones/:id/foto` — `:derechoVotoId`/`:id` no-UUID → `400`
       antes de invocar el servicio [threat matrix: Enrutamiento (servidor)]
-- [ ] 7.2 RED unit: respuesta `200` incluye `X-Content-Type-Options: nosniff` y `Content-Security-
+- [x] 7.2 RED unit: respuesta `200` incluye `X-Content-Type-Options: nosniff` y `Content-Security-
       Policy: default-src 'none'` [spec: Headers de seguridad presentes en la respuesta]
-- [ ] 7.3 RED unit: `GET .../plan-trabajo` sanea `Content-Disposition` con
+- [x] 7.3 RED unit: `GET .../plan-trabajo` sanea `Content-Disposition` con
       `plan_trabajo_nombre.replace(/[^\w.\- ]/g, '_')` — nombre con comillas/CRLF queda saneado
       [design.md "Mejora deliberada"; threat matrix: Clasificación de archivo activo]
-- [ ] 7.4 RED unit: `StreamableFile` se construye con el `mime` exacto persistido (no un valor fijo)
+- [x] 7.4 RED unit: `StreamableFile` se construye con el `mime` exacto persistido (no un valor fijo)
 
 ### Phase 8: Rutas de `VotosController` — GREEN
-- [ ] 8.1 GREEN: agregar las 2 rutas a `votos.controller.ts` delegando en
+- [x] 8.1 GREEN: agregar las 2 rutas a `votos.controller.ts` delegando en
       `PapeletaArchivosService` — pasa 7.1-7.4
-- [ ] 8.2 Registrar `PapeletaArchivosService` en `apps/backend/src/votos/votos.module.ts`
+- [x] 8.2 Registrar `PapeletaArchivosService` en `apps/backend/src/votos/votos.module.ts`
 
 ### Phase 9: `SinRestriccionDeRol()` y relajación de `/configuracion/logo` — RED (D4)
-- [ ] 9.1 RED unit (`roles.guard.spec.ts`): handler con metadata `[]` (`SinRestriccionDeRol()`)
+- [x] 9.1 RED unit (`roles.guard.spec.ts`): handler con metadata `[]` (`SinRestriccionDeRol()`)
       anula el `@Roles` de clase → guard deja pasar a cualquier usuario autenticado [design.md D4;
       spec: Un votante (rol `estudiante`) obtiene el logo institucional]
-- [ ] 9.2 RED unit: handler sin metadata propia sigue heredando el `@Roles` de la clase → `403`
+- [x] 9.2 RED unit: handler sin metadata propia sigue heredando el `@Roles` de la clase → `403`
       para un rol no listado (regresión explícita del comportamiento actual)
-- [ ] 9.3 RED unit (`configuracion.controller.spec.ts`):
+- [x] 9.3 RED unit (`configuracion.controller.spec.ts`):
       `Reflect.getMetadata(ROLES_KEY, ConfiguracionController.prototype.obtenerLogo)` es `[]`
       [spec: El resto de `ConfiguracionController` sigue restringido — verificación negativa
       implícita: solo `obtenerLogo` tiene la metadata vacía]
-- [ ] 9.4 RED unit: `GET /configuracion`, `PUT /configuracion`, `POST /configuracion/logo` y el
+- [x] 9.4 RED unit: `GET /configuracion`, `PUT /configuracion`, `POST /configuracion/logo` y el
       listado de comité siguen rechazando `estudiante`/`padre`/`comite` sin cambios [spec: El resto
       de `ConfiguracionController` sigue restringido a administrador/director]
 
 ### Phase 10: `SinRestriccionDeRol()` — GREEN
-- [ ] 10.1 GREEN: agregar `SinRestriccionDeRol()` a `apps/backend/src/auth/roles.decorator.ts`
+- [x] 10.1 GREEN: agregar `SinRestriccionDeRol()` a `apps/backend/src/auth/roles.decorator.ts`
       (`SetMetadata(ROLES_KEY, [])`) — pasa 9.1-9.2
-- [ ] 10.2 GREEN: anotar `ConfiguracionController.obtenerLogo()` con `@SinRestriccionDeRol()`,
+- [x] 10.2 GREEN: anotar `ConfiguracionController.obtenerLogo()` con `@SinRestriccionDeRol()`,
       eliminar el `@ApiResponse({status:403,...})` de ese método (ya no aplica) — pasa 9.3-9.4
 
 ### Phase 11: Contrato y regresión PR2
-- [ ] 11.1 `pnpm openapi:extract`: confirmar que los 2 endpoints nuevos y el `PapeletaOpcionDto`
+- [x] 11.1 `pnpm openapi:extract`: confirmar que los 2 endpoints nuevos y el `PapeletaOpcionDto`
       enriquecido quedan documentados en `packages/contracts/src/generated/api.ts`
-- [ ] 11.2 `pnpm --filter @seei/backend test -- votos papeleta-archivos roles.guard configuracion`
+- [x] 11.2 `pnpm --filter @seei/backend test -- votos papeleta-archivos roles.guard configuracion`
       verde
-- [ ] 11.3 `pnpm typecheck` verde en los 4 paquetes
-- [ ] 11.4 `pnpm --filter @seei/backend test -- votos.service` verde y sin modificar (19 tests de
+- [x] 11.3 `pnpm typecheck` verde en los 4 paquetes
+- [x] 11.4 `pnpm --filter @seei/backend test -- votos.service` verde y sin modificar (19 tests de
       `emitir()` intactos)
 
 ## PR 3 — Cliente API y 4 piezas nuevas del Paso 2 (base = PR 2 branch)

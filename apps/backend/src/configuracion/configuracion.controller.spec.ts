@@ -1,5 +1,6 @@
 import { BadRequestException, PayloadTooLargeException } from '@nestjs/common';
 import type { ConfiguracionService } from './configuracion.service';
+import { ROLES_KEY } from '../auth/roles.decorator';
 import { CONFIGURACION_ERROR_CODES } from './configuracion.errors';
 import {
   ConfiguracionController,
@@ -153,5 +154,28 @@ describe('ConfiguracionController.subirLogo()/obtenerLogo() (3.5: orquestación 
       'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
     });
     expect(resultado).toBeDefined();
+  });
+});
+
+/**
+ * rediseno-boleta-votacion, PR2 (design.md D4, tareas 9.3-9.4). `@SinRestriccionDeRol()` en
+ * `obtenerLogo()` define metadata `[]` que ANULA el `@Roles('administrador','director')` de
+ * clase (`getAllAndOverride` devuelve el primer valor no-`undefined`, handler antes que clase).
+ * El resto de métodos del controlador NO declara `@Roles()` propio, así que sigue heredando la
+ * metadata de clase sin cambios (verificación negativa implícita de la spec: "El resto de
+ * ConfiguracionController sigue restringido").
+ */
+describe('ConfiguracionController — metadata de roles (D4, tareas 9.3-9.4)', () => {
+  it('[9.3] obtenerLogo() tiene metadata ROLES_KEY = [] (anula el @Roles de clase)', () => {
+    const metadata = Reflect.getMetadata(ROLES_KEY, ConfiguracionController.prototype.obtenerLogo);
+    expect(metadata).toEqual([]);
+  });
+
+  it('[9.4] obtener()/actualizar()/subirLogo()/listarComite() NO tienen metadata propia — siguen heredando @Roles(administrador, director) de la clase', () => {
+    expect(Reflect.getMetadata(ROLES_KEY, ConfiguracionController.prototype.obtener)).toBeUndefined();
+    expect(Reflect.getMetadata(ROLES_KEY, ConfiguracionController.prototype.actualizar)).toBeUndefined();
+    expect(Reflect.getMetadata(ROLES_KEY, ConfiguracionController.prototype.subirLogo)).toBeUndefined();
+    expect(Reflect.getMetadata(ROLES_KEY, ConfiguracionController.prototype.listarComite)).toBeUndefined();
+    expect(Reflect.getMetadata(ROLES_KEY, ConfiguracionController)).toEqual(['administrador', 'director']);
   });
 });

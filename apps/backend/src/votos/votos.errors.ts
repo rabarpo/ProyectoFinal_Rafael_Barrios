@@ -8,6 +8,9 @@ export const VOTOS_ERROR_CODES = {
   VOTACION_CERRADA: 'VOTACION_CERRADA',
   DERECHO_YA_EJERCIDO: 'DERECHO_YA_EJERCIDO',
   ELECCION_INVALIDA: 'ELECCION_INVALIDA',
+  // rediseno-boleta-votacion, PR2 (design.md D3, tarea 5.7/5.8). Pertenencia válida pero binario no
+  // persistido — mismo código que `CANDIDATOS_ERROR_CODES.ARCHIVO_NO_ENCONTRADO` (404, no 403).
+  ARCHIVO_NO_ENCONTRADO: 'ARCHIVO_NO_ENCONTRADO',
 } as const;
 
 export type VotosErrorCode = (typeof VOTOS_ERROR_CODES)[keyof typeof VOTOS_ERROR_CODES];

@@ -575,7 +575,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Descarga el logo institucional */
+        /** Descarga el logo institucional (accesible a cualquier usuario autenticado) */
         get: operations["ConfiguracionController_obtenerLogo"];
         put?: never;
         /** Sube el logo institucional (PNG/JPG/SVG, máximo 2 MB) */
@@ -966,6 +966,40 @@ export interface paths {
         };
         /** Comprobante completo (con eleccion_resumen) de un voto propio, tras autenticación (D11) */
         get: operations["VotosController_comprobante"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/votos/papeleta/{derechoVotoId}/opciones/{id}/foto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descarga la foto del candidato cabeza de lista/candidato de una opción propia (D3) */
+        get: operations["VotosController_obtenerFotoOpcion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/votos/papeleta/{derechoVotoId}/opciones/{id}/plan-trabajo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descarga el plan de trabajo de una opción (Lista) propia (D3) */
+        get: operations["VotosController_obtenerPlanTrabajoOpcion"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1719,6 +1753,15 @@ export interface components {
         PapeletaOpcionDto: {
             id: string;
             etiqueta: string;
+            descripcion?: string;
+            simbolo?: string;
+            lema?: string;
+            propuesta?: string;
+            plan_trabajo_presente?: boolean;
+            candidato_id?: string;
+            candidato_nombres?: string;
+            cargo?: string;
+            foto_presente?: boolean;
         };
         PapeletaComprobanteDto: {
             codigo_comprobante: string;
@@ -3698,13 +3741,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rol distinto de administrador/director */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
             /** @description No hay logo institucional persistido */
             404: {
                 headers: {
@@ -5206,6 +5242,104 @@ export interface operations {
             };
             /** @description Voto ajeno o inexistente */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VotosController_obtenerFotoOpcion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                derechoVotoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Binario de la foto con el Content-Type persistido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description derechoVotoId o id no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Opción ajena o inexistente (mismo cuerpo para ambos casos) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Opción propia sin foto almacenada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VotosController_obtenerPlanTrabajoOpcion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                derechoVotoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF del plan de trabajo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description derechoVotoId o id no-UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Opción ajena o inexistente (mismo cuerpo para ambos casos) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Opción propia sin plan de trabajo almacenado */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

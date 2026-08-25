@@ -20,7 +20,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiCookieAuth, ApiOperation, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
-import { Roles } from '../auth/roles.decorator';
+import { Roles, SinRestriccionDeRol } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import type { SesionUsuario } from '../auth/sesion-usuario';
 import { UsersService } from '../users/users.service';
@@ -199,13 +199,18 @@ export class ConfiguracionController {
    * nosniff` + `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'` en TODA
    * respuesta (incluida la de un SVG con `<script>`/`onload` que haya pasado la allowlist — el
    * archivo se acepta como archivo, pero nunca se ejecuta en el origen de la app).
+   *
+   * rediseno-boleta-votacion, PR2 (design.md D4, tarea 10.2). `@SinRestriccionDeRol()` anula el
+   * `@Roles('administrador','director')` de clase: el logo institucional es un dato público sin
+   * relación con ningún voto, necesario en el Paso 1 del flujo de votación para cualquier usuario
+   * autenticado (incluidos votantes `estudiante`/`padre`). El resto del controlador no cambia.
    */
   @Get('logo')
+  @SinRestriccionDeRol()
   @ApiProduces('image/png', 'image/jpeg', 'image/svg+xml')
-  @ApiOperation({ summary: 'Descarga el logo institucional' })
+  @ApiOperation({ summary: 'Descarga el logo institucional (accesible a cualquier usuario autenticado)' })
   @ApiResponse({ status: 200, description: 'Binario del logo con el Content-Type persistido' })
   @ApiResponse({ status: 401, description: 'Sin cookie de sesión válida' })
-  @ApiResponse({ status: 403, description: 'Rol distinto de administrador/director' })
   @ApiResponse({ status: 404, description: 'No hay logo institucional persistido' })
   async obtenerLogo(@Res({ passthrough: true }) res: RespuestaConCabeceras): Promise<StreamableFile> {
     const logo = await this.configuracionService.obtenerLogo();

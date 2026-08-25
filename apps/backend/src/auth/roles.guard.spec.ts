@@ -58,4 +58,27 @@ describe('RolesGuard', () => {
 
     expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
   });
+
+  // rediseno-boleta-votacion, PR2 (design.md D4, tarea 9.1). `SinRestriccionDeRol()` produce
+  // `SetMetadata(ROLES_KEY, [])`: `getAllAndOverride` devuelve `[]` (definido, gana sobre la
+  // clase) y el guard entra por la rama ya existente `rolesRequeridos.length === 0` -> deja pasar
+  // a cualquier usuario autenticado, sin mirar su rol.
+  it('[9.1] handler con metadata [] (SinRestriccionDeRol) anula el @Roles de clase -> deja pasar a cualquier rol autenticado', () => {
+    const reflector = crearReflector([]);
+    const guard = new RolesGuard(reflector);
+    const context = crearContexto({ rol: 'estudiante' });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  // rediseno-boleta-votacion, PR2 (design.md D4, tarea 9.2). Regresión explícita: un handler SIN
+  // metadata propia sigue heredando el @Roles de la clase (getAllAndOverride devuelve ese valor,
+  // no []) -> 403 para un rol no listado, comportamiento sin cambios respecto de hoy.
+  it('[9.2] handler sin metadata propia sigue heredando el @Roles de la clase -> 403 para un rol no listado', () => {
+    const reflector = crearReflector(['administrador', 'director']);
+    const guard = new RolesGuard(reflector);
+    const context = crearContexto({ rol: 'estudiante' });
+
+    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+  });
 });

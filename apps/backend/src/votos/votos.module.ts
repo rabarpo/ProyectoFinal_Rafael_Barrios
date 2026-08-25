@@ -6,6 +6,7 @@ import { AuthModule } from '../auth/auth.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { ComprobanteService } from './comprobante.service';
 import { MisDerechosService } from './mis-derechos.service';
+import { PapeletaArchivosService } from './papeleta-archivos.service';
 import { PapeletaService } from './papeleta.service';
 import { VotosController } from './votos.controller';
 import { VotosService } from './votos.service';
@@ -27,6 +28,10 @@ import { VotosService } from './votos.service';
  * registra acá — servicio propio, desacoplado de `VotosService.emitir()`, sin auditoría propia
  * (es UX, no la validación, mismo criterio que `PapeletaService`).
  *
+ * rediseno-boleta-votacion (#31, PR2, design.md D3, tarea 8.2): `PapeletaArchivosService` se
+ * registra acá — reusa `PapeletaService.obtenerOpciones()` como fuente única de pertenencia, sin
+ * auditoría propia (mismo criterio que `PapeletaService`, no es la validación).
+ *
  * `cookie-parser` como middleware del propio módulo, mismo criterio que `ProcesosModule`/
  * `AcademicoModule`/`AuthModule`. Ningún provider abre conexión al instanciarse, así que
  * `pnpm openapi:extract` sigue corriendo sin Postgres ni Redis vivos tras registrar este módulo
@@ -35,7 +40,14 @@ import { VotosService } from './votos.service';
 @Module({
   imports: [AuthModule, AuditoriaModule],
   controllers: [VotosController],
-  providers: [PrismaService, VotosService, PapeletaService, ComprobanteService, MisDerechosService],
+  providers: [
+    PrismaService,
+    VotosService,
+    PapeletaService,
+    ComprobanteService,
+    MisDerechosService,
+    PapeletaArchivosService,
+  ],
 })
 export class VotosModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
