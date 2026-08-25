@@ -238,9 +238,12 @@ export function VotacionPage({ derechoVotoId }: VotacionPageProps) {
     return (
       <PasoBoleta
         opciones={datos.opciones}
+        tipo={datos.proceso.tipo}
+        derechoVotoId={derechoVotoId}
         seleccion={seleccion}
         onSeleccionar={seleccionar}
         onContinuar={() => irAPaso(3)}
+        onVolver={() => irAPaso(1)}
       />
     );
   }

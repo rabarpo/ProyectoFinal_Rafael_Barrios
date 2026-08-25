@@ -6,6 +6,16 @@ import { PasoConfirmacion } from './PasoConfirmacion';
 // a "Registrando…" al confirmar (`enviando`). Mismo criterio de gesto explícito que
 // `PanelConfirmacionApertura` (#13).
 describe('PasoConfirmacion', () => {
+  it('[19.1] monta BarraProgresoVotacion con pasoActual=3', () => {
+    render(
+      <PasoConfirmacion resumenSeleccion="Lista A" enviando={false} onConfirmar={vi.fn()} onVolver={vi.fn()} />,
+    );
+
+    const barra = screen.getByRole('progressbar');
+    expect(barra).toHaveAttribute('aria-valuenow', '3');
+    expect(barra).toHaveAttribute('aria-valuemax', '3');
+  });
+
   it('[17.3] no habilita confirmar sin el gesto explícito de consentimiento', () => {
     render(
       <PasoConfirmacion resumenSeleccion="Lista A" enviando={false} onConfirmar={vi.fn()} onVolver={vi.fn()} />,

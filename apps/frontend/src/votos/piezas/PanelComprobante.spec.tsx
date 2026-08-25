@@ -31,4 +31,38 @@ describe('PanelComprobante', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/correo/i);
   });
+
+  // [design.md D6; spec comprobante-autenticado: "Comprobante recién emitido muestra ícono de
+  // éxito"; tasks.md 19.2] Sin `yaRegistrado`: ícono/badge de éxito + mensaje, sin el badge "Ya has
+  // votado".
+  it('[19.2] comprobante recién emitido (sin yaRegistrado) muestra ícono de éxito, sin badge "Ya has votado"', () => {
+    render(<PanelComprobante comprobante={comprobante} />);
+
+    expect(screen.getByText(/voto emitido correctamente/i)).toBeInTheDocument();
+    expect(screen.queryByText(/ya has votado/i)).not.toBeInTheDocument();
+  });
+
+  // [spec comprobante-autenticado: "Reintento tras voto ya emitido muestra el badge 'Ya has
+  // votado'"; tasks.md 19.3]
+  it('[19.3] con yaRegistrado muestra el badge "Ya has votado"', () => {
+    render(<PanelComprobante comprobante={comprobante} yaRegistrado />);
+
+    expect(screen.getByText(/ya has votado/i)).toBeInTheDocument();
+  });
+
+  // [spec comprobante-autenticado: "El comprobante nunca muestra periodo lectivo ni estado de
+  // sincronización"; tasks.md 19.4]
+  it.each([false, true])('[19.4] con yaRegistrado=%s no muestra periodo lectivo ni estado de sincronización', (yaRegistrado) => {
+    render(<PanelComprobante comprobante={comprobante} yaRegistrado={yaRegistrado} />);
+
+    expect(screen.queryByText(/periodo lectivo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/estado de sincronización/i)).not.toBeInTheDocument();
+  });
+
+  // [design.md D5, "PanelComprobante ... no la barra de progreso"; tasks.md 19.5]
+  it('[19.5] no monta BarraProgresoVotacion (post-emisión, fuera de los 3 pasos)', () => {
+    render(<PanelComprobante comprobante={comprobante} />);
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
 });

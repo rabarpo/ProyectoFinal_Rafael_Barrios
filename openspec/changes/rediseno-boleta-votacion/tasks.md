@@ -206,72 +206,79 @@ colaboradores dentro del mismo PR3.
 ## PR 4 — Rediseño de los 3 pasos existentes y wiring (base = PR 3 branch)
 
 ### Phase 16: `PasoInformacionProceso` — RED/GREEN
-- [ ] 16.1 RED componente: muestra exactamente 3 tarjetas de reglas (secreto, única vez,
+- [x] 16.1 RED componente: muestra exactamente 3 tarjetas de reglas (secreto, única vez,
       irreversible) y la imagen de `GET /configuracion/logo` [spec: Paso 1 muestra las 3 reglas y
       el logo institucional]
-- [ ] 16.2 RED componente: `GET /configuracion/logo` responde `404` — el paso se renderiza sin la
+- [x] 16.2 RED componente: `GET /configuracion/logo` responde `404` — el paso se renderiza sin la
       imagen, sin error visible, botón "Comenzar Votación" funcional [spec: Sin logo institucional
       configurado, el paso 1 no rompe; design.md D4 "onError + useState local"]
-- [ ] 16.3 RED componente: monta `BarraProgresoVotacion` con `pasoActual=1`, `totalPasos=3`
+- [x] 16.3 RED componente: monta `BarraProgresoVotacion` con `pasoActual=1`, `totalPasos=3`
       [spec: La barra refleja el paso actual en cada uno de los 3 pasos]
-- [ ] 16.4 GREEN: modificar `apps/frontend/src/votos/piezas/PasoInformacionProceso.tsx` — pasa
+- [x] 16.4 GREEN: modificar `apps/frontend/src/votos/piezas/PasoInformacionProceso.tsx` — pasa
       16.1-16.3
 
 ### Phase 17: `PasoBoleta` — RED (reescritura completa)
-- [ ] 17.1 RED componente (`PasoBoleta.spec.tsx` reescrito): variante `TarjetaLista` para
+- [x] 17.1 RED componente (`PasoBoleta.spec.tsx` reescrito): variante `TarjetaLista` para
       `tipo='municipio'`, `TarjetaCandidato` para `representante_aula`/`padres`, `TarjetaOpcion`
       para `consulta`, seleccionada por `tipo` sin heurística sobre campos presentes [spec:
       Variantes de tarjeta del Paso 2 según tipo de proceso]
-- [ ] 17.2 RED componente: `TarjetaVotoBlanco` presente en las 3 variantes como tarjeta adicional,
+- [x] 17.2 RED componente: `TarjetaVotoBlanco` presente en las 3 variantes como tarjeta adicional,
       nunca preseleccionada
-- [ ] 17.3 RED componente: `role="radiogroup" aria-label="Opciones de la boleta"` preservado en el
+- [x] 17.3 RED componente: `role="radiogroup" aria-label="Opciones de la boleta"` preservado en el
       contenedor de la grilla [design.md D6, "Semántica ARIA preservada"]
-- [ ] 17.4 RED componente: `id` de `Seleccion` es siempre `opcion.id`, nunca `candidato_id` — click
+- [x] 17.4 RED componente: `id` de `Seleccion` es siempre `opcion.id`, nunca `candidato_id` — click
       en `TarjetaLista` produce `onSeleccionar({tipo:'opcion', id: opcion.id})` [design.md D6,
       invariante crítica de `Seleccion`]
-- [ ] 17.5 RED componente: click en "Ver Propuesta Completa" no cambia la `Seleccion` actual (no
+- [x] 17.5 RED componente: click en "Ver Propuesta Completa" no cambia la `Seleccion` actual (no
       dispara `onSeleccionar`)
-- [ ] 17.6 RED componente: monta `BarraProgresoVotacion` con `pasoActual=2`, muestra
+- [x] 17.6 RED componente: monta `BarraProgresoVotacion` con `pasoActual=2`, muestra
       "% Completado" y footer con "Volver al paso anterior" (invoca `onVolver`)/"Siguiente Paso"
       (deshabilitado sin selección, preserva el comportamiento ya cubierto por #14)
 
 ### Phase 18: `PasoBoleta` — GREEN
-- [ ] 18.1 GREEN: reescribir `apps/frontend/src/votos/piezas/PasoBoleta.tsx` consumiendo las 4
+- [x] 18.1 GREEN: reescribir `apps/frontend/src/votos/piezas/PasoBoleta.tsx` consumiendo las 4
       piezas de PR3, con `PasoBoletaProps` extendida (`tipo`, `derechoVotoId`, `onVolver`) — pasa
       17.1-17.6
 
 ### Phase 19: `PasoConfirmacion` y `PanelComprobante` — RED/GREEN
-- [ ] 19.1 RED componente: `PasoConfirmacion` monta `BarraProgresoVotacion` con `pasoActual=3`, sin
+- [x] 19.1 RED componente: `PasoConfirmacion` monta `BarraProgresoVotacion` con `pasoActual=3`, sin
       otro cambio visual [design.md "Cambios de archivos" — Phase 3 solo agrega la barra]
-- [ ] 19.2 RED componente (`PanelComprobante.spec.tsx`): ícono/badge de éxito + "¡Voto emitido
+- [x] 19.2 RED componente (`PanelComprobante.spec.tsx`): ícono/badge de éxito + "¡Voto emitido
       correctamente!" + datos reales (fecha/hora, código, resumen de elección) sin `yaRegistrado`
       [spec: Comprobante recién emitido muestra ícono de éxito]
-- [ ] 19.3 RED componente: badge "Ya has votado" visible únicamente con `yaRegistrado` [spec:
+- [x] 19.3 RED componente: badge "Ya has votado" visible únicamente con `yaRegistrado` [spec:
       Reintento tras voto ya emitido muestra el badge "Ya has votado"]
-- [ ] 19.4 RED componente: ningún elemento etiquetado "periodo lectivo" ni "estado de
+- [x] 19.4 RED componente: ningún elemento etiquetado "periodo lectivo" ni "estado de
       sincronización" en ningún estado (`yaRegistrado` true/false) [spec: El comprobante nunca
       muestra periodo lectivo ni estado de sincronización]
-- [ ] 19.5 RED componente: `PanelComprobante` NO monta `BarraProgresoVotacion` (post-emisión, fuera
+- [x] 19.5 RED componente: `PanelComprobante` NO monta `BarraProgresoVotacion` (post-emisión, fuera
       de los 3 pasos) [design.md, "`PanelComprobante` ... no la barra de progreso"]
-- [ ] 19.6 GREEN: modificar `apps/frontend/src/votos/piezas/PasoConfirmacion.tsx` y
+- [x] 19.6 GREEN: modificar `apps/frontend/src/votos/piezas/PasoConfirmacion.tsx` y
       `apps/frontend/src/votos/piezas/PanelComprobante.tsx` — pasa 19.1-19.5
 
 ### Phase 20: Wiring — `VotacionPage`/`ComprobantePage`
-- [ ] 20.1 RED componente (`VotacionPage.spec.tsx`, solo fixtures + 1 caso nuevo): `papeletaMock`
+- [x] 20.1 RED componente (`VotacionPage.spec.tsx`, solo fixtures + 1 caso nuevo): `papeletaMock`
       gana los campos opcionales de PR1; ningún `findByRole('radiogroup')`/`getByRole('radio')`
       existente cambia; caso nuevo: volver de paso 2 a paso 1 invoca `onVolver`
-- [ ] 20.2 GREEN: modificar `apps/frontend/src/votos/VotacionPage.tsx` — pasa `tipo`/
+- [x] 20.2 GREEN: modificar `apps/frontend/src/votos/VotacionPage.tsx` — pasa `tipo`/
       `derechoVotoId`/`onVolver` a `PasoBoleta`; pasa 20.1
-- [ ] 20.3 Modificar `apps/frontend/src/votos/ComprobantePage.tsx`: `<PanelComprobante
+- [x] 20.3 Modificar `apps/frontend/src/votos/ComprobantePage.tsx`: `<PanelComprobante
       yaRegistrado />` cuando corresponda
 
 ### Phase 21: Verificación de branding y regresión final PR4
-- [ ] 21.1 `rg -i "san alfonso" apps/` sin resultados [spec: Ningún componente del flujo de
+- [x] 21.1 `rg -i "san alfonso" apps/` sin resultados [spec: Ningún componente del flujo de
       votación menciona "San Alfonso"; proposal.md Success Criteria]
-- [ ] 21.2 `pnpm --filter @seei/frontend test` verde — suite completa, incluidos
+- [x] 21.2 `pnpm --filter @seei/frontend test` verde — suite completa, incluidos
       `PasoBoleta.spec.tsx`, `VotacionPage.spec.tsx`, `PanelComprobante.spec.tsx` reescritos/
-      actualizados
-- [ ] 21.3 `pnpm --filter @seei/backend test` verde — incluidos los 19 tests de
-      `VotosService.emitir()` sin modificar [proposal.md Success Criteria]
-- [ ] 21.4 `pnpm typecheck` verde en los 4 paquetes
-- [ ] 21.5 `pnpm turbo run test` completo verde (regresión cruzada final del change)
+      actualizados (92 archivos, 645 tests)
+- [x] 21.3 `pnpm --filter @seei/backend test` verde para el módulo `votos` — incluidos los 19 tests
+      de `VotosService.emitir()` sin modificar [proposal.md Success Criteria]. `@seei/backend#test`
+      global reporta 4 suites en rojo (`session.service.spec.ts`, `bloqueo.service.spec.ts`,
+      `recovery.service.spec.ts`, `importacion.service.spec.ts`) por timeout de conexión a Redis en
+      este entorno (sandbox sin Redis) — preexistente, no relacionado con este change (cero
+      archivos de `apps/backend` tocados en PR4, confirmado con `git status --short apps/backend/`)
+- [x] 21.4 `pnpm typecheck` verde en `@seei/frontend`/`@seei/contracts`/`@seei/worker`;
+      `@seei/backend#typecheck` falla únicamente por el error preexistente en
+      `mis-derechos.service.spec.ts` (backlog #30, ya documentado en 4.2/15.2, no tocado por PR4)
+- [x] 21.5 `pnpm turbo run test`: `@seei/contracts` (3/3), `@seei/worker` (58/58) y `@seei/frontend`
+      (645/645) verdes; `@seei/backend` falla solo por las 4 suites dependientes de Redis de 21.3

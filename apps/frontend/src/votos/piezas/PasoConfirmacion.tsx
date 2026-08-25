@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { BarraProgresoVotacion } from './BarraProgresoVotacion';
 
 interface PasoConfirmacionProps {
   resumenSeleccion: string;
@@ -12,6 +13,9 @@ interface PasoConfirmacionProps {
  * Presentacional puro (design.md D14, tasks.md 17.3), mismo criterio de gesto explícito que
  * `piezas/PanelConfirmacionApertura` (#13): exige un checkbox de consentimiento antes de habilitar
  * "Confirmar", y el botón muestra "Registrando…" mientras `enviando` está en curso.
+ *
+ * rediseno-boleta-votacion, PR4 (design.md D5, tasks.md 19.1): agrega `BarraProgresoVotacion` con
+ * `pasoActual=3` como primer hijo — único cambio visual de este paso en este change.
  */
 export function PasoConfirmacion({
   resumenSeleccion,
@@ -25,7 +29,9 @@ export function PasoConfirmacion({
 
   return (
     <div className="mx-auto w-full max-w-page px-5 md:px-12">
-      <h2 className="text-headline-lg-mobile text-primary md:text-headline-lg">Confirmá tu voto</h2>
+      <BarraProgresoVotacion pasoActual={3} totalPasos={3} />
+
+      <h2 className="mt-4 text-headline-lg-mobile text-primary md:text-headline-lg">Confirmá tu voto</h2>
 
       <dl className="mt-4 rounded-card border border-border-gray bg-surface-white p-4 text-body-md text-on-surface">
         <div className="flex justify-between">

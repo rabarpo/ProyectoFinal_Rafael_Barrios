@@ -24,6 +24,9 @@ type Estado =
  * enumeración también en el cliente, sin cuerpo discriminante que enrutar. Sin sesión, el montaje
  * de esta página no ocurre — `AuthGuard`/`Enrutador` (#12 D11) resuelven eso por fuera, así que
  * `401` no es un estado propio de este contenedor.
+ *
+ * rediseno-boleta-votacion, PR4 (design.md D6, tasks.md 20.3): siempre pasa `yaRegistrado` —
+ * esta relectura autenticada solo ocurre para un voto ya emitido, nunca para uno recién creado.
  */
 export function ComprobantePage({ votoId }: ComprobantePageProps) {
   const [estado, setEstado] = useState<Estado>({ fase: 'cargando' });
@@ -74,5 +77,5 @@ export function ComprobantePage({ votoId }: ComprobantePageProps) {
     );
   }
 
-  return <PanelComprobante comprobante={estado.comprobante} />;
+  return <PanelComprobante comprobante={estado.comprobante} yaRegistrado />;
 }

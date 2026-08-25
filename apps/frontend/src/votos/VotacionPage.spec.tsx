@@ -9,7 +9,13 @@ import type { PapeletaDto, ComprobanteDto } from './votos-api';
 // NO es parte de la URL (espejo de `AperturaProcesoPage`): navegar entre pasos no recarga ni
 // cambia el pathname, y el paso 2 no es alcanzable sin haber pasado por el paso 1 en la misma
 // sesión de render.
-vi.mock('./votos-api', () => ({ papeleta: vi.fn(), emitir: vi.fn() }));
+vi.mock('./votos-api', () => ({
+  papeleta: vi.fn(),
+  emitir: vi.fn(),
+  urlFotoOpcion: (derechoVotoId: string, id: string) => `/api/votos/papeleta/${derechoVotoId}/opciones/${id}/foto`,
+  urlPlanTrabajoOpcion: (derechoVotoId: string, id: string) =>
+    `/api/votos/papeleta/${derechoVotoId}/opciones/${id}/plan-trabajo`,
+}));
 
 function papeletaMock(overrides: Partial<PapeletaDto> = {}): { data: PapeletaDto; response: Response } {
   return {
@@ -23,7 +29,16 @@ function papeletaMock(overrides: Partial<PapeletaDto> = {}): { data: PapeletaDto
       },
       en_calidad_de: 'estudiante',
       opciones: [
-        { id: 'o1', etiqueta: 'Lista A' },
+        {
+          id: 'o1',
+          etiqueta: 'Lista A',
+          simbolo: 'Sol',
+          lema: 'Juntos',
+          candidato_id: 'c1',
+          candidato_nombres: 'Ana Pérez',
+          cargo: 'Presidenta',
+          foto_presente: true,
+        },
         { id: 'o2', etiqueta: 'Lista B' },
       ],
       ya_voto: false,
@@ -63,11 +78,11 @@ describe('VotacionPage', () => {
     await screen.findByText(/alcaldía escolar 2026/i);
     expect(votosApi.papeleta).toHaveBeenCalledWith('dv1');
 
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
 
     await screen.findByRole('radiogroup');
-    fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Lista A' }));
+    fireEvent.click(screen.getByRole('button', { name: /siguiente paso/i }));
 
     await screen.findByRole('checkbox');
     fireEvent.click(screen.getByRole('checkbox'));
@@ -82,6 +97,23 @@ describe('VotacionPage', () => {
     await screen.findByText(/k7qm-3xz9-8htb-p4wr/i);
   });
 
+  // [design.md D5/D6; tasks.md 20.1] Nuevo en PR4: `onVolver` de `PasoBoleta` regresa al paso 1
+  // sin recargar — el contenedor sigue siendo el único con estado de paso.
+  it('[20.1] "Volver al paso anterior" en el paso 2 regresa al paso 1', async () => {
+    vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
+
+    render(<VotacionPage derechoVotoId="dv1" />);
+
+    await screen.findByText(/alcaldía escolar 2026/i);
+    fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
+
+    await screen.findByRole('radiogroup');
+    fireEvent.click(screen.getByRole('button', { name: /volver al paso anterior/i }));
+
+    await screen.findByRole('button', { name: /comenzar votación/i });
+    expect(screen.getByText(/alcaldía escolar 2026/i)).toBeInTheDocument();
+  });
+
   it('[17.2/18.5] enviar el voto en blanco arma el payload con blanco=true, sin ningún id de elección', async () => {
     vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
     vi.mocked(votosApi.emitir).mockResolvedValueOnce(comprobanteMock());
@@ -89,11 +121,11 @@ describe('VotacionPage', () => {
     render(<VotacionPage derechoVotoId="dv1" />);
 
     await screen.findByText(/alcaldía escolar 2026/i);
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
 
     await screen.findByRole('radiogroup');
     fireEvent.click(screen.getByRole('radio', { name: /blanco/i }));
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /siguiente paso/i }));
 
     await screen.findByRole('checkbox');
     fireEvent.click(screen.getByRole('checkbox'));
@@ -114,11 +146,11 @@ describe('VotacionPage', () => {
     render(<VotacionPage derechoVotoId="dv1" />);
 
     await screen.findByText(/alcaldía escolar 2026/i);
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
 
     await screen.findByRole('radiogroup');
     fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /siguiente paso/i }));
 
     await screen.findByRole('checkbox');
     fireEvent.click(screen.getByRole('checkbox'));
@@ -136,10 +168,10 @@ describe('VotacionPage', () => {
     render(<VotacionPage derechoVotoId="dv1" />);
 
     await screen.findByText(/alcaldía escolar 2026/i);
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
     await screen.findByRole('radiogroup');
     fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /siguiente paso/i }));
     await screen.findByRole('checkbox');
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
@@ -158,10 +190,10 @@ describe('VotacionPage', () => {
   // enruta a la variante `ya-votaste` con el comprobante ya emitido.
   async function llegarAlPaso3() {
     await screen.findByText(/alcaldía escolar 2026/i);
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
     await screen.findByRole('radiogroup');
     fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /siguiente paso/i }));
     await screen.findByRole('checkbox');
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
