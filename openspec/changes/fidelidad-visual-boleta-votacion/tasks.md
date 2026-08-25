@@ -78,39 +78,39 @@ gate D8 usado en `rediseno-boleta-votacion`.
 ## PR 2 — Paso 1 completo (base = PR 1 branch)
 
 ### Phase 5: Íconos de reglas — RED/GREEN (D5)
-- [ ] 5.1 RED componente (`iconos-reglas.spec.tsx` o cobertura dentro de `PasoInformacionProceso.spec.tsx`):
+- [x] 5.1 RED componente (`iconos-reglas.spec.tsx` o cobertura dentro de `PasoInformacionProceso.spec.tsx`):
       `IconoVotoSecreto`, `IconoUnaSolaVez`, `IconoIrreversible` renderizan `svg` con `aria-hidden`,
       mismo `baseProps` (`viewBox="0 0 24 24"`, `fill="none"`, `stroke="currentColor"`) que
       `app/iconos-menu.tsx` [design.md D5]
-- [ ] 5.2 GREEN: crear `apps/frontend/src/votos/piezas/iconos-reglas.tsx` con los 5 íconos
+- [x] 5.2 GREEN: crear `apps/frontend/src/votos/piezas/iconos-reglas.tsx` con los 5 íconos
       (`IconoVotoSecreto`, `IconoUnaSolaVez`, `IconoIrreversible`, `IconoInformacion`,
       `IconoProhibido`) — pasa 5.1
 
 ### Phase 6: `PasoInformacionProceso` — RED (D4/D8)
-- [ ] 6.1 RED componente: badge de estado del proceso visible junto al hero
+- [x] 6.1 RED componente: badge de estado del proceso visible junto al hero
       [spec vote-casting: Paso 1 muestra badge, hero con texto superpuesto, reglas con ícono y
       footer]
-- [ ] 6.2 RED componente: imagen hero grande con texto superpuesto obtenida de
+- [x] 6.2 RED componente: imagen hero grande con texto superpuesto obtenida de
       `GET /configuracion/logo`, con degradado `bg-gradient-to-t from-primary/90 via-primary/30
       to-transparent` sobre la imagen [spec vote-casting: idem; design.md D4]
-- [ ] 6.3 RED componente: exactamente 3 tarjetas de reglas, cada una con su ícono de
+- [x] 6.3 RED componente: exactamente 3 tarjetas de reglas, cada una con su ícono de
       `iconos-reglas.tsx` [spec vote-casting: idem]
-- [ ] 6.4 RED componente: footer presente [spec vote-casting: idem]
-- [ ] 6.5 RED componente: `GET /configuracion/logo` responde `404` (`fireEvent.error` en el `<img>`)
+- [x] 6.4 RED componente: footer presente [spec vote-casting: idem]
+- [x] 6.5 RED componente: `GET /configuracion/logo` responde `404` (`fireEvent.error` en el `<img>`)
       → el hero NO desaparece, se pinta `bg-primary` sólido detrás del degradado, el texto
       institucional sigue visible y "Comenzar Votación" permanece funcional [spec vote-casting: Sin
       logo institucional configurado, el paso 1 no rompe; design.md D4, cambio respecto de #31 que
       ocultaba el bloque]
-- [ ] 6.6 RED componente: ningún texto/copy nuevo menciona "San Alfonso" (grep manual, ver Phase 21)
+- [x] 6.6 RED componente: ningún texto/copy nuevo menciona "San Alfonso" (grep manual, ver Phase 21)
 
 ### Phase 7: GREEN
-- [ ] 7.1 GREEN: reescribir `apps/frontend/src/votos/piezas/PasoInformacionProceso.tsx` con badge,
+- [x] 7.1 GREEN: reescribir `apps/frontend/src/votos/piezas/PasoInformacionProceso.tsx` con badge,
       hero con overlay (D4), tarjetas de reglas con ícono (D5), footer, tokens de D8 — pasa 6.1-6.5
 
 ### Phase 8: Regresión PR2
-- [ ] 8.1 `pnpm --filter @seei/frontend test -- PasoInformacionProceso` verde
-- [ ] 8.2 `pnpm typecheck` verde en `@seei/frontend`
-- [ ] 8.3 `rg -i "san alfonso" apps/frontend/src/votos/piezas/PasoInformacionProceso.tsx apps/frontend/src/votos/piezas/iconos-reglas.tsx` sin resultados
+- [x] 8.1 `pnpm --filter @seei/frontend test -- PasoInformacionProceso` verde
+- [x] 8.2 `pnpm typecheck` verde en `@seei/frontend`
+- [x] 8.3 `rg -i "san alfonso" apps/frontend/src/votos/piezas/PasoInformacionProceso.tsx apps/frontend/src/votos/piezas/iconos-reglas.tsx` sin resultados
 
 ## PR 3 — `BotonSeleccion` + banner + `TarjetaVotoBlanco` (base = PR 2 branch) — PR de riesgo
 
