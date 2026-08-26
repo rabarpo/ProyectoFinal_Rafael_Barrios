@@ -79,14 +79,14 @@ decisión de estrategia antes de `sdd-apply`.
 ## PR 3 — Emisor único `emitirNotificaciones` (D4)
 
 ### Phase 7: RED/GREEN — `emitir-notificaciones.spec.ts`
-- [ ] 7.1 `destinatarios: []` ⇒ no ejecuta ningún `INSERT` (spy sobre doble de `tx`)
-- [ ] 7.2 Troceado a 500; `createMany` de `JobCorreo` recibe exactamente las filas del `RETURNING`, nunca la lista completa
-- [ ] 7.3 `origen:'notificacion'` en todas las filas de `JobCorreo`
-- [ ] 7.4 Payload de `NOTIFICACIONES_EMITIDAS` sin `usuario_id` ni identidad de elección [threat: secreto del voto/PII]
-- [ ] 7.5 GREEN: crear `apps/backend/src/notificaciones/emitir-notificaciones.ts` (función libre sobre `tx`, `ON CONFLICT DO NOTHING`, orden Notificacion→JobCorreo→UPDATE→auditoría) — pasa 7.1-7.4
+- [x] 7.1 `destinatarios: []` ⇒ no ejecuta ningún `INSERT` (spy sobre doble de `tx`)
+- [x] 7.2 Troceado a 500; `createMany` de `JobCorreo` recibe exactamente las filas del `RETURNING`, nunca la lista completa
+- [x] 7.3 `origen:'notificacion'` en todas las filas de `JobCorreo`
+- [x] 7.4 Payload de `NOTIFICACIONES_EMITIDAS` sin `usuario_id` ni identidad de elección [threat: secreto del voto/PII]
+- [x] 7.5 GREEN: crear `apps/backend/src/notificaciones/emitir-notificaciones.ts` (función libre sobre `tx`, `ON CONFLICT DO NOTHING`, orden Notificacion→JobCorreo→UPDATE→auditoría) — pasa 7.1-7.4
 
 ### Phase 8: Regresión PR3
-- [ ] 8.1 `pnpm --filter @seei/backend test -- emitir-notificaciones` verde; `pnpm typecheck` verde
+- [x] 8.1 `pnpm --filter @seei/backend test -- emitir-notificaciones` verde; `pnpm typecheck` verde
 
 ## PR 4 — Hooks transaccionales de apertura/cierre (D5)
 
