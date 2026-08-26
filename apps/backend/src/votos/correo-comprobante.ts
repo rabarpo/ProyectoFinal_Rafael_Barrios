@@ -12,7 +12,11 @@
  * capturado por un usuario de gestión). El nombre del proceso viaja únicamente en el CUERPO
  * (`text` plano, nunca HTML/cabeceras) y se normaliza (se retiran caracteres de control) antes de
  * interpolarse — threat matrix: "Inyección de cabeceras SMTP".
+ *
+ * `normalizarTextoLibre()` vive en `email/texto-libre.ts` (#19, PR2; design.md D8): módulo
+ * compartido con `notificaciones/plantillas-notificacion.ts`, sin comportamiento distinto.
  */
+import { normalizarTextoLibre } from '../email/texto-libre';
 
 const ASUNTO_FIJO = 'Comprobante de tu voto';
 
@@ -28,16 +32,6 @@ export interface DatosCorreoComprobante {
 export interface CorreoComprobante {
   asunto: string;
   cuerpo: string;
-}
-
-/**
- * Retira caracteres de control (incluidos `\r`/`\n`) de un texto libre capturado por un usuario
- * de gestión, antes de interpolarlo en el cuerpo del correo — evita que un `\r\nBcc: x@y` inyecte
- * un salto de cabecera dentro del cuerpo `text` plano.
- */
-function normalizarTextoLibre(texto: string): string {
-  // eslint-disable-next-line no-control-regex
-  return texto.replace(/[\x00-\x1F\x7F]+/g, ' ').trim();
 }
 
 export function construirCorreoComprobante(datos: DatosCorreoComprobante): CorreoComprobante {

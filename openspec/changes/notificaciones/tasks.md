@@ -62,19 +62,19 @@ decisión de estrategia antes de `sdd-apply`.
 ## PR 2 — Motor de plantillas (D8)
 
 ### Phase 4: `email/texto-libre.ts`
-- [ ] 4.1 Crear `apps/backend/src/email/texto-libre.ts`: mover `normalizarTextoLibre()` desde `votos/correo-comprobante.ts`
-- [ ] 4.2 Modificar `apps/backend/src/votos/correo-comprobante.ts`: importar el helper movido — verificar `correo-comprobante.spec.ts` verde **sin editarse**
+- [x] 4.1 Crear `apps/backend/src/email/texto-libre.ts`: mover `normalizarTextoLibre()` desde `votos/correo-comprobante.ts`
+- [x] 4.2 Modificar `apps/backend/src/votos/correo-comprobante.ts`: importar el helper movido — verificar `correo-comprobante.spec.ts` verde **sin editarse**
 
 ### Phase 5: RED/GREEN — `plantillas-notificacion.spec.ts`
-- [ ] 5.1 Los 4 eventos producen `titulo`/`cuerpo`/`asunto` deterministas
-- [ ] 5.2 `asunto` **no** contiene `proceso_nombre` en ninguno de los 4 [threat: inyección SMTP]
-- [ ] 5.3 `proceso_nombre` con `\r\nBcc:` sale normalizado en el `cuerpo`
-- [ ] 5.4 Sin `app_base_url` el cuerpo omite el enlace y no lanza
-- [ ] 5.5 La firma no acepta `usuario` (aserción de tipo/texto del módulo) [C8]
-- [ ] 5.6 GREEN: crear `apps/backend/src/notificaciones/plantillas-notificacion.ts` (`construirNotificacion`, despacho congelado) — pasa 5.1-5.5
+- [x] 5.1 Los 4 eventos producen `titulo`/`cuerpo`/`asunto` deterministas
+- [x] 5.2 `asunto` **no** contiene `proceso_nombre` en ninguno de los 4 [threat: inyección SMTP]
+- [x] 5.3 `proceso_nombre` con `\r\nBcc:` sale normalizado en el `cuerpo`
+- [x] 5.4 Sin `app_base_url` el cuerpo omite el enlace y no lanza
+- [x] 5.5 La firma no acepta `usuario` (aserción de tipo/texto del módulo) [C8]
+- [x] 5.6 GREEN: crear `apps/backend/src/notificaciones/plantillas-notificacion.ts` (`construirNotificacion`, despacho congelado) — pasa 5.1-5.5
 
 ### Phase 6: Regresión PR2
-- [ ] 6.1 `pnpm --filter @seei/backend test -- plantillas-notificacion correo-comprobante` verde; `pnpm typecheck` verde
+- [x] 6.1 `pnpm --filter @seei/backend test -- plantillas-notificacion correo-comprobante` verde; `pnpm typecheck` verde
 
 ## PR 3 — Emisor único `emitirNotificaciones` (D4)
 
