@@ -22,7 +22,12 @@ const LOTE_NOTIFICACIONES = 500;
 export interface ProcesoNotificable {
   id: string;
   nombre: string;
-  fecha_cierre_prevista: Date;
+  /**
+   * Opcional (PR4, design.md D5): `abrir()` la suma a su `RETURNING`, pero `cerrar()` no la
+   * necesita — `construirNotificacion('resultados', …)` no la usa (ver
+   * `plantillas-notificacion.ts`), y `DatosNotificacion.fecha_cierre_prevista` ya es opcional.
+   */
+  fecha_cierre_prevista?: Date;
 }
 
 export interface ParametrosEmision {

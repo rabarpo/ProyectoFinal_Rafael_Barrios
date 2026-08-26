@@ -13,6 +13,7 @@ import type { AbrirProcesoDto } from './dto/abrir-proceso.dto';
 import type { AperturaRespuestaDto } from './dto/apertura-respuesta.dto';
 import type { CerrarProcesoDto, FirmanteDto } from './dto/cerrar-proceso.dto';
 import type { CierreRespuestaDto } from './dto/cierre-respuesta.dto';
+import { emitirNotificaciones } from '../notificaciones/emitir-notificaciones';
 import { armarActas } from './actas-contenido';
 import { calcularEscrutinio } from './escrutinio';
 import { resolverAulas, validarSegmentacion } from './padron.service';
@@ -649,7 +650,9 @@ export class ProcesosService {
       const filas = await tx.$queryRaw<
         {
           id: string;
+          nombre: string;
           apertura_real: Date;
+          fecha_cierre_prevista: Date;
           ocultar_resultados: boolean;
           publico_objetivo: ProcesoElectoral['publico_objetivo'];
           tipo: ProcesoElectoral['tipo'];
@@ -658,7 +661,7 @@ export class ProcesosService {
         UPDATE "ProcesoElectoral"
            SET estado = 'abierto', apertura_real = clock_timestamp()
          WHERE id = ${id}::uuid AND estado = 'borrador'
-        RETURNING id, apertura_real, ocultar_resultados, publico_objetivo, tipo`;
+        RETURNING id, nombre, apertura_real, fecha_cierre_prevista, ocultar_resultados, publico_objetivo, tipo`;
 
       if (filas.length === 0) {
         const existente = await tx.procesoElectoral.findUnique({ where: { id } });
@@ -676,7 +679,15 @@ export class ProcesosService {
       }
 
       const [
-        { id: procesoId, apertura_real: aperturaReal, ocultar_resultados: ocultarResultados, publico_objetivo: publicoObjetivo, tipo },
+        {
+          id: procesoId,
+          nombre,
+          apertura_real: aperturaReal,
+          fecha_cierre_prevista: fechaCierrePrevista,
+          ocultar_resultados: ocultarResultados,
+          publico_objetivo: publicoObjetivo,
+          tipo,
+        },
       ] = filas;
 
       // D6: aulas YA congeladas — jamás resolverAulas() acá (ver materializarDerechosVoto()).
@@ -702,6 +713,23 @@ export class ProcesosService {
           apertura_real: aperturaReal.toISOString(),
         } as Prisma.InputJsonValue,
       );
+
+      // notificaciones (#19, PR4; design.md D5). Solo en la rama de transición real — nunca en el
+      // no-op idempotente de arriba. SELECT DISTINCT: en alcance `comunidad` la misma cuenta tiene
+      // 2 DerechoVoto (estudiante+padre) y no debe recibir dos avisos.
+      const destinatariosApertura = (
+        await tx.$queryRaw<{ usuario_id: string }[]>`
+          SELECT DISTINCT usuario_id FROM "DerechoVoto" WHERE proceso_id = ${procesoId}::uuid
+        `
+      ).map((fila) => fila.usuario_id);
+
+      await emitirNotificaciones(tx, {
+        proceso: { id: procesoId, nombre, fecha_cierre_prevista: fechaCierrePrevista },
+        evento: 'inicio_votacion',
+        destinatarios: destinatariosApertura,
+        actorId,
+        app_base_url: process.env.APP_BASE_URL,
+      });
 
       return respuestaApertura(tx, procesoId, aperturaReal, ocultarResultados);
     });
@@ -821,6 +849,24 @@ export class ProcesosService {
               firmantes: firmantes.length,
             } as Prisma.InputJsonValue,
           );
+
+          // notificaciones (#19, PR4; design.md D5). Solo en la rama de transición real — nunca en
+          // el no-op idempotente de arriba. `fecha_cierre_prevista` no se agrega al RETURNING de
+          // este `UPDATE`: la plantilla de `resultados` no la usa (ver
+          // `plantillas-notificacion.ts::construirResultados()`).
+          const destinatariosCierre = (
+            await tx.$queryRaw<{ usuario_id: string }[]>`
+              SELECT DISTINCT usuario_id FROM "DerechoVoto" WHERE proceso_id = ${procesoId}::uuid
+            `
+          ).map((fila) => fila.usuario_id);
+
+          await emitirNotificaciones(tx, {
+            proceso: { id: procesoId, nombre },
+            evento: 'resultados',
+            destinatarios: destinatariosCierre,
+            actorId,
+            app_base_url: process.env.APP_BASE_URL,
+          });
 
           return { id: procesoId, estado: 'cerrado', cierre_real: cierreReal.toISOString(), actas_creadas: 4 };
         },

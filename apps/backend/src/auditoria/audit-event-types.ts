@@ -135,6 +135,15 @@ export const AUDIT_EVENT_TYPES = {
   PROCESO_CERRADO: 'PROCESO_CERRADO',
   ACTA_GENERADA: 'ACTA_GENERADA',
   REPORTE_GENERADO: 'REPORTE_GENERADO',
+  // notificaciones, PR4 (design.md D11, tarea 9.1): una clave aditiva `NOTIFICACIONES_EMITIDAS`,
+  // escrita por `emitirNotificaciones()` (PR3, `notificaciones/emitir-notificaciones.ts`) con
+  // `tx.eventoAuditoria.create()` directo — no `AuditoriaService`, porque el sweep del worker
+  // (PR9/PR10) no puede importar el contenedor de DI de Nest. Un evento AGREGADO por invocación
+  // (≤4 por proceso: inicio_votacion/recordatorio/cierre_proximo/resultados), nunca uno por
+  // notificación ni por destinatario. Payload cerrado `{ evento, notificaciones, jobs_correo }` —
+  // jamás `usuario_id` ni identidad de elección. No toca la cláusula `WHEN` del trigger de
+  // ADR-0016 (no involucra un `Voto`) — ver test/schema/auditoria.spec.ts, caso [TM4].
+  NOTIFICACIONES_EMITIDAS: 'NOTIFICACIONES_EMITIDAS',
 } as const;
 
 export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[keyof typeof AUDIT_EVENT_TYPES];

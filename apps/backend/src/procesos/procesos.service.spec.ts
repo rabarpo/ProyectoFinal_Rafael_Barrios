@@ -781,7 +781,9 @@ describe('ProcesosService.abrir() — guarda exitosa desde borrador (D3/D4, tare
       .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
       .mockResolvedValueOnce([]);
     const { prisma, queryRaw, procesoElectoralFindUnique } = construirPrismaAbrir({
-      queryRaw: jest.fn().mockResolvedValue([filaGuarda]),
+      // notificaciones (#19, PR4; design.md D5): el hook lee un SEGUNDO $queryRaw (SELECT DISTINCT
+      // usuario_id) tras la guarda — 0 destinatarios ⇒ emitirNotificaciones() no-opea sin tocar tx.
+      queryRaw: jest.fn().mockResolvedValueOnce([filaGuarda]).mockResolvedValue([]),
       procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
       matriculaFindMany,
     });
@@ -793,8 +795,9 @@ describe('ProcesosService.abrir() — guarda exitosa desde borrador (D3/D4, tare
     expect(respuesta.apertura_real).toBe('2026-08-13T12:00:00.000Z');
     expect(respuesta.ocultar_resultados).toBe(true);
     // La guarda es la ÚNICA fuente de la transición: no hay un findUnique previo (D4 — la escritura
-    // va primero, nunca leer-y-luego-escribir).
-    expect(queryRaw).toHaveBeenCalledTimes(1);
+    // va primero, nunca leer-y-luego-escribir). El segundo $queryRaw es el SELECT DISTINCT
+    // destinatarios del hook de notificaciones (#19, PR4, design.md D5) — no un findUnique.
+    expect(queryRaw).toHaveBeenCalledTimes(2);
     expect(procesoElectoralFindUnique).not.toHaveBeenCalled();
     // PR3 (Phase 10): la apertura exitosa SÍ audita ahora, exactamente una vez.
     expect(auditoria.log).toHaveBeenCalledTimes(1);
@@ -829,7 +832,9 @@ describe('ProcesosService.abrir() — materialización de DerechoVoto (D6, tarea
       .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
       .mockResolvedValueOnce([]);
     const { prisma, matriculaFindMany: mfm, procesoAulaFindMany } = construirPrismaAbrir({
-      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({})]),
+      // notificaciones (#19, PR4): segundo $queryRaw = SELECT DISTINCT destinatarios; [] ⇒ el hook
+      // no-opea (destinatarios.length === 0).
+      queryRaw: jest.fn().mockResolvedValueOnce([filaGuardaExitosa({})]).mockResolvedValue([]),
       procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
       matriculaFindMany,
     });
@@ -863,7 +868,9 @@ describe("ProcesosService.abrir() — publico_objetivo='estudiantes' (tarea 9.2)
       .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
       .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }]);
     const { prisma, derechoVotoCreateMany } = construirPrismaAbrir({
-      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'estudiantes' })]),
+      // notificaciones (#19, PR4): segundo $queryRaw = SELECT DISTINCT destinatarios; [] ⇒ el hook
+      // no-opea (destinatarios.length === 0).
+      queryRaw: jest.fn().mockResolvedValueOnce([filaGuardaExitosa({ publico_objetivo: 'estudiantes' })]).mockResolvedValue([]),
       procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
       matriculaFindMany,
     });
@@ -885,7 +892,9 @@ describe("ProcesosService.abrir() — doble derecho para publico_objetivo='comun
       .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
       .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }]);
     const { prisma, derechoVotoCreateMany } = construirPrismaAbrir({
-      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'comunidad' })]),
+      // notificaciones (#19, PR4): segundo $queryRaw = SELECT DISTINCT destinatarios; [] ⇒ el hook
+      // no-opea (destinatarios.length === 0).
+      queryRaw: jest.fn().mockResolvedValueOnce([filaGuardaExitosa({ publico_objetivo: 'comunidad' })]).mockResolvedValue([]),
       procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
       matriculaFindMany,
     });
@@ -908,7 +917,9 @@ describe('ProcesosService.abrir() — createMany troceado en LOTE_DERECHOS (D7, 
     const elegibles = Array.from({ length: 5001 }, (_, i) => ({ usuario_id: `u${i}`, aula_id: 'au1' }));
     const matriculaFindMany = jest.fn().mockResolvedValueOnce(elegibles).mockResolvedValueOnce([]);
     const { prisma, derechoVotoCreateMany } = construirPrismaAbrir({
-      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'estudiantes' })]),
+      // notificaciones (#19, PR4): segundo $queryRaw = SELECT DISTINCT destinatarios; [] ⇒ el hook
+      // no-opea (destinatarios.length === 0).
+      queryRaw: jest.fn().mockResolvedValueOnce([filaGuardaExitosa({ publico_objetivo: 'estudiantes' })]).mockResolvedValue([]),
       procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
       matriculaFindMany,
     });
@@ -926,7 +937,9 @@ describe('ProcesosService.abrir() — padrón vacío (D8, tarea 9.5)', () => {
   it('[9.5] 0 filas elegibles -> 409 SEGMENTACION_SIN_ELEGIBLES, sin createMany ni auditoría', async () => {
     const matriculaFindMany = jest.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     const { prisma, derechoVotoCreateMany } = construirPrismaAbrir({
-      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'comunidad' })]),
+      // notificaciones (#19, PR4): segundo $queryRaw = SELECT DISTINCT destinatarios; [] ⇒ el hook
+      // no-opea (destinatarios.length === 0).
+      queryRaw: jest.fn().mockResolvedValueOnce([filaGuardaExitosa({ publico_objetivo: 'comunidad' })]).mockResolvedValue([]),
       procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }]),
       matriculaFindMany,
     });
@@ -952,7 +965,12 @@ describe('ProcesosService.abrir() — auditoría PROCESO_ABIERTO (D11, tarea 10.
       .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }])
       .mockResolvedValueOnce([{ usuario_id: 'u1', aula_id: 'au1' }]);
     const { prisma } = construirPrismaAbrir({
-      queryRaw: jest.fn().mockResolvedValue([filaGuardaExitosa({ publico_objetivo: 'comunidad', tipo: 'consulta' })]),
+      // notificaciones (#19, PR4): segundo $queryRaw = SELECT DISTINCT destinatarios; [] ⇒ el hook
+      // no-opea (destinatarios.length === 0).
+      queryRaw: jest
+        .fn()
+        .mockResolvedValueOnce([filaGuardaExitosa({ publico_objetivo: 'comunidad', tipo: 'consulta' })])
+        .mockResolvedValue([]),
       procesoAulaFindMany: jest.fn().mockResolvedValue([{ aula_id: 'au1' }, { aula_id: 'au2' }]),
       matriculaFindMany,
     });
@@ -1204,12 +1222,15 @@ describe('ProcesosService.cerrar() — camino exitoso: escrutinio, 4 actas, audi
   }
 
   it('[11.3] crea las 4 Acta en borrador y registra PROCESO_CERRADO con conteos', async () => {
-    // `$queryRaw` se invoca dos veces: la guarda UPDATE...RETURNING (D4) y `SELECT now()` dentro
-    // de `calcularParticipacion()` (D5, ya extraído) — mismo mock, dos resultados en secuencia.
+    // `$queryRaw` se invoca TRES veces: la guarda UPDATE...RETURNING (D4), `SELECT now()` dentro de
+    // `calcularParticipacion()` (D5, ya extraído) y el SELECT DISTINCT destinatarios del hook de
+    // notificaciones (#19, PR4, design.md D5) — mismo mock, tres resultados en secuencia. []
+    // destinatarios ⇒ emitirNotificaciones() no-opea sin tocar jobCorreo/eventoAuditoria.
     const queryRaw = jest
       .fn()
       .mockResolvedValueOnce(filaGuarda())
-      .mockResolvedValueOnce([{ ahora: new Date('2026-08-18T18:00:01.000Z') }]);
+      .mockResolvedValueOnce([{ ahora: new Date('2026-08-18T18:00:01.000Z') }])
+      .mockResolvedValue([]);
     const { prisma, tx, actaCreateMany } = construirPrismaCerrar({
       queryRaw,
       derechoVotoCount: jest.fn().mockResolvedValue(5),

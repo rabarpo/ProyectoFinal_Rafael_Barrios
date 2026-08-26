@@ -91,20 +91,20 @@ decisión de estrategia antes de `sdd-apply`.
 ## PR 4 — Hooks transaccionales de apertura/cierre (D5)
 
 ### Phase 9: Auditoría y `RETURNING`
-- [ ] 9.1 Modificar `apps/backend/src/auditoria/audit-event-types.ts`: `+NOTIFICACIONES_EMITIDAS` + entrada de bitácora
-- [ ] 9.2 Modificar `procesos.service.ts::abrir()`: sumar `nombre, fecha_cierre_prevista` al `RETURNING`
+- [x] 9.1 Modificar `apps/backend/src/auditoria/audit-event-types.ts`: `+NOTIFICACIONES_EMITIDAS` + entrada de bitácora
+- [x] 9.2 Modificar `procesos.service.ts::abrir()`: sumar `nombre, fecha_cierre_prevista` al `RETURNING`
 
 ### Phase 10: RED/GREEN — `test/procesos/notificaciones-hooks.e2e-spec.ts`
-- [ ] 10.1 Apertura con N habilitados ⇒ N `Notificacion` (`evento='inicio_votacion'`) + N `JobCorreo(origen='notificacion')`
-- [ ] 10.2 Apertura que falla ⇒ cero de ambas (rollback)
-- [ ] 10.3 Segunda apertura (no-op idempotente) ⇒ siguen N, sin duplicar
-- [ ] 10.4 Alcance `comunidad` (2 `DerechoVoto` por cuenta) ⇒ una notificación, no dos [`SELECT DISTINCT`]
-- [ ] 10.5 Cierre ⇒ N de `resultados`; doble cierre ⇒ siguen N
-- [ ] 10.6 GREEN: en `procesos.service.ts::abrir()`/`cerrar()`, llamar `emitirNotificaciones(tx, …)` tras `auditoria.log(...)` y antes del `return`, solo en la rama de transición real — pasa 10.1-10.5
-- [ ] 10.7 `test/schema/auditoria.spec.ts` caso `[TM4]`: `NOTIFICACIONES_EMITIDAS` cumple `CHECK ^[A-Z_]+$` y no entra en el trigger `eventoauditoria_claves_eleccion_trg`
+- [x] 10.1 Apertura con N habilitados ⇒ N `Notificacion` (`evento='inicio_votacion'`) + N `JobCorreo(origen='notificacion')`
+- [x] 10.2 Apertura que falla ⇒ cero de ambas (rollback)
+- [x] 10.3 Segunda apertura (no-op idempotente) ⇒ siguen N, sin duplicar
+- [x] 10.4 Alcance `comunidad` (2 `DerechoVoto` por cuenta) ⇒ una notificación, no dos [`SELECT DISTINCT`]
+- [x] 10.5 Cierre ⇒ N de `resultados`; doble cierre ⇒ siguen N
+- [x] 10.6 GREEN: en `procesos.service.ts::abrir()`/`cerrar()`, llamar `emitirNotificaciones(tx, …)` tras `auditoria.log(...)` y antes del `return`, solo en la rama de transición real — pasa 10.1-10.5
+- [x] 10.7 `test/schema/auditoria.spec.ts` caso `[TM4]`: `NOTIFICACIONES_EMITIDAS` cumple `CHECK ^[A-Z_]+$` y no entra en el trigger `eventoauditoria_claves_eleccion_trg`
 
 ### Phase 11: Regresión PR4
-- [ ] 11.1 `pnpm --filter @seei/backend test:e2e -- notificaciones-hooks` verde; `test -- auditoria` verde; `pnpm typecheck` verde
+- [x] 11.1 `pnpm --filter @seei/backend test:e2e -- notificaciones-hooks` verde; `test -- auditoria` verde; `pnpm typecheck` verde
 
 ## PR 5 — `NotificacionesService`, DTOs y errores (D9/D10)
 

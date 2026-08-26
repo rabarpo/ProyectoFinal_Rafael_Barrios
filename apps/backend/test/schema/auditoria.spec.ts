@@ -331,6 +331,21 @@ describe('append_only_audit', () => {
     });
   });
 
+  // notificaciones (#19, PR4; design.md D11, tarea 10.7): INSERT directo de
+  // NOTIFICACIONES_EMITIDAS cumple el CHECK `^[A-Z_]+$` y NO dispara AU002 — el trigger de claves
+  // de elección sólo cubre VOTO/RECHAZO literalmente. Constancia de que la protección de esta
+  // clave (jamás usuario_id ni identidad de elección en el payload) es de código (D11,
+  // `emitir-notificaciones.ts`), no del motor.
+  it('[TM4] INSERT directo de NOTIFICACIONES_EMITIDAS con detalle.candidato_id NO dispara AU002', async () => {
+    await withTransaction(client, async () => {
+      const id = await insertarEvento(client.query.bind(client), 'NOTIFICACIONES_EMITIDAS', {
+        detalle: { candidato_id: randomUUID() },
+      });
+      const result = await client.query(`SELECT id FROM "EventoAuditoria" WHERE id = $1`, [id]);
+      expect(result.rows).toHaveLength(1);
+    });
+  });
+
   // [TM4] Ambas claves cumplen el CHECK de convención ^[A-Z_]+$ (ya ejercitado arriba de forma
   // implícita al aceptarse el INSERT: si violaran el CHECK, el insertarEvento() habría lanzado).
 
