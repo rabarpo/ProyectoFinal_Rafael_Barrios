@@ -74,6 +74,9 @@ model Usuario {
   eventosAuditoria EventoAuditoria[]
   // reportes-y-exportaciones (#18, PR1; design.md D2): relación inversa 1:N, sólo schema.
   reportesSolicitados Reporte[]
+  // notificaciones (#19, PR1; design.md D2): relación inversa 1:N, sólo schema — bandeja interna
+  // de cada usuario (usuario_id NOT NULL FK requerida).
+  notificaciones      Notificacion[]
 }
 
 model Apoderado {
@@ -231,6 +234,9 @@ model ProcesoElectoral {
   jobsCorreo   JobCorreo[]
   // reportes-y-exportaciones (#18, PR1; design.md D2): relación inversa 1:N, sólo schema.
   reportes     Reporte[]
+  // notificaciones (#19, PR1; design.md D2): relación inversa 1:N, sólo schema — `proceso_id` es
+  // nullable a propósito (una notificación futura sin proceso asociado no colisiona en dedup).
+  notificaciones Notificacion[]
 }
 
 model Lista {
@@ -359,8 +365,29 @@ enum EstadoJobCorreo {
   fallido
 }
 
+// notificaciones (#19, PR1; design.md D2): `interna` agregado de forma aditiva (`ALTER TYPE ...
+// ADD VALUE`) — `correo` conserva nombre y orden (spec "Migración no toca columnas ni valores
+// existentes").
 enum TipoNotificacion {
   correo
+  interna
+}
+
+// notificaciones (#19, PR1; design.md D2/C3): enum de EVENTO, distinto del canal (`TipoNotificacion`).
+// Los 4 eventos del ciclo de vida del proceso electoral que dispara este change.
+enum EventoNotificacion {
+  inicio_votacion
+  recordatorio
+  cierre_proximo
+  resultados
+}
+
+// notificaciones (#19, PR1; design.md D3, corrige C5): discriminante real de la cola BullMQ —
+// sin esta columna, `outbox-correo.repo.ts::pendientes()` no distingue comprobantes de
+// recordatorios y la cola dedicada `notificaciones` es decorativa.
+enum OrigenJobCorreo {
+  comprobante
+  notificacion
 }
 
 // cierre-escrutinio-actas (#17, PR1; design.md D2): `escrutinio`/`oficial` agregados; `resultados`
@@ -397,6 +424,9 @@ model JobCorreo {
   voto_id            String?         @unique @db.Uuid
   proceso_id         String?         @db.Uuid
   codigo_comprobante String?
+  // notificaciones (#19, PR1; design.md D3, corrige C5): discriminante de cola. `DEFAULT
+  // 'comprobante'` clasifica correctamente todas las filas preexistentes sin backfill.
+  origen             OrigenJobCorreo @default(comprobante)
 
   usuario        Usuario           @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
   voto           Voto?             @relation(fields: [voto_id], references: [id], onDelete: Restrict)
@@ -406,13 +436,30 @@ model JobCorreo {
   @@index([estado, creado_en])
 }
 
+// notificaciones (#19, PR1; design.md D2/C3/C4/C6): `Notificacion` gana el eje que no tenía
+// (`proceso_id`/`evento`/`usuario_id`) más el contenido de bandeja (`titulo`/`cuerpo`/`leido_en`).
+// `job_correo_id` pasa a nullable (una notificación interna puede existir sin correo asociado).
+// `proceso_id` es nullable A PROPÓSITO: Postgres trata NULL como distinto en el índice único, así
+// que una notificación futura sin proceso jamás colisiona con la clave de dedup.
 model Notificacion {
-  id            String           @id @default(uuid()) @db.Uuid
-  job_correo_id String           @db.Uuid
-  tipo          TipoNotificacion @default(correo)
-  creado_en     DateTime         @default(now()) @db.Timestamptz(3)
+  id            String              @id @default(uuid()) @db.Uuid
+  job_correo_id String?             @db.Uuid
+  tipo          TipoNotificacion    @default(correo)
+  creado_en     DateTime            @default(now()) @db.Timestamptz(3)
+  usuario_id    String              @db.Uuid
+  proceso_id    String?             @db.Uuid
+  evento        EventoNotificacion
+  titulo        String
+  cuerpo        String
+  leido_en      DateTime?           @db.Timestamptz(3)
 
-  jobCorreo JobCorreo @relation(fields: [job_correo_id], references: [id], onDelete: Restrict)
+  jobCorreo JobCorreo?        @relation(fields: [job_correo_id], references: [id], onDelete: Restrict)
+  usuario   Usuario           @relation(fields: [usuario_id], references: [id], onDelete: Restrict)
+  proceso   ProcesoElectoral? @relation(fields: [proceso_id], references: [id], onDelete: Restrict)
+
+  // D2/C4: clave de deduplicación del sweep — una por (proceso, evento, usuario).
+  @@unique([proceso_id, evento, usuario_id])
+  @@index([usuario_id, creado_en(sort: Desc)])
 }
 
 // configuracion-general, PR1 (design.md D1, tarea 1.2). Columnas aditivas, todas nullable o con
