@@ -125,19 +125,19 @@ decisión de estrategia antes de `sdd-apply`.
 ## PR 6 — `NotificacionesController`/`Module` y contrato (D9)
 
 ### Phase 15: Wiring HTTP
-- [ ] 15.1 Crear `notificaciones.controller.ts`: `@Controller('notificaciones')`, `@UseGuards(AuthGuard)`, sin `@Roles`; `GET /notificaciones`, `PATCH /notificaciones/:id/leido` (`@HttpCode(200)`, `ParseUUIDPipe`)
-- [ ] 15.2 Crear `notificaciones.module.ts` (`imports:[AuthModule]`, `cookie-parser` `forRoutes`); modificar `app.module.ts` (`+NotificacionesModule`)
+- [x] 15.1 Crear `notificaciones.controller.ts`: `@Controller('notificaciones')`, `@UseGuards(AuthGuard)`, sin `@Roles`; `GET /notificaciones`, `PATCH /notificaciones/:id/leido` (`@HttpCode(200)`, `ParseUUIDPipe`)
+- [x] 15.2 Crear `notificaciones.module.ts` (`imports:[AuthModule]`, `cookie-parser` `forRoutes`); modificar `app.module.ts` (`+NotificacionesModule`)
 
 ### Phase 16: RED/GREEN e2e — `notificaciones.e2e-spec.ts`
-- [ ] 16.1 Usuario A solo ve las suyas, paginadas, nunca las de B [spec: Listado scoped]
-- [ ] 16.2 `solo_no_leidas=true` filtra correctamente
-- [ ] 16.3 `PATCH` propio ⇒ `200` con `leido_en` poblado; `PATCH` de ajena ⇒ `403` sin cuerpo; UUID inexistente ⇒ el **mismo** `403` byte a byte [aserción de no-oráculo]
-- [ ] 16.4 Sin cookie ⇒ `401`
-- [ ] 16.5 GREEN: completar wiring del controller/service — pasa 16.1-16.4
-- [ ] 16.6 Correr `pnpm openapi:extract`: `packages/contracts/openapi.json`+`src/generated/api.d.ts` exponen las 2 rutas; commitear el contrato regenerado
+- [x] 16.1 Usuario A solo ve las suyas, paginadas, nunca las de B [spec: Listado scoped] (escrito)
+- [x] 16.2 `solo_no_leidas=true` filtra correctamente (escrito)
+- [x] 16.3 `PATCH` propio ⇒ `200` con `leido_en` poblado; `PATCH` de ajena ⇒ `403` sin cuerpo; UUID inexistente ⇒ el **mismo** `403` byte a byte [aserción de no-oráculo] (escrito)
+- [x] 16.4 Sin cookie ⇒ `401` (escrito)
+- [x] 16.5 GREEN: completar wiring del controller/service — pasa 16.1-16.4 — ejecutado contra Postgres/Redis reales (`docker-compose.test.yml`), `pnpm exec jest --config test/jest-e2e.config.ts --runInBand --testPathPattern notificaciones`: 2 suites, 10/10 tests verdes (los 4 de esta suite + regresión de los 6 de `notificaciones-hooks.e2e-spec.ts` de PR4)
+- [x] 16.6 Correr `pnpm openapi:extract` + `pnpm --filter @seei/contracts generate:contracts`: `packages/contracts/openapi.json`+`src/generated/api.d.ts` exponen las 2 rutas nuevas; drift check (`@seei/contracts test`) verde
 
 ### Phase 17: Regresión PR6
-- [ ] 17.1 `pnpm --filter @seei/backend test:e2e -- notificaciones` verde; `pnpm typecheck` verde
+- [x] 17.1 `notificaciones.e2e-spec.ts` verde contra Postgres/Redis reales (10/10, ver Phase 16); `pnpm typecheck` verde salvo el fallo preexistente de `#30` (`mis-derechos.service.spec.ts`, no tocado por este PR). Nota: la suite completa `test:e2e` **no corre en paralelo** con seguridad en este entorno — varias suites de `#18`/`#26` compiten por el único `AnioEscolar` activo y devuelven `409` con el runner de Jest en paralelo (`node scripts/test-e2e.mjs`, sin `--runInBand`); es un problema preexistente de la suite completa, no de este PR — se validó `notificaciones` de forma aislada con `--runInBand`
 
 ## PR 7 — Fix de aislamiento de colas (D3, corrige C5)
 

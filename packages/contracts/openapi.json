@@ -3620,6 +3620,110 @@
           "reportes"
         ]
       }
+    },
+    "/notificaciones": {
+      "get": {
+        "operationId": "NotificacionesController_listar",
+        "parameters": [
+          {
+            "name": "solo_no_leidas",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "tamano",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de notificaciones propias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaNotificacionesDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Query fuera de rango o formato"
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Bandeja interna de notificaciones del usuario autenticado, paginada (D9)",
+        "tags": [
+          "notificaciones"
+        ]
+      }
+    },
+    "/notificaciones/{id}/leido": {
+      "patch": {
+        "operationId": "NotificacionesController_marcarLeido",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notificación marcada (o ya leída previamente)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificacionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin cookie de sesión válida"
+          },
+          "403": {
+            "description": "Notificación ajena o inexistente, sin cuerpo discriminante"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Marca la notificación propia como leída, idempotente (D10)",
+        "tags": [
+          "notificaciones"
+        ]
+      }
     }
   },
   "info": {
@@ -5649,6 +5753,96 @@
           "archivo_disponible",
           "solicitado_por",
           "creado_en"
+        ]
+      },
+      "NotificacionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID de la notificación"
+          },
+          "evento": {
+            "type": "string",
+            "description": "Evento que originó la notificación",
+            "enum": [
+              "inicio_votacion",
+              "recordatorio",
+              "cierre_proximo",
+              "resultados"
+            ]
+          },
+          "proceso_id": {
+            "type": "string",
+            "description": "Proceso electoral relacionado, si aplica",
+            "nullable": true
+          },
+          "titulo": {
+            "type": "string",
+            "description": "Título para la bandeja interna"
+          },
+          "cuerpo": {
+            "type": "string",
+            "description": "Cuerpo para la bandeja interna"
+          },
+          "creado_en": {
+            "type": "string",
+            "description": "Momento de creación (ISO-8601)"
+          },
+          "leido_en": {
+            "type": "string",
+            "description": "Momento en que se marcó como leída (ISO-8601), null si no se ha leído",
+            "nullable": true
+          },
+          "tiene_correo": {
+            "type": "boolean",
+            "description": "true si la notificación tiene un JobCorreo asociado"
+          }
+        },
+        "required": [
+          "id",
+          "evento",
+          "proceso_id",
+          "titulo",
+          "cuerpo",
+          "creado_en",
+          "leido_en",
+          "tiene_correo"
+        ]
+      },
+      "PaginaNotificacionesDto": {
+        "type": "object",
+        "properties": {
+          "datos": {
+            "description": "Notificaciones de la página solicitada",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificacionDto"
+            }
+          },
+          "pagina": {
+            "type": "number",
+            "description": "Página solicitada (>=1)"
+          },
+          "tamano": {
+            "type": "number",
+            "description": "Tamaño de página (1..100)"
+          },
+          "total": {
+            "type": "number",
+            "description": "Total de notificaciones propias (respetando solo_no_leidas)"
+          },
+          "no_leidas": {
+            "type": "number",
+            "description": "Total de notificaciones propias no leídas, sin importar la página"
+          }
+        },
+        "required": [
+          "datos",
+          "pagina",
+          "tamano",
+          "total",
+          "no_leidas"
         ]
       }
     }

@@ -1144,6 +1144,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notificaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bandeja interna de notificaciones del usuario autenticado, paginada (D9) */
+        get: operations["NotificacionesController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notificaciones/{id}/leido": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Marca la notificación propia como leída, idempotente (D10) */
+        patch: operations["NotificacionesController_marcarLeido"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1912,6 +1946,39 @@ export interface components {
             creado_en: string;
             /** @description Momento de emisión (ISO-8601) */
             emitido_en?: string | null;
+        };
+        NotificacionDto: {
+            /** @description ID de la notificación */
+            id: string;
+            /**
+             * @description Evento que originó la notificación
+             * @enum {string}
+             */
+            evento: "inicio_votacion" | "recordatorio" | "cierre_proximo" | "resultados";
+            /** @description Proceso electoral relacionado, si aplica */
+            proceso_id: string | null;
+            /** @description Título para la bandeja interna */
+            titulo: string;
+            /** @description Cuerpo para la bandeja interna */
+            cuerpo: string;
+            /** @description Momento de creación (ISO-8601) */
+            creado_en: string;
+            /** @description Momento en que se marcó como leída (ISO-8601), null si no se ha leído */
+            leido_en: string | null;
+            /** @description true si la notificación tiene un JobCorreo asociado */
+            tiene_correo: boolean;
+        };
+        PaginaNotificacionesDto: {
+            /** @description Notificaciones de la página solicitada */
+            datos: components["schemas"]["NotificacionDto"][];
+            /** @description Página solicitada (>=1) */
+            pagina: number;
+            /** @description Tamaño de página (1..100) */
+            tamano: number;
+            /** @description Total de notificaciones propias (respetando solo_no_leidas) */
+            total: number;
+            /** @description Total de notificaciones propias no leídas, sin importar la página */
+            no_leidas: number;
         };
     };
     responses: never;
@@ -5762,6 +5829,80 @@ export interface operations {
             };
             /** @description Reporte aún no emitido, o gate vigente (REPORTE_NO_DISPONIBLE) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NotificacionesController_listar: {
+        parameters: {
+            query?: {
+                solo_no_leidas?: "true" | "false";
+                tamano?: number;
+                pagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de notificaciones propias */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginaNotificacionesDto"];
+                };
+            };
+            /** @description Query fuera de rango o formato */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NotificacionesController_marcarLeido: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notificación marcada (o ya leída previamente) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificacionDto"];
+                };
+            };
+            /** @description Sin cookie de sesión válida */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Notificación ajena o inexistente, sin cuerpo discriminante */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

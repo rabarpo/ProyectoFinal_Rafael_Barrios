@@ -7,6 +7,7 @@ import { ConfiguracionLecturaModule } from './configuracion/configuracion-lectur
 import { ConfiguracionModule } from './configuracion/configuracion.module';
 import { HealthModule } from './health/health.module';
 import { ImportacionModule } from './importacion/importacion.module';
+import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { PanelJornadaModule } from './panel-jornada/panel-jornada.module';
 import { ProcesosModule } from './procesos/procesos.module';
 import { ReportesModule } from './reportes/reportes.module';
@@ -47,6 +48,10 @@ import { VotosModule } from './votos/votos.module';
 // reportes-y-exportaciones, PR3 (Backlog #18; design.md D1, "Cambios de archivos"). `ReportesModule`
 // se registra al final de la lista, mismo criterio de orden — cambio aditivo puro; `/reportes/*` no
 // colisiona con ningún prefijo previo.
+//
+// notificaciones, PR6 (Backlog #19; design.md D9, tarea 15.2). `NotificacionesModule` se registra
+// al final de la lista, mismo criterio de orden — cambio aditivo puro; `/notificaciones/*` no
+// colisiona con ningún prefijo previo.
 @Module({
   imports: [
     HealthModule,
@@ -63,6 +68,7 @@ import { VotosModule } from './votos/votos.module';
     VotosModule,
     PanelJornadaModule,
     ReportesModule,
+    NotificacionesModule,
   ],
 })
 export class AppModule {}
