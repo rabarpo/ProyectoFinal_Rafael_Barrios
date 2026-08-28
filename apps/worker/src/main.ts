@@ -29,6 +29,16 @@ import {
   crearListenerReportesFallido,
   type JobFallido as ReporteJobFallido,
 } from './reportes/reportes-fallido-listener';
+import { PrismaNotificacionesRepo } from './notificaciones/notificaciones.repo';
+import {
+  NOTIFICACION_CORREO_JOB_NAME,
+  NOTIFICACIONES_QUEUE_NAME,
+  despacharLoteNotificaciones,
+} from './notificaciones/notificaciones-dispatcher';
+import {
+  crearListenerNotificacionesFallido,
+  type JobFallido as NotificacionJobFallido,
+} from './notificaciones/notificaciones-fallido-listener';
 
 /**
  * Deben coincidir con `SYSTEM_QUEUE_NAME`/`SYSTEM_PING_JOB_NAME` de
@@ -62,6 +72,14 @@ const ACTAS_BATCH = Number(process.env.ACTAS_BATCH ?? 20);
  */
 const REPORTES_POLL_MS = Number(process.env.REPORTES_POLL_MS ?? 5000);
 const REPORTES_BATCH = Number(process.env.REPORTES_BATCH ?? 20);
+
+/**
+ * notificaciones (backlog #19), PR8 (design.md D7/D12). Mismos defaults que `OUTBOX_*`/`ACTAS_*`/
+ * `REPORTES_*` (5000/20) — el barrido sobre `JobCorreo WHERE estado='pendiente' AND
+ * origen='notificacion'` es igual de barato gracias al índice existente de `#15`.
+ */
+const NOTIFICACIONES_POLL_MS = Number(process.env.NOTIFICACIONES_POLL_MS ?? 5000);
+const NOTIFICACIONES_BATCH = Number(process.env.NOTIFICACIONES_BATCH ?? 20);
 
 /**
  * `maxRetriesPerRequest: null` es requerido por BullMQ para conexiones de
@@ -261,3 +279,56 @@ setInterval(() => {
     console.error('[worker] error despachando lote de reportes:', error);
   });
 }, REPORTES_POLL_MS);
+
+/**
+ * notificaciones (backlog #19), PR8 (design.md D7). Cola PROPIA `notificaciones`, nunca compartida
+ * con `correo` (corrige C5, PR7): un SMTP institucional lento no debe encolar recordatorios detrás
+ * de comprobantes de voto, ni viceversa. El processor se REUSA tal cual (`procesarCorreoComprobante`
+ * de `#15`) — es agnóstico del contenido y ya tiene la barrera CAS real; sólo cambia el repo
+ * (`PrismaNotificacionesRepo`, `pendientes()` propio con `origen:'notificacion'`).
+ */
+const notificacionesRepo = new PrismaNotificacionesRepo(prisma);
+const notificacionesQueue = new Queue(NOTIFICACIONES_QUEUE_NAME, { connection });
+
+export const notificacionesWorker = new Worker(
+  NOTIFICACIONES_QUEUE_NAME,
+  async (job) => {
+    if (job.name !== NOTIFICACION_CORREO_JOB_NAME) {
+      return;
+    }
+    const sender = await crearEmailSender(prisma);
+    await procesarCorreoComprobante(notificacionesRepo, sender, job.data.job_correo_id as string);
+  },
+  { connection },
+);
+
+notificacionesWorker.on('error', (error) => {
+  // eslint-disable-next-line no-console
+  console.error('[worker] error en la cola "notificaciones":', error);
+});
+
+/**
+ * D7: BullMQ decide CUÁNDO reintentar (`attempts`/`backoff`, ver `notificaciones-dispatcher.ts`);
+ * este listener sólo escribe el estado TERMINAL `fallido` cuando la cola agota los reintentos
+ * configurados — nunca desde el processor, que permanece agnóstico y sin cambios respecto de `#15`.
+ */
+const listenerNotificacionesFallido = crearListenerNotificacionesFallido(notificacionesRepo);
+notificacionesWorker.on('failed', (job, error) => {
+  // eslint-disable-next-line no-console
+  console.error('[worker] error en la cola "notificaciones":', error);
+  listenerNotificacionesFallido(job as unknown as NotificacionJobFallido | undefined, error);
+});
+
+/**
+ * D7: despachador liviano de *polling* — Postgres es la fuente de verdad, BullMQ sólo ejecuta y
+ * reintenta. El backend nunca encola notificaciones (ADR-0012); las filas nacen `pendiente` dentro
+ * de la transacción de `emitirNotificaciones()` (PR3/PR4).
+ */
+setInterval(() => {
+  despacharLoteNotificaciones(notificacionesRepo, notificacionesQueue, NOTIFICACIONES_BATCH).catch(
+    (error: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error('[worker] error despachando lote de notificaciones:', error);
+    },
+  );
+}, NOTIFICACIONES_POLL_MS);

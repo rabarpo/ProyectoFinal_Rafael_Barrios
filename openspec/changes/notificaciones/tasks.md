@@ -151,21 +151,21 @@ decisión de estrategia antes de `sdd-apply`.
 ## PR 8 — Worker: repo/dispatcher/listener de `notificaciones` (D7)
 
 ### Phase 20: Repo y dispatcher
-- [ ] 20.1 Crear `apps/worker/src/notificaciones/notificaciones.repo.ts`: composición sobre `PrismaOutboxCorreoRepo`, `pendientes()` con `origen:'notificacion'`
-- [ ] 20.2 RED/GREEN `notificaciones-dispatcher.spec.ts`: `jobId:'notificacion:<id>'`, `attempts:5`, backoff exponencial 2000ms; lote vacío ⇒ no llama `addBulk` — GREEN: crear `notificaciones-dispatcher.ts`
+- [x] 20.1 Crear `apps/worker/src/notificaciones/notificaciones.repo.ts`: composición sobre `PrismaOutboxCorreoRepo`, `pendientes()` con `origen:'notificacion'`
+- [x] 20.2 RED/GREEN `notificaciones-dispatcher.spec.ts`: `jobId:'notificacion:<id>'`, `attempts:5`, backoff exponencial 2000ms; lote vacío ⇒ no llama `addBulk` — GREEN: crear `notificaciones-dispatcher.ts`
 
 ### Phase 21: Listener de fallos
-- [ ] 21.1 RED/GREEN `notificaciones-fallido-listener.spec.ts`: `attemptsMade >= attempts` ⇒ `marcarFallido`; `attemptsMade < attempts` ⇒ no marca — GREEN: crear `notificaciones-fallido-listener.ts` (espejo de `crearListenerActasFallido`)
+- [x] 21.1 RED/GREEN `notificaciones-fallido-listener.spec.ts`: `attemptsMade >= attempts` ⇒ `marcarFallido`; `attemptsMade < attempts` ⇒ no marca — GREEN: crear `notificaciones-fallido-listener.ts` (espejo de `crearListenerActasFallido`)
 
 ### Phase 22: Wiring en `main.ts`
-- [ ] 22.1 Modificar `apps/worker/src/main.ts`: `Queue`/`Worker` de `notificaciones`, reusar `procesarCorreoComprobante` con `PrismaNotificacionesRepo`, listener `on('failed')`, `NOTIFICACIONES_POLL_MS`/`NOTIFICACIONES_BATCH` (defaults 5000/20)
+- [x] 22.1 Modificar `apps/worker/src/main.ts`: `Queue`/`Worker` de `notificaciones`, reusar `procesarCorreoComprobante` con `PrismaNotificacionesRepo`, listener `on('failed')`, `NOTIFICACIONES_POLL_MS`/`NOTIFICACIONES_BATCH` (defaults 5000/20)
 
 ### Phase 23: RED e2e — aislamiento de colas `[TM]`
-- [ ] 23.1 500 `JobCorreo(origen='notificacion')` pendientes + 1 `(origen='comprobante')` ⇒ `despacharLoteOutbox` devuelve solo el de comprobante y `despacharLoteNotificaciones` ninguno de comprobante — **debe fallar si se revierte PR7**
-- [ ] 23.2 GREEN: verificar wiring completo de Phase 20-22 satisface 23.1
+- [x] 23.1 `test/notificaciones/aislamiento-colas.e2e-spec.ts`: 500 `JobCorreo(origen='notificacion')` pendientes + 1 `(origen='comprobante')` ⇒ `despacharLoteOutbox` devuelve solo el de comprobante y `despacharLoteNotificaciones` ninguno de comprobante — **verificado que falla si se revierte el filtro de PR7** (se revirtió temporalmente, se confirmó el fallo, se restauró)
+- [x] 23.2 GREEN: wiring completo de Phase 20-22 satisface 23.1 (verificado contra Postgres real)
 
 ### Phase 24: Regresión PR8
-- [ ] 24.1 `pnpm --filter @seei/worker test -- notificaciones` verde (Postgres real); `pnpm typecheck` verde
+- [x] 24.1 `pnpm --filter @seei/worker test` verde (17 suites/64 tests unit); `pnpm exec vitest run --config vitest.e2e.config.ts` verde (3 suites/11 tests, incluye regresión de `#17`/`#18`); `pnpm --filter @seei/worker` typecheck verde
 
 ## PR 9 — Sweep puro (D6/D12)
 
