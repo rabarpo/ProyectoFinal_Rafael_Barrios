@@ -109,18 +109,18 @@ decisión de estrategia antes de `sdd-apply`.
 ## PR 5 — `NotificacionesService`, DTOs y errores (D9/D10)
 
 ### Phase 12: DTOs y errores
-- [ ] 12.1 Crear `dto/listar-notificaciones.query.ts`, `notificacion-respuesta.dto.ts`, `pagina-notificaciones.dto.ts` (planos, `@ApiProperty`, sin `class-validator`)
-- [ ] 12.2 Crear `apps/backend/src/notificaciones/notificaciones.errors.ts`: `CAMPO_INVALIDO` (`as const` + union)
+- [x] 12.1 Crear `dto/listar-notificaciones.query.ts`, `notificacion-respuesta.dto.ts`, `pagina-notificaciones.dto.ts` (planos, `@ApiProperty`, sin `class-validator`)
+- [x] 12.2 Crear `apps/backend/src/notificaciones/notificaciones.errors.ts`: `CAMPO_INVALIDO` (`as const` + union)
 
 ### Phase 13: RED/GREEN — `notificaciones.service.spec.ts`
-- [ ] 13.1 Listado filtra por `usuario_id = sesion.userId`, nunca por parámetro [threat: IDOR/oráculo]
-- [ ] 13.2 `pagina`/`tamano` fuera de rango ⇒ `CAMPO_INVALIDO`
-- [ ] 13.3 `findFirst({id, usuario_id})` nulo ⇒ `403` (idéntico para ajena e inexistente, sin cuerpo) [D9/C7]
-- [ ] 13.4 `PATCH` con `leido_en=NULL` ⇒ `updateMany` CAS puebla `leido_en`; segundo `PATCH` ⇒ `200` con el `leido_en` **original**, sin sobrescribir [D10]
-- [ ] 13.5 GREEN: crear `apps/backend/src/notificaciones/notificaciones.service.ts` — pasa 13.1-13.4
+- [x] 13.1 Listado filtra por `usuario_id = sesion.userId`, nunca por parámetro [threat: IDOR/oráculo]
+- [x] 13.2 `pagina`/`tamano` fuera de rango ⇒ `CAMPO_INVALIDO`
+- [x] 13.3 `findFirst({id, usuario_id})` nulo ⇒ `403` (idéntico para ajena e inexistente, sin cuerpo) [D9/C7]
+- [x] 13.4 `PATCH` con `leido_en=NULL` ⇒ `updateMany` CAS puebla `leido_en`; segundo `PATCH` ⇒ `200` con el `leido_en` **original**, sin sobrescribir [D10]
+- [x] 13.5 GREEN: crear `apps/backend/src/notificaciones/notificaciones.service.ts` — pasa 13.1-13.4
 
 ### Phase 14: Regresión PR5
-- [ ] 14.1 `pnpm --filter @seei/backend test -- notificaciones.service` verde; `pnpm typecheck` verde
+- [x] 14.1 `pnpm --filter @seei/backend test -- notificaciones.service` verde (13/13); `pnpm typecheck` verde salvo el fallo preexistente de `#30` (`mis-derechos.service.spec.ts`, no tocado por PR5)
 
 ## PR 6 — `NotificacionesController`/`Module` y contrato (D9)
 
