@@ -170,12 +170,12 @@ decisión de estrategia antes de `sdd-apply`.
 ## PR 9 — Sweep puro (D6/D12)
 
 ### Phase 25: RED/GREEN — `sweep-notificaciones.spec.ts`
-- [ ] 25.1 `restante` justo por encima/por debajo de cada umbral (recordatorio 24h, cierre próximo 2h)
-- [ ] 25.2 Proceso dentro de ambos umbrales ⇒ dos emisiones independientes, sin que la más urgente cancele la otra [spec: Cierre próximo y recordatorio son independientes]
-- [ ] 25.3 `restante ≤ 0` ⇒ cero emisiones
-- [ ] 25.4 Sin procesos abiertos ⇒ no llama al repo
-- [ ] 25.5 `numeroPositivo(env, default)` cae al default ante `NaN`/`0`/negativo — el barrido emite igual [threat: configuración hostil/silenciosa]
-- [ ] 25.6 GREEN: crear `apps/worker/src/notificaciones/sweep-notificaciones.ts` (`barrerNotificaciones`, `ahora` inyectado) — pasa 25.1-25.5
+- [x] 25.1 `restante` justo por encima/por debajo de cada umbral (recordatorio 24h, cierre próximo 2h)
+- [x] 25.2 Proceso dentro de ambos umbrales ⇒ dos emisiones independientes, sin que la más urgente cancele la otra [spec: Cierre próximo y recordatorio son independientes]
+- [x] 25.3 `restante ≤ 0` ⇒ cero emisiones
+- [x] 25.4 Sin procesos abiertos ⇒ no llama al repo
+- [x] 25.5 `numeroPositivo(env, default)` cae al default ante `NaN`/`0`/negativo — el barrido emite igual [threat: configuración hostil/silenciosa]
+- [x] 25.6 GREEN: crear `apps/worker/src/notificaciones/sweep-notificaciones.ts` (`barrerNotificaciones`, `ahora` inyectado) — pasa 25.1-25.5 (18/18 suites, 78/78 tests del worker)
 
 ## PR 10 — Sweep repo, wiring y variables de entorno (D6/D12)
 
