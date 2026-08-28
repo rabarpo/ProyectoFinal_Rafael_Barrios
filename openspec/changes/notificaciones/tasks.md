@@ -142,11 +142,11 @@ decisión de estrategia antes de `sdd-apply`.
 ## PR 7 — Fix de aislamiento de colas (D3, corrige C5)
 
 ### Phase 18: RED/GREEN — `outbox-correo.repo.spec.ts`
-- [ ] 18.1 `pendientes()` de la cola `correo` excluye filas `origen='notificacion'` (spy/mocked repo, sin Postgres)
-- [ ] 18.2 GREEN: modificar `apps/worker/src/outbox/outbox-correo.repo.ts::pendientes()` — sumar filtro `origen:'comprobante'` — pasa 18.1
+- [x] 18.1 `pendientes()` de la cola `correo` excluye filas `origen='notificacion'` (spy/mocked repo, sin Postgres)
+- [x] 18.2 GREEN: modificar `apps/worker/src/outbox/outbox-correo.repo.ts::pendientes()` — sumar filtro `origen:'comprobante'` — pasa 18.1
 
 ### Phase 19: Regresión PR7
-- [ ] 19.1 `pnpm --filter @seei/worker test -- outbox-correo` verde (incluye regresión de `#15`); `pnpm typecheck` verde
+- [x] 19.1 `pnpm --filter @seei/worker test -- outbox-correo` verde (15/15 suites, 59/59 tests, incluye regresión de `#15`); `pnpm --filter @seei/worker` typecheck verde
 
 ## PR 8 — Worker: repo/dispatcher/listener de `notificaciones` (D7)
 

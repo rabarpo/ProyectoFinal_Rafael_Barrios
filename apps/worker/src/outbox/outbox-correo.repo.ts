@@ -58,9 +58,15 @@ export class PrismaOutboxCorreoRepo implements OutboxCorreoRepo {
     });
   }
 
+  /**
+   * notificaciones (backlog #19), PR7 (design.md D3, corrige C5). `origen:'comprobante'` aísla
+   * esta cola de la cola `notificaciones` (`#19` PR8): sin este filtro, un `JobCorreo` emitido por
+   * `emitirNotificaciones()` (`origen:'notificacion'`) también calificaría acá y dos workers
+   * podrían disputarse el mismo job.
+   */
   async pendientes(limite: number): Promise<string[]> {
     const filas = await this.prisma.jobCorreo.findMany({
-      where: { estado: 'pendiente' },
+      where: { estado: 'pendiente', origen: 'comprobante' },
       orderBy: { creado_en: 'asc' },
       take: limite,
       select: { id: true },
