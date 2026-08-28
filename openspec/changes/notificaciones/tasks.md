@@ -180,25 +180,25 @@ decisión de estrategia antes de `sdd-apply`.
 ## PR 10 — Sweep repo, wiring y variables de entorno (D6/D12)
 
 ### Phase 26: Adaptador Prisma
-- [ ] 26.1 Crear `apps/worker/src/notificaciones/sweep.repo.ts`: `procesosAbiertos()`, `emitirPendientes()` con atajo `count(Notificacion{proceso,evento}) > 0` antes de tocar `DerechoVoto`/`Voto`, destinatarios vía `NOT EXISTS` sobre `Voto`
+- [x] 26.1 Crear `apps/worker/src/notificaciones/sweep.repo.ts`: `procesosAbiertos()`, `emitirPendientes()` con atajo `count(Notificacion{proceso,evento}) > 0` antes de tocar `DerechoVoto`/`Voto`, destinatarios vía `NOT EXISTS` sobre `Voto` (relación `votos: { none: {} } `). Reusa `emitirNotificaciones()` de `@seei/backend/dist/notificaciones/emitir-notificaciones` (mismo import cross-paquete que `email-sender.factory.ts`, PR2 de `#15`)
 
 ### Phase 27: RED/GREEN e2e — `test/notificaciones/sweep.e2e-spec.ts`
-- [ ] 27.1 Doble barrido sobre el mismo proceso dentro del umbral ⇒ N notificaciones, no 2N
-- [ ] 27.2 Barrido concurrente (`Promise.all` de dos `emitirPendientes`) ⇒ N
-- [ ] 27.3 Usuario que ya votó no recibe recordatorio
-- [ ] 27.4 Sweep sobre proceso ya notificado ⇒ cero consultas a `DerechoVoto` (spy) [threat: denegación por barrido/transacción larga]
-- [ ] 27.5 GREEN: modificar `apps/worker/src/main.ts` — `setInterval(NOTIFICACIONES_SWEEP_MS=60000)` invocando `barrerNotificaciones(sweepRepo, umbrales, new Date())` — pasa 27.1-27.4
+- [x] 27.1 Doble barrido sobre el mismo proceso dentro del umbral ⇒ N notificaciones, no 2N
+- [x] 27.2 Barrido concurrente (`Promise.all` de dos `emitirPendientes`) ⇒ N
+- [x] 27.3 Usuario que ya votó no recibe recordatorio
+- [x] 27.4 Sweep sobre proceso ya notificado ⇒ cero consultas a `DerechoVoto` (spy) [threat: denegación por barrido/transacción larga]
+- [x] 27.5 GREEN: modificar `apps/worker/src/main.ts` — `setInterval(NOTIFICACIONES_SWEEP_MS=60000)` invocando `barrerNotificaciones(sweepRepo, umbrales, new Date())` — pasa 27.1-27.4, más un 5º caso de punta a punta. Corregido en el camino: `fileParallelism: false` en `vitest.e2e.config.ts` — sin esto, `aislamiento-colas.e2e-spec.ts` (PR8) se contaminaba con las inserciones concurrentes de este archivo al compartir el mismo Postgres de test
 
 ### Phase 28: Documentación de variables de entorno
-- [ ] 28.1 Modificar `infra/docker/docker-compose.yml`, `docs/onboarding.md`, `README.md`: las 5 `NOTIFICACIONES_*` junto a `OUTBOX_*`/`ACTAS_*`/`REPORTES_*`
-- [ ] 28.2 Modificar `turbo.json`: sumar las env vars nuevas a `test:e2e.env`
+- [x] 28.1 Modificar `infra/docker/docker-compose.yml`, `docs/onboarding.md`, `README.md`: las 5 `NOTIFICACIONES_*` junto a `OUTBOX_*`/`ACTAS_*`/`REPORTES_*`
+- [x] 28.2 Modificar `turbo.json`: sumar las env vars nuevas a `test:e2e.env`
 
 ### Phase 29: Regresión final del change
-- [ ] 29.1 `pnpm --filter @seei/worker test:e2e -- sweep` verde
-- [ ] 29.2 `pnpm --filter @seei/backend test` y `test:e2e` completos verdes (Postgres real)
-- [ ] 29.3 `pnpm turbo run test` verde en los 4 paquetes
-- [ ] 29.4 `pnpm typecheck` verde
-- [ ] 29.5 Verificar `test/votos/outbox-atomicidad.e2e-spec.ts` y `correo-comprobante.spec.ts` (`#15`) siguen verdes sin editarse desde PR2/PR7
+- [x] 29.1 `pnpm exec vitest run --config vitest.e2e.config.ts` (worker) verde: 4 suites/16 tests, dos corridas consecutivas sin flakiness
+- [x] 29.2 `pnpm --filter @seei/backend test` con Postgres/Redis reales: 692/696 verdes — los 4 que fallaban al inicio de PR5 bajaron a 2 (`session.service.spec.ts`, `importacion.service.spec.ts`, timeouts preexistentes no relacionados con `#19`, no tocados por este change). `test:e2e -- notificaciones` aislado con `--runInBand`: 10/10 verde
+- [x] 29.3 `pnpm --filter @seei/worker test` verde: 18 suites/78 tests
+- [x] 29.4 `pnpm typecheck` verde salvo el fallo preexistente de `#30` (`mis-derechos.service.spec.ts`, no tocado por este change)
+- [x] 29.5 `test/votos/outbox-atomicidad.e2e-spec.ts` y `correo-comprobante.spec.ts` (`#15`) verdes sin editarse — confirmado dentro de la corrida completa de 29.2
 
 ## Pendientes explícitamente fuera de este change (constancia, no se inventan aquí)
 

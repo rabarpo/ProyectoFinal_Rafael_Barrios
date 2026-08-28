@@ -13,5 +13,10 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 30_000,
     hookTimeout: 30_000,
+    // notificaciones (#19, PR10). Todos los archivos e2e comparten el mismo Postgres real
+    // (`infra/docker/docker-compose.test.yml`) — sin esto, Vitest corre archivos de prueba en
+    // paralelo por defecto y `aislamiento-colas.e2e-spec.ts` (tarea 23.1, cuenta filas de TODA la
+    // tabla `JobCorreo`) queda contaminado por inserciones concurrentes de `sweep.e2e-spec.ts`.
+    fileParallelism: false,
   },
 });

@@ -35,7 +35,12 @@
         "ACTAS_POLL_MS",
         "ACTAS_BATCH",
         "REPORTES_POLL_MS",
-        "REPORTES_BATCH"
+        "REPORTES_BATCH",
+        "NOTIFICACIONES_POLL_MS",
+        "NOTIFICACIONES_BATCH",
+        "NOTIFICACIONES_SWEEP_MS",
+        "NOTIFICACIONES_RECORDATORIO_HORAS",
+        "NOTIFICACIONES_CIERRE_PROXIMO_HORAS"
       ]
     },
     "test:schema": {

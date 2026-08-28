@@ -107,6 +107,14 @@ services:
       # cola propia `reportes`, opcionales, el worker cae a 5000/20 sin ellas.
       REPORTES_POLL_MS: ${REPORTES_POLL_MS:-5000}
       REPORTES_BATCH: ${REPORTES_BATCH:-20}
+      # notificaciones (#19, PR10; design.md D7/D12): mismo patrón de polling que ACTAS_*/REPORTES_*
+      # para la cola `notificaciones`; el sweep (`NOTIFICACIONES_SWEEP_MS`) y sus umbrales son
+      # variables propias, todas opcionales — el worker cae a sus defaults sin ellas.
+      NOTIFICACIONES_POLL_MS: ${NOTIFICACIONES_POLL_MS:-5000}
+      NOTIFICACIONES_BATCH: ${NOTIFICACIONES_BATCH:-20}
+      NOTIFICACIONES_SWEEP_MS: ${NOTIFICACIONES_SWEEP_MS:-60000}
+      NOTIFICACIONES_RECORDATORIO_HORAS: ${NOTIFICACIONES_RECORDATORIO_HORAS:-24}
+      NOTIFICACIONES_CIERRE_PROXIMO_HORAS: ${NOTIFICACIONES_CIERRE_PROXIMO_HORAS:-2}
     # Sin healthcheck: el worker no expone superficie HTTP (design.md, "Preguntas abiertas" —
     # omisión aceptada para el andamiaje, a revisar cuando llegue el despachador del outbox).
     depends_on:

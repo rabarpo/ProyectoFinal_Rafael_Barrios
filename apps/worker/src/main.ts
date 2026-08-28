@@ -39,6 +39,8 @@ import {
   crearListenerNotificacionesFallido,
   type JobFallido as NotificacionJobFallido,
 } from './notificaciones/notificaciones-fallido-listener';
+import { barrerNotificaciones, numeroPositivo } from './notificaciones/sweep-notificaciones';
+import { PrismaSweepRepo } from './notificaciones/sweep.repo';
 
 /**
  * Deben coincidir con `SYSTEM_QUEUE_NAME`/`SYSTEM_PING_JOB_NAME` de
@@ -80,6 +82,16 @@ const REPORTES_BATCH = Number(process.env.REPORTES_BATCH ?? 20);
  */
 const NOTIFICACIONES_POLL_MS = Number(process.env.NOTIFICACIONES_POLL_MS ?? 5000);
 const NOTIFICACIONES_BATCH = Number(process.env.NOTIFICACIONES_BATCH ?? 20);
+
+/**
+ * notificaciones (backlog #19), PR10 (design.md D12). `numeroPositivo()` cae al default ante
+ * cualquier valor no finito o no positivo — desviación declarada del patrón `Number(x ?? def)` de
+ * las demás env vars: un `NaN` acá degeneraría `setInterval` a un temporizador de ~1ms y el sweep
+ * dejaría de notificar en silencio.
+ */
+const NOTIFICACIONES_SWEEP_MS = numeroPositivo(process.env.NOTIFICACIONES_SWEEP_MS, 60000);
+const NOTIFICACIONES_RECORDATORIO_HORAS = numeroPositivo(process.env.NOTIFICACIONES_RECORDATORIO_HORAS, 24);
+const NOTIFICACIONES_CIERRE_PROXIMO_HORAS = numeroPositivo(process.env.NOTIFICACIONES_CIERRE_PROXIMO_HORAS, 2);
 
 /**
  * `maxRetriesPerRequest: null` es requerido por BullMQ para conexiones de
@@ -332,3 +344,22 @@ setInterval(() => {
     },
   );
 }, NOTIFICACIONES_POLL_MS);
+
+/**
+ * notificaciones (backlog #19), PR10 (design.md D6/D12). Sweep periódico independiente del
+ * despachador: `barrerNotificaciones()` decide QUÉ emitir (pura, `ahora` inyectado como
+ * `new Date()` real acá — el único lugar permitido, D6); `PrismaSweepRepo` es el único adaptador
+ * de este archivo con `emitirPendientes()`, que reusa `emitirNotificaciones()` de `#19` PR3.
+ */
+const sweepRepo = new PrismaSweepRepo(prisma);
+const umbralesSweep = {
+  recordatorioHoras: NOTIFICACIONES_RECORDATORIO_HORAS,
+  cierreProximoHoras: NOTIFICACIONES_CIERRE_PROXIMO_HORAS,
+};
+
+setInterval(() => {
+  barrerNotificaciones(sweepRepo, umbralesSweep, new Date()).catch((error: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error('[worker] error en el sweep de notificaciones:', error);
+  });
+}, NOTIFICACIONES_SWEEP_MS);

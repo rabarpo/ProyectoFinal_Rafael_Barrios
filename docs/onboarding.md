@@ -79,6 +79,17 @@ Turborepo, roles de Postgres, topología de Docker Compose) ver
    | `REPORTES_POLL_MS` | Intervalo del despachador de *polling* sobre `Reporte WHERE estado='borrador'` (por defecto `5000`) |
    | `REPORTES_BATCH` | Tamaño de lote que el despachador encola por cada ciclo (por defecto `20`) |
 
+   Notificaciones (backlog #19, `design.md` D7/D12) agrega estas variables, opcionales en
+   desarrollo, al servicio `worker`:
+
+   | Variable | Uso |
+   |---|---|
+   | `NOTIFICACIONES_POLL_MS` | Intervalo del despachador de *polling* sobre `JobCorreo WHERE estado='pendiente' AND origen='notificacion'` (por defecto `5000`) |
+   | `NOTIFICACIONES_BATCH` | Tamaño de lote que el despachador encola por cada ciclo (por defecto `20`) |
+   | `NOTIFICACIONES_SWEEP_MS` | Intervalo del barrido que decide recordatorio/cierre próximo sobre procesos abiertos (por defecto `60000`) |
+   | `NOTIFICACIONES_RECORDATORIO_HORAS` | Umbral de horas restantes para emitir el recordatorio (por defecto `24`) |
+   | `NOTIFICACIONES_CIERRE_PROXIMO_HORAS` | Umbral de horas restantes para emitir cierre próximo (por defecto `2`) |
+
 3. **Levantar el stack completo** (Caddy + frontend + backend + worker + Postgres + Redis, con el
    override de desarrollo — bind mounts, puertos de DB/Redis publicados solo en `127.0.0.1`):
 

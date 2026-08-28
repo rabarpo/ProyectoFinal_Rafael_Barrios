@@ -179,3 +179,29 @@ ninguna agregación entre filas que proteger) y un evento `REPORTE_GENERADO` de 
 `actor_usuario_id` leído de `Reporte.solicitado_por` **dentro** de la transacción, nunca del
 payload de BullMQ (volátil). `estado='fallido'` lo escribe sólo el listener
 `reportesWorker.on('failed')` cuando la cola agota los `attempts` configurados.
+
+## Worker — notificaciones (`notificacion.correo`) y sweep
+
+Backlog #19 (`openspec/changes/notificaciones/design.md`) agrega una quinta cola BullMQ,
+`notificaciones`, propia y separada de `correo`/`actas`/`reportes` (corrige C5 — antes de este
+change, `pendientes()` de la cola `correo` no filtraba por `origen` y un `JobCorreo` de
+notificación calificaba también ahí). El processor se **reusa tal cual**
+(`apps/worker/src/processors/outbox-correo.processor.ts`, el mismo de `correo`): es agnóstico del
+contenido y ya tiene la barrera CAS real, sólo cambia el repo
+(`apps/worker/src/notificaciones/notificaciones.repo.ts`, `pendientes()` propio con
+`origen:'notificacion'`). Un despachador de *polling*
+(`apps/worker/src/notificaciones/notificaciones-dispatcher.ts`) descubre esas filas cada
+`NOTIFICACIONES_POLL_MS` y las encola por lotes de `NOTIFICACIONES_BATCH` con `jobId` determinista
+(`notificacion:<id>`).
+
+Además de la cola, un **sweep periódico** (`apps/worker/src/notificaciones/sweep-notificaciones.ts`,
+`barrerNotificaciones`, función pura con `ahora` inyectado) recorre cada `NOTIFICACIONES_SWEEP_MS`
+los procesos `abierto` y decide, independientemente para cada uno, si emitir `recordatorio`
+(`NOTIFICACIONES_RECORDATORIO_HORAS`) y/o `cierre_proximo` (`NOTIFICACIONES_CIERRE_PROXIMO_HORAS`)
+según las horas restantes hasta `fecha_cierre_prevista` — los dos umbrales no se cancelan entre sí.
+El adaptador (`apps/worker/src/notificaciones/sweep.repo.ts`) corta antes de tocar el padrón
+completo si ya existe una `Notificacion` para ese `(proceso, evento)` [threat: denegación por
+barrido/transacción larga], y reusa `emitirNotificaciones()` de `@seei/backend` (mismo emisor que
+los hooks de apertura/cierre del backend) para la deduplicación real vía `ON CONFLICT` sobre
+`(proceso_id, evento, usuario_id)` — el atajo del repo es una optimización, no la garantía de
+correctitud bajo concurrencia.
