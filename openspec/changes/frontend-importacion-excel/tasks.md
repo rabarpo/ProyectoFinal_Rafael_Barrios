@@ -45,12 +45,12 @@ Estrategia TDD estricta: cada tarea GREEN va precedida por su tarea RED. Runner:
 
 ## Phase 3: Cliente API y subida (PR3)
 
-- [ ] 3.1 RED `apps/frontend/src/importacion/importacion-api.spec.ts` (importarPadron): `vi.stubGlobal('fetch', ...)`; path `/importaciones/padron`, cuerpo `FormData` con clave `archivo`, sin `Content-Type` manual, `ok:true` en `201`, `ok:false` con `status`/`codigo` en `400`
-- [ ] 3.2 GREEN `apps/frontend/src/importacion/importacion-api.ts`: `importarPadron(archivo)` con `client().POST('/importaciones/padron', { body: aFormData({ archivo }) as never })`; `ResultadoApi<T>`/`resolver` copiados de `candidatos-api.ts`; `aFormData` local; tipos `ResultadoImportacionDto`/`ErrorFilaDto` desde `components['schemas']`
-- [ ] 3.3 RED `apps/frontend/src/importacion/piezas/ResumenImportacion.spec.tsx`: los cuatro contadores `filas_totales`/`filas_creadas`/`filas_existentes`/`filas_invalidas` desde `ResultadoImportacionDto`
-- [ ] 3.4 GREEN `apps/frontend/src/importacion/piezas/ResumenImportacion.tsx`: presentacional puro, sin fetch ni `useSesion`
-- [ ] 3.5 RED `apps/frontend/src/importacion/ImportacionExcelPage.spec.tsx` (`vi.mock('./importacion-api')` + `proveer()`): `.xlsm`/6 MB => alerta y `importarPadron` no invocada; envio => `role="status"` y boton `disabled`; `201` => `ResumenImportacion` con 4 contadores; `400` => `mensajeDeError` sin desmontar; segundo envio reemplaza el resultado sin recarga ni navegacion
-- [ ] 3.6 GREEN `ImportacionExcelPage.tsx`: union discriminada `EstadoImportacion` (D5), `CampoArchivo` reusado, `validarArchivoPadron` como barrera previa, `importarPadron`, `ResumenImportacion`; el `File` vive en `useState` aparte y sobrevive a `fase='resultado'` (satisface importacion-excel: Envio sincrono, Presentacion del resultado, Reintento sin recargar)
+- [x] 3.1 RED `apps/frontend/src/importacion/importacion-api.spec.ts` (importarPadron): `vi.stubGlobal('fetch', ...)`; path `/importaciones/padron`, cuerpo `FormData` con clave `archivo`, sin `Content-Type` manual, `ok:true` en `201`, `ok:false` con `status`/`codigo` en `400`
+- [x] 3.2 GREEN `apps/frontend/src/importacion/importacion-api.ts`: `importarPadron(archivo)` con `client().POST('/importaciones/padron', { body: aFormData({ archivo }) as never })`; `ResultadoApi<T>`/`resolver` copiados de `candidatos-api.ts`; `aFormData` local; tipos `ResultadoImportacionDto`/`ErrorFilaDto` desde `components['schemas']`
+- [x] 3.3 RED `apps/frontend/src/importacion/piezas/ResumenImportacion.spec.tsx`: los cuatro contadores `filas_totales`/`filas_creadas`/`filas_existentes`/`filas_invalidas` desde `ResultadoImportacionDto`
+- [x] 3.4 GREEN `apps/frontend/src/importacion/piezas/ResumenImportacion.tsx`: presentacional puro, sin fetch ni `useSesion`
+- [x] 3.5 RED `apps/frontend/src/importacion/ImportacionExcelPage.spec.tsx` (`vi.mock('./importacion-api')` + `proveer()`): `.xlsm`/6 MB => alerta y `importarPadron` no invocada; envio => `role="status"` y boton `disabled`; `201` => `ResumenImportacion` con 4 contadores; `400` => `mensajeDeError` sin desmontar; segundo envio reemplaza el resultado sin recarga ni navegacion
+- [x] 3.6 GREEN `ImportacionExcelPage.tsx`: union discriminada `EstadoImportacion` (D5), `CampoArchivo` reusado, `validarArchivoPadron` como barrera previa, `importarPadron`, `ResumenImportacion`; el `File` vive en `useState` aparte y sobrevive a `fase='resultado'` (satisface importacion-excel: Envio sincrono, Presentacion del resultado, Reintento sin recargar)
 
 ## Phase 4: Errores y descarga (PR4)
 
