@@ -33,6 +33,7 @@ export type Ruta =
   | { nombre: 'panel-jornada' }
   | { nombre: 'proyeccion'; procesoId: string }
   | { nombre: 'mis-votaciones' }
+  | { nombre: 'importacion-excel' }
   | { nombre: 'no-encontrada'; pathname: string };
 
 function segmentos(pathname: string): string[] {
@@ -153,6 +154,16 @@ export function parsearRuta(pathname: string): Ruta {
     return { nombre: 'mis-votaciones' };
   }
 
+  // frontend-importacion-excel, PR1 (#29; design.md D1, tasks.md 1.2; spec: minimal-frontend-router,
+  // "Variante `Ruta 'importacion-excel'` plana"): ruta plana sin parámetros, mismo criterio que
+  // `/academica`/`/usuarios`/`/configuracion` — la pantalla es un contenedor único sin sub-rutas
+  // ni pestañas en la URL, y el `ResultadoImportacionDto` sólo viaja en la respuesta del `POST`
+  // (no hay resultado recuperable por deep-link). Cualquier `/importacion-excel/...` cae en
+  // 'no-encontrada'.
+  if (partes.length === 1 && partes[0] === 'importacion-excel') {
+    return { nombre: 'importacion-excel' };
+  }
+
   return { nombre: 'no-encontrada', pathname };
 }
 
@@ -192,6 +203,8 @@ export function rutaAPath(ruta: Ruta): string {
       return `/proyeccion/${ruta.procesoId}`;
     case 'mis-votaciones':
       return '/mis-votaciones';
+    case 'importacion-excel':
+      return '/importacion-excel';
     case 'no-encontrada':
       return ruta.pathname;
   }

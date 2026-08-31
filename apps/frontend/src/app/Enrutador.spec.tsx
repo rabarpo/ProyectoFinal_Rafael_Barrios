@@ -273,6 +273,58 @@ describe('Enrutador', () => {
     expect(screen.getByTestId('cuentas-bloqueadas-page')).toBeInTheDocument();
   });
 
+  // frontend-importacion-excel, PR1 (#29; design.md D1/D9, tasks.md 1.5; spec:
+  // minimal-frontend-router, "Navegación a `/importacion-excel` renderiza la pantalla"; threat
+  // matrix "Enrutamiento (cliente)"). `ImportacionExcelPage` real (no doblada): en PR1 no hace
+  // fetch ni monta piezas, sólo el gate D9 + estado vacío, así que puede montarse en este árbol
+  // sin `QueryProvider` ni mocks de API.
+  it('[1.5] sin sesión, /importacion-excel renderiza LoginPage, nunca la pantalla de importación', () => {
+    window.history.pushState(null, '', '/importacion-excel');
+
+    render(proveer({ estado: 'anonimo', ...acciones }));
+
+    expect(screen.getByTestId('login-page')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /importación de padrón/i })).not.toBeInTheDocument();
+  });
+
+  it.each(['administrador', 'director'])(
+    '[1.5] con sesión de %s, /importacion-excel monta ImportacionExcelPage',
+    (rol) => {
+      window.history.pushState(null, '', '/importacion-excel');
+
+      render(
+        proveer({
+          estado: 'autenticado',
+          sesion: { userId: 'u1', rol: rol as never, creadoEn: 1 },
+          ...acciones,
+        }),
+      );
+
+      expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /importación de padrón/i })).toBeInTheDocument();
+    },
+  );
+
+  it.each(['comite', 'docente', 'estudiante'])(
+    '[1.5] con sesión de %s, /importacion-excel muestra aviso role="status" y cero piezas',
+    (rol) => {
+      window.history.pushState(null, '', '/importacion-excel');
+
+      render(
+        proveer({
+          estado: 'autenticado',
+          sesion: { userId: 'u1', rol: rol as never, creadoEn: 1 },
+          ...acciones,
+        }),
+      );
+
+      expect(screen.queryByTestId('login-page')).not.toBeInTheDocument();
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: /importación de padrón/i })).not.toBeInTheDocument();
+      expect(screen.queryByTestId('importacion-excel-contenido')).not.toBeInTheDocument();
+    },
+  );
+
   // frontend-configuracion-general, PR1 (#28; design.md D1, tasks.md 2.1).
   it('[2.1] con sesión válida, /configuracion resuelve a ConfiguracionPage', () => {
     window.history.pushState(null, '', '/configuracion');

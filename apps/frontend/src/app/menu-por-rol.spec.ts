@@ -95,6 +95,38 @@ describe('MENU_POR_ROL', () => {
     }
   });
 
+  // frontend-importacion-excel, PR1 (#29; design.md D2, tasks.md 1.3-1.4; spec:
+  // menu-navegacion-post-login, "Ítem real de importación de Excel para administrador y director").
+  // `IMPORTACION_EXCEL` deja de ser placeholder `proximamente`: pasa a item navegable con
+  // `Ruta { nombre: 'importacion-excel' }`, sólo para `administrador`/`director`
+  // (`ImportacionController` es `@Roles('administrador','director')` a nivel de clase). Cero
+  // cambios en las filas de `MENU_POR_ROL`: ya figuraba sólo en esos dos roles.
+  it('[1.3] importacion-excel es navegable para administrador y director', () => {
+    for (const rol of ['administrador', 'director'] as RolSesion[]) {
+      const item = MENU_POR_ROL[rol].find((i) => i.id === 'importacion-excel');
+      expect(item).toEqual({
+        clase: 'navegable',
+        id: 'importacion-excel',
+        etiqueta: 'Importación Excel',
+        ruta: { nombre: 'importacion-excel' },
+      });
+    }
+  });
+
+  it('[1.3] comite, docente y estudiante no tienen item importacion-excel', () => {
+    for (const rol of ['comite', 'docente', 'estudiante'] as RolSesion[]) {
+      expect(MENU_POR_ROL[rol].find((i) => i.id === 'importacion-excel')).toBeUndefined();
+    }
+  });
+
+  it('[1.3] ya no queda ningún item "proximamente" en el mapa', () => {
+    for (const items of Object.values(MENU_POR_ROL)) {
+      for (const item of items) {
+        expect(item.clase).toBe('navegable');
+      }
+    }
+  });
+
   it('[4.2] ningún item "proximamente" expone una ruta', () => {
     for (const items of Object.values(MENU_POR_ROL)) {
       for (const item of items) {

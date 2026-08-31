@@ -25,6 +25,7 @@ describe('rutas', () => {
       { nombre: 'panel-jornada' },
       { nombre: 'proyeccion', procesoId: 'p1' },
       { nombre: 'mis-votaciones' },
+      { nombre: 'importacion-excel' },
     ];
 
     for (const ruta of casos) {
@@ -192,5 +193,25 @@ describe('rutas', () => {
       nombre: 'no-encontrada',
       pathname: '/mis-votaciones/algo',
     });
+  });
+
+  // [frontend-importacion-excel, PR1; design.md D1; tasks.md 1.1; spec: minimal-frontend-router,
+  // "Variante `Ruta 'importacion-excel'` plana"] Ruta plana sin parámetros, reconocida sólo con
+  // `partes.length === 1` — cualquier `/importacion-excel/...` cae en 'no-encontrada', mismo
+  // criterio que `/academica`/`/usuarios`/`/configuracion`. El archivo seleccionado y el
+  // resultado nunca viven en la URL.
+  it("[1.1] '/importacion-excel' resuelve a 'importacion-excel' y su rutaAPath es '/importacion-excel'", () => {
+    expect(parsearRuta('/importacion-excel')).toEqual({ nombre: 'importacion-excel' });
+    expect(rutaAPath({ nombre: 'importacion-excel' })).toBe('/importacion-excel');
+  });
+
+  it.each([
+    '/importacion-excel/x',
+    '/importacion-excel/algo/mas',
+    '/importacion-excel/..',
+    '/importacion-excel/../../etc/passwd',
+  ])("[1.1] '%s' resuelve a 'no-encontrada'", (pathname) => {
+    expect(() => parsearRuta(pathname)).not.toThrow();
+    expect(parsearRuta(pathname).nombre).toBe('no-encontrada');
   });
 });

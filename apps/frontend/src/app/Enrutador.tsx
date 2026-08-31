@@ -16,6 +16,7 @@ import { ConfiguracionPage } from '../configuracion/ConfiguracionPage';
 import { PanelJornadaPage } from '../panel-jornada/PanelJornadaPage';
 import { ProyeccionPage } from '../panel-jornada/ProyeccionPage';
 import { MisVotacionesPage } from '../votos/MisVotacionesPage';
+import { ImportacionExcelPage } from '../importacion/ImportacionExcelPage';
 
 /**
  * design.md D11: `switch` sobre `Ruta`, montado DENTRO de `AuthGuard` >
@@ -33,6 +34,8 @@ import { MisVotacionesPage } from '../votos/MisVotacionesPage';
  * `#27`/PR1 (design.md D1, tasks.md 2.3) reemplazados por su implementación real en PR2;
  * `configuracion` monta `ConfiguracionPage` desde `#28`/PR1 (design.md D1, tasks.md 2.2).
  * `mis-votaciones` monta `MisVotacionesPage` real desde `#30`/PR2 (design.md D7, tasks.md 5.3).
+ * `importacion-excel` monta `ImportacionExcelPage` desde `#29`/PR1 (design.md D1/D9, tasks.md 1.6):
+ * en PR1 es sólo el gate de rol (D9) + estado vacío, sin fetch ni piezas.
  * `no-encontrada` se renderiza
  * dentro del shell, nunca lanza ni deja `undefined`. menu-navegacion-post-login
  * (#25; design.md D1): `/` ya NO monta `ProcesoWizardPage` — resuelve a la
@@ -91,6 +94,8 @@ export function Enrutador() {
       return <ProyeccionPage procesoId={ruta.procesoId} />;
     case 'mis-votaciones':
       return <MisVotacionesPage />;
+    case 'importacion-excel':
+      return <ImportacionExcelPage />;
     case 'no-encontrada':
       return <VistaNoEncontrada />;
   }

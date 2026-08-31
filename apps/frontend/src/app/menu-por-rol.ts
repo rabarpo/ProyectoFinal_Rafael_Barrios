@@ -50,9 +50,10 @@ const CONFIGURACION: ItemMenu = {
   ruta: { nombre: 'configuracion' },
 };
 const IMPORTACION_EXCEL: ItemMenu = {
-  clase: 'proximamente',
+  clase: 'navegable',
   id: 'importacion-excel',
   etiqueta: 'Importación Excel',
+  ruta: { nombre: 'importacion-excel' },
 };
 const PANEL_JORNADA: ItemMenu = {
   clase: 'navegable',
@@ -93,6 +94,12 @@ const MIS_VOTACIONES: ItemMenu = {
  * item navegable con `Ruta { nombre: 'configuracion' }`, sólo para `administrador`/`director`
  * (`ConfiguracionController` es `@Roles('administrador','director')` a nivel de clase) — cero
  * cambios en las filas de `MENU_POR_ROL`, ya figuraba sólo en esos dos roles.
+ *
+ * `importacion-excel` (frontend-importacion-excel, PR1, #29; design.md D2, tasks.md 1.4) pasa de
+ * placeholder `proximamente` a item navegable con `Ruta { nombre: 'importacion-excel' }`, sólo para
+ * `administrador`/`director` (`ImportacionController` es `@Roles('administrador','director')` a nivel
+ * de clase, así que `comite` recibiría `403` en sus dos rutas) — cero cambios en las filas de
+ * `MENU_POR_ROL`, ya figuraba sólo en esos dos roles.
  *
  * `panel-jornada` (dashboard-panel-jornada, PR3, #20; design.md "Cambios de archivos", tasks.md
  * 12.5) es item navegable con `Ruta { nombre: 'panel-jornada' }` para `administrador`/

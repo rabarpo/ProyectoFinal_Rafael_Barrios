@@ -29,12 +29,12 @@ Estrategia TDD estricta: cada tarea GREEN va precedida por su tarea RED. Runner:
 
 ## Phase 1: Cimientos, ruta y menu (PR1)
 
-- [ ] 1.1 RED `apps/frontend/src/app/rutas.spec.ts`: round-trip `parsearRuta(rutaAPath(r))` de `importacion-excel`; `/importacion-excel/x`, `/importacion-excel/algo/mas`, `/importacion-excel/..` => `no-encontrada` (satisface minimal-frontend-router: Variante Ruta plana)
-- [ ] 1.2 GREEN `apps/frontend/src/app/rutas.ts`: variante `{ nombre: 'importacion-excel' }` en la union; `parsearRuta` exige `partes.length === 1`; `rutaAPath` => `/importacion-excel`
-- [ ] 1.3 RED `apps/frontend/src/app/menu-por-rol.spec.ts`: item `importacion-excel` navegable para `administrador`/`director`, ausente para `comite`/`docente`/`estudiante`; invariantes de #25-#30 intactas (satisface menu-navegacion-post-login: Item real / Placeholders MODIFIED)
-- [ ] 1.4 GREEN `apps/frontend/src/app/menu-por-rol.ts`: `IMPORTACION_EXCEL` pasa de `{ clase: 'proximamente' }` a `{ clase: 'navegable', ruta: { nombre: 'importacion-excel' } }`; cero cambios en las filas de `MENU_POR_ROL`
-- [ ] 1.5 RED `apps/frontend/src/app/Enrutador.spec.tsx`: sin sesion => `LoginPage`; `case 'importacion-excel'` monta `ImportacionExcelPage`; con `comite`/`docente`/`estudiante`/rol ausente => aviso `role="status"`, cero piezas, cero llamadas (threat matrix Enrutamiento)
-- [ ] 1.6 GREEN `apps/frontend/src/app/Enrutador.tsx`: `case 'importacion-excel'` => `ImportacionExcelPage`. Crear `apps/frontend/src/importacion/ImportacionExcelPage.tsx` esqueleto: gate D9 `puedeImportar = rol === 'administrador' || rol === 'director'`, estado vacio, sin fetch ni piezas (satisface importacion-excel: Pantalla unica - rol no autorizado)
+- [x] 1.1 RED `apps/frontend/src/app/rutas.spec.ts`: round-trip `parsearRuta(rutaAPath(r))` de `importacion-excel`; `/importacion-excel/x`, `/importacion-excel/algo/mas`, `/importacion-excel/..` => `no-encontrada` (satisface minimal-frontend-router: Variante Ruta plana)
+- [x] 1.2 GREEN `apps/frontend/src/app/rutas.ts`: variante `{ nombre: 'importacion-excel' }` en la union; `parsearRuta` exige `partes.length === 1`; `rutaAPath` => `/importacion-excel`
+- [x] 1.3 RED `apps/frontend/src/app/menu-por-rol.spec.ts`: item `importacion-excel` navegable para `administrador`/`director`, ausente para `comite`/`docente`/`estudiante`; invariantes de #25-#30 intactas (satisface menu-navegacion-post-login: Item real / Placeholders MODIFIED)
+- [x] 1.4 GREEN `apps/frontend/src/app/menu-por-rol.ts`: `IMPORTACION_EXCEL` pasa de `{ clase: 'proximamente' }` a `{ clase: 'navegable', ruta: { nombre: 'importacion-excel' } }`; cero cambios en las filas de `MENU_POR_ROL`
+- [x] 1.5 RED `apps/frontend/src/app/Enrutador.spec.tsx`: sin sesion => `LoginPage`; `case 'importacion-excel'` monta `ImportacionExcelPage`; con `comite`/`docente`/`estudiante`/rol ausente => aviso `role="status"`, cero piezas, cero llamadas (threat matrix Enrutamiento)
+- [x] 1.6 GREEN `apps/frontend/src/app/Enrutador.tsx`: `case 'importacion-excel'` => `ImportacionExcelPage`. Crear `apps/frontend/src/importacion/ImportacionExcelPage.tsx` esqueleto: gate D9 `puedeImportar = rol === 'administrador' || rol === 'director'`, estado vacio, sin fetch ni piezas (satisface importacion-excel: Pantalla unica - rol no autorizado)
 
 ## Phase 2: Barreras puras - validador y mensajes (PR2)
 
