@@ -38,10 +38,10 @@ Estrategia TDD estricta: cada tarea GREEN va precedida por su tarea RED. Runner:
 
 ## Phase 2: Barreras puras - validador y mensajes (PR2)
 
-- [ ] 2.1 RED `apps/frontend/src/importacion/validar-archivo-padron.spec.ts`: matriz extension x tamano - `.xlsx`/`.csv` validos; `.xlsm`, `.xls`, `.pdf`, sin extension, `padron.xlsx.xlsm` => rechazo; 0 bytes; 5 MB exactos vs 5 MB + 1 byte (threat matrix Clasificacion de archivo)
-- [ ] 2.2 GREEN `apps/frontend/src/importacion/validar-archivo-padron.ts`: `validarArchivoPadron(archivo): string | null` por extension real `/\.(xlsx|csv)$/i` y `0 < size <= 5*1024*1024`; sin pareo de MIME (satisface importacion-excel: Validacion de tipo y tamano)
-- [ ] 2.3 RED `apps/frontend/src/importacion/mensajes-error.spec.ts`: `mensajeDeError` sobre los 5 `CodigoImportacion` + fallback por `status` `403`/`404`/generico; `LIMITE_FILAS_EXCEDIDO` menciona el tope de 2000 filas
-- [ ] 2.4 GREEN `apps/frontend/src/importacion/mensajes-error.ts`: `Record<CodigoImportacion, string>` total + `mensajeDeError({ codigo, status })` (satisface importacion-excel: Validacion - rechazo del backend legible)
+- [x] 2.1 RED `apps/frontend/src/importacion/validar-archivo-padron.spec.ts`: matriz extension x tamano - `.xlsx`/`.csv` validos; `.xlsm`, `.xls`, `.pdf`, sin extension, `padron.xlsx.xlsm` => rechazo; 0 bytes; 5 MB exactos vs 5 MB + 1 byte (threat matrix Clasificacion de archivo)
+- [x] 2.2 GREEN `apps/frontend/src/importacion/validar-archivo-padron.ts`: `validarArchivoPadron(archivo): string | null` por extension real `/\.(xlsx|csv)$/i` y `0 < size <= 5*1024*1024`; sin pareo de MIME (satisface importacion-excel: Validacion de tipo y tamano)
+- [x] 2.3 RED `apps/frontend/src/importacion/mensajes-error.spec.ts`: `mensajeDeError` sobre los 5 `CodigoImportacion` + fallback por `status` `403`/`404`/generico; `LIMITE_FILAS_EXCEDIDO` menciona el tope de 2000 filas
+- [x] 2.4 GREEN `apps/frontend/src/importacion/mensajes-error.ts`: `Record<CodigoImportacion, string>` total + `mensajeDeError({ codigo, status })` (satisface importacion-excel: Validacion - rechazo del backend legible)
 
 ## Phase 3: Cliente API y subida (PR3)
 
