@@ -1,8 +1,9 @@
 # Technical Design Document: SEEI — Sistema de Elecciones Electrónicas para Instituciones Educativas
 
 **Tipo de proyecto:** Greenfield
-**Design.md disponible:** Sí — usado como fuente para el modelo de datos y las reglas operativas
-(wireframes `1a`–`1i`, `3a`–`3e` y alta fidelidad del flujo de votación).
+**Design.md disponible:** Sí — usado como fuente para el modelo de datos y las reglas operativas.
+`Design.md` se reescribió el 2026-08-31 como referencia de la UI ya construida (superó la fase
+de wireframes de baja fidelidad).
 
 ## Resumen
 
@@ -22,7 +23,7 @@ TypeScript ([ADR-0002](adrs/0002-stack-typescript-full-stack.md)):
 
 ```
 ┌─────────────────────────────┐
-│ Frontend web (React + Vite) │  SPA mobile-first · sistema visual Broadsheet
+│ Frontend web (React + Vite) │  SPA mobile-first · Hanken Grotesk / Institution Blue
 │  · flujo de votación 3 pasos│
 │  · vistas del votante       │
 │  · panel comité / admin     │
@@ -47,15 +48,22 @@ TypeScript ([ADR-0002](adrs/0002-stack-typescript-full-stack.md)):
 - Todo corre en un VPS con Docker Compose tras Caddy/Nginx con HTTPS
   ([ADR-0007](adrs/0007-despliegue-vps-docker-compose.md)).
 
-> **Nota (actualizado según el código real):** los módulos de backend implementados hoy son
-> `academico, auditoria, auth, candidatos, configuracion, email, health, importacion, procesos,
-> users, votos` (`apps/backend/src/`), más `apps/worker/src` con `outbox` y `processors`.
+> **Nota (actualizado según el código real, 2026-08-31):** los módulos de backend implementados
+> hoy son `academico, auditoria, auth, candidatos, configuracion, email, health, importacion,
+> notificaciones, panel-jornada, procesos, redis, reportes, system-ping, users, votos`
+> (`apps/backend/src/`). El worker (`apps/worker/src/`) tiene `actas, notificaciones, outbox,
+> processors, reportes`.
 > "Padrón" (`DerechoVoto`) y "resultados" no son módulos propios: viven dentro de `procesos`
-> (`GET /procesos/:id/resultados`, backlog #16). `auditoria` hoy solo escribe eventos
-> (`auditoria.service.ts`); no tiene controller ni vista de consulta — la vista de auditoría de
-> solo lectura (backlog #21) sigue pendiente. Los módulos `actas` y `reportes` **no existen
-> todavía como módulos de backend** (backlog #17 y #18, pendientes); `Acta` y `Notificacion` ya
-> están en el esquema Prisma desde `#2` pero sin ningún service/controller que los use.
+> (`GET /procesos/:id/resultados`, backlog #16, **hecho**). `auditoria` hoy **solo escribe
+> eventos** (`auditoria.service.ts`); no tiene controller ni vista de consulta — la vista de
+> auditoría de solo lectura (backlog #21) sigue pendiente y es uno de los 3 ítems abiertos.
+> `actas` **no es un módulo de backend**: la generación de actas vive en el worker
+> (`apps/worker/src/actas/`), backlog #17 **hecho**. `reportes` existe como módulo de backend
+> *y* en el worker (`apps/worker/src/reportes/`), backlog #18 **hecho**. `Notificacion` está
+> **completamente implementada** (módulo `notificaciones` en backend y worker: bandeja interna,
+> correos de inicio/recordatorio/cierre próximo/publicación, plantillas y envío por lotes),
+> backlog #19 archivado el 2026-08-31. El panel de jornada y el modo proyección están hechos
+> (módulo `panel-jornada`, backlog #20).
 
 ## Decisiones de arquitectura
 
@@ -74,6 +82,11 @@ TypeScript ([ADR-0002](adrs/0002-stack-typescript-full-stack.md)):
 | [ADR-0011](adrs/0011-voto-del-padre-cuenta-estudiante.md) | El padre vota con la cuenta del estudiante que representa | Aceptado |
 | [ADR-0012](adrs/0012-outbox-correos-postgresql.md) | Outbox de correos en PostgreSQL | Aceptado |
 | [ADR-0013](adrs/0013-contingencia-jornada-procedimiento.md) | Continuidad de jornada por procedimiento operativo | Aceptado |
+| [ADR-0014](adrs/0014-monorepo-pnpm-turborepo.md) | Monorepo con pnpm workspaces + Turborepo, contrato OpenAPI como artefacto generado y versionado | Aceptado |
+| [ADR-0015](adrs/0015-roles-postgresql-migrador-app.md) | Dos roles de PostgreSQL — `seei_migrator` y `seei_app` | Aceptado |
+| [ADR-0016](adrs/0016-bloqueo-estructural-identidad-eleccion-auditoria.md) | Bloqueo estructural identidad↔elección en el payload de auditoría | Aceptado |
+| [ADR-0017](adrs/0017-acceso-google-dominio-institucional.md) | Acceso por Google restringido al dominio institucional | Aceptado |
+| [ADR-0018](adrs/0018-ventana-temporal-jobcorreo-diferido.md) | Ventana temporal sin `JobCorreo` en la transacción del voto (#14 antes de #15) | Superado por #15 |
 
 ## Modelo de datos
 
@@ -130,11 +143,13 @@ errores fila a fila):
 - `Configuración` — institución, logo, director, comité (nombres que se imprimen en actas), año
   activo, zona horaria, colores, SMTP, dominio Google Workspace.
 
-> **Nota:** todas las entidades de esta sección existen en `apps/backend/prisma/schema.prisma`
-> con nombres consistentes. Hay una tabla puente adicional no documentada aquí,
-> `ProcesoAula` (proceso ↔ aula para la creación en lote de #11/#12). `Acta` y `Notificacion`
-> están en el esquema desde `#2` pero sin ningún uso en `apps/backend/src` ni `apps/worker/src`
-> todavía — son placeholders hasta que se implementen backlog #17 y #19.
+> **Nota (actualizado 2026-08-31):** todas las entidades de esta sección existen en
+> `apps/backend/prisma/schema.prisma` con nombres consistentes. Hay una tabla puente adicional
+> no documentada aquí, `ProcesoAula` (proceso ↔ aula para la creación en lote de #11/#12).
+> `Acta` y `Notificacion` **ya no son placeholders**: `Acta` la usa el worker
+> (`apps/worker/src/actas/`, backlog #17) para las 4 actas en PDF, y `Notificacion` está
+> completamente implementada por el módulo `notificaciones` de backend y worker (backlog #19,
+> archivado el 2026-08-31).
 
 ## Criterios de aceptación por flujo
 
@@ -148,26 +163,26 @@ Más granulares que los del PRD; verificables uno a uno.
 > construido; los que exigen validación con usuarios reales (último ítem) no se marcan porque
 > requieren una prueba fuera del código.
 
-- [ ] Un votante del padrón, con el proceso abierto, completa paso 1 → 2 → 3 y recibe pantalla
+- [x] Un votante del padrón, con el proceso abierto, completa paso 1 → 2 → 3 y recibe pantalla
       de comprobante con código de voto y hora del servidor.
-- [ ] El `POST /votos` con la misma clave de idempotencia repetido N veces (doble clic, dos
+- [x] El `POST /votos` con la misma clave de idempotencia repetido N veces (doble clic, dos
       pestañas, reintento tras corte) produce exactamente 1 fila en `Voto` y devuelve siempre el
       mismo comprobante.
-- [ ] Un reintento tras recarga de página (clave de idempotencia nueva) que choca con el
+- [x] Un reintento tras recarga de página (clave de idempotencia nueva) que choca con el
       `UNIQUE` recibe el comprobante ya emitido — nunca una pantalla de error para quien sí
       votó; la clave persiste en `sessionStorage` por proceso y derecho (ADR-0004).
-- [ ] Si la transacción no confirma (corte de conexión en paso 3), no existe fila en `Voto` ni
+- [x] Si la transacción no confirma (corte de conexión en paso 3), no existe fila en `Voto` ni
       marca en `DerechoVoto`, y el votante puede reintentar desde el paso 2.
-- [ ] Un voto confirmado a las `hh:cierre − 1s` (hora del servidor) se acepta; a `hh:cierre` o
+- [x] Un voto confirmado a las `hh:cierre − 1s` (hora del servidor) se acepta; a `hh:cierre` o
       después se rechaza con la pantalla "Votación cerrada" y evento `RECHAZO` en auditoría.
-- [ ] Intentos de voto de: usuario inactivo, usuario fuera del padrón, proceso no abierto, o
+- [x] Intentos de voto de: usuario inactivo, usuario fuera del padrón, proceso no abierto, o
       derecho ya ejercido → rechazados con su pantalla específica y evento `RECHAZO`; ninguno
       crea fila en `Voto`.
-- [ ] La opción "voto en blanco" está presente en toda boleta y se registra como voto con
+- [x] La opción "voto en blanco" está presente en toda boleta y se registra como voto con
       elección `BLANCO`; no existe opción de voto nulo.
-- [ ] El botón de emitir queda deshabilitado hasta marcar el consentimiento de la copia por
+- [x] El botón de emitir queda deshabilitado hasta marcar el consentimiento de la copia por
       correo, y pasa a estado "Registrando…" al primer toque.
-- [ ] Un proceso de padres se vota desde la cuenta del estudiante y la banda declara la calidad
+- [x] Un proceso de padres se vota desde la cuenta del estudiante y la banda declara la calidad
       ("Votando como padre/apoderado de ▢") en los 3 pasos; en una consulta a toda la comunidad,
       la cuenta presenta por separado sus dos derechos (como estudiante y como padre) y cada
       voto consume solo el `DerechoVoto` de su calidad (ADR-0011).
@@ -179,22 +194,22 @@ Más granulares que los del PRD; verificables uno a uno.
 
 > **Implementado (backlog #15).** Verificado en código: `JobCorreo.voto_id` con FK + `UNIQUE`
 > (`apps/backend/prisma/schema.prisma`) confirma que el job nace atado a la misma transacción
-> del voto, y `apps/worker/src` tiene el dispatcher/processor del outbox. El ítem del contador
-> en el panel de jornada depende del panel (backlog #20, pendiente); se deja sin marcar.
+> del voto, y `apps/worker/src` tiene el dispatcher/processor del outbox. El contador de correos
+> fallidos del panel de jornada también quedó cubierto al cerrar backlog #20.
 
-- [ ] La fila `JobCorreo` nace en la misma transacción que el voto (outbox): no puede existir un
+- [x] La fila `JobCorreo` nace en la misma transacción que el voto (outbox): no puede existir un
       voto confirmado sin su job de correo, ni siquiera si el backend cae inmediatamente después
       del commit (ADR-0012).
-- [ ] Cada voto confirmado genera exactamente un job de correo; el correo contiene código de
+- [x] Cada voto confirmado genera exactamente un job de correo; el correo contiene código de
       voto, proceso, hora y enlace autenticado — nunca la elección en el cuerpo (ADR-0009).
-- [ ] El enlace del correo exige sesión de la cuenta votante; autenticado, muestra el
+- [x] El enlace del correo exige sesión de la cuenta votante; autenticado, muestra el
       comprobante con la elección concreta.
-- [ ] Un fallo definitivo de envío (correo inválido/inexistente) genera evento
+- [x] Un fallo definitivo de envío (correo inválido/inexistente) genera evento
       `CORREO_FALLIDO` y **no** altera el voto.
-- [ ] El fallo de envío incrementa el contador del panel de jornada — **pendiente**: el panel de
-      jornada (backlog #20) todavía no existe.
-- [ ] El comprobante es accesible sin el correo desde "Mis votaciones" → `VOTADO`.
-- [ ] Los envíos masivos salen por lotes con ritmo configurable sin exceder los límites del
+- [x] El fallo de envío incrementa el contador del panel de jornada (backlog #20, hecho:
+      `apps/frontend/src/panel-jornada/` + métricas del backend `panel-jornada`).
+- [x] El comprobante es accesible sin el correo desde "Mis votaciones" → `VOTADO`.
+- [x] Los envíos masivos salen por lotes con ritmo configurable sin exceder los límites del
       proveedor SMTP.
 
 ### Flujo 3 — Creación y apertura de proceso
@@ -202,84 +217,89 @@ Más granulares que los del PRD; verificables uno a uno.
 > **Implementado (backlog #11, #13).** `ocultar_resultados` por defecto en `true` se confirmó en
 > el commit `8aedda7 fix(procesos): default ocultar_resultados to true (ADR-0008)`.
 
-- [ ] El asistente de 4 pasos calcula el padrón en vivo según público/nivel/grados/aulas y lo
+- [x] El asistente de 4 pasos calcula el padrón en vivo según público/nivel/grados/aulas y lo
       muestra antes de confirmar.
-- [ ] Al abrir el proceso: el padrón se materializa como filas `DerechoVoto` congeladas, la
+- [x] Al abrir el proceso: el padrón se materializa como filas `DerechoVoto` congeladas, la
       configuración de visibilidad queda inmutable, y la apertura se registra en auditoría con
       hora del servidor.
-- [ ] Un cambio de aula/sección posterior a la apertura no modifica el padrón del proceso
+- [x] Un cambio de aula/sección posterior a la apertura no modifica el padrón del proceso
       abierto y sí aplica a procesos creados después.
-- [ ] La creación en lote de procesos de representante de aula genera un proceso por aula y
+- [x] La creación en lote de procesos de representante de aula genera un proceso por aula y
       bloquea las aulas sin candidatos registrados.
-- [ ] "Ocultar resultados hasta el cierre" aparece activa por defecto y visible de forma
+- [x] "Ocultar resultados hasta el cierre" aparece activa por defecto y visible de forma
       prominente en la revisión previa a abrir.
 
 ### Flujo 4 — Resultados, escrutinio y actas
 
-> **Parcialmente implementado.** Resultados en vivo (backlog #16) está hecho; cierre, escrutinio
-> y actas (backlog #17) siguen pendientes — la entidad `Acta` existe en el esquema Prisma desde
-> `#2` pero sin service/controller que la use todavía.
+> **Implementado (backlog #16, #17, #20).** Resultados en vivo (#16), cierre/escrutinio/actas
+> (#17, archivado 2026-08-19) y panel de jornada (#20) están hechos. La generación de las 4
+> actas en PDF vive en el worker (`apps/worker/src/actas/`). Sólo queda pendiente la validación
+> con usuarios reales durante una jornada de prueba (backlog #23).
 
-- [ ] Con resultados ocultos, el endpoint de resultados devuelve solo participación — nunca
+- [x] Con resultados ocultos, el endpoint de resultados devuelve solo participación — nunca
       conteos por candidato — para cualquier rol de votante; el comité ve el estado "ocultos".
-- [ ] Al cierre: votos por lista/opción + blancos + abstenciones = total del padrón congelado,
-      con nulos = 0 y nota explicativa en el acta. *(#17, pendiente)*
-- [ ] El escrutinio es reproducible: un recuento directo sobre la tabla `Voto` coincide
+- [x] Al cierre: votos por lista/opción + blancos + abstenciones = total del padrón congelado,
+      con nulos = 0 y nota explicativa en el acta.
+- [x] El escrutinio es reproducible: un recuento directo sobre la tabla `Voto` coincide
       exactamente con el acta, y la cantidad y cronología de filas de `Voto` coinciden con los
-      eventos `VOTO` de auditoría — que no contienen la elección (ADR-0010). *(#17, pendiente)*
-- [ ] Un empate entre listas/opciones queda declarado en el acta de escrutinio, sin resolución
-      automática. *(#17, pendiente)*
-- [ ] Un candidato dado de baja con la votación abierta desaparece de la boleta para nuevos
-      votantes y conserva sus votos ya emitidos (backlog #12); que el acta refleje la baja queda
-      pendiente de #17.
-- [ ] Un proceso con participación cero cierra y genera sus actas reportando abstención total.
-      *(#17, pendiente)*
-- [ ] Las 4 actas (apertura, cierre, escrutinio, oficial) se generan en PDF por el worker,
-      descargables e imprimibles, y cada generación queda en auditoría. *(#17, pendiente)*
+      eventos `VOTO` de auditoría — que no contienen la elección (ADR-0010).
+- [x] Un empate entre listas/opciones queda declarado en el acta de escrutinio, sin resolución
+      automática.
+- [x] Un candidato dado de baja con la votación abierta desaparece de la boleta para nuevos
+      votantes y conserva sus votos ya emitidos (backlog #12); el acta de escrutinio refleja la
+      baja (#17).
+- [x] Un proceso con participación cero cierra y genera sus actas reportando abstención total.
+- [x] Las 4 actas (apertura, cierre, escrutinio, oficial) se generan en PDF por el worker,
+      descargables e imprimibles, y cada generación queda en auditoría.
+- [ ] Ensayo de la secuencia completa cierre → escrutinio → actas en una jornada de prueba con
+      el comité (backlog #23, pendiente) — no verificable sólo por código.
 
 ### Flujo 5 — Autenticación y desbloqueo
 
 > **Implementado (backlog #4, #5, #6).**
 
-- [ ] Google OAuth acepta solo cuentas del dominio institucional configurado; usuario/contraseña
-      funciona como alternativa con recuperación de contraseña.
-- [ ] N intentos fallidos consecutivos (configurable) bloquean la cuenta; el bloqueo expira solo
+- [x] Google OAuth acepta solo cuentas del dominio institucional configurado (ADR-0017);
+      usuario/contraseña funciona como alternativa con recuperación de contraseña.
+- [x] N intentos fallidos consecutivos (configurable) bloquean la cuenta; el bloqueo expira solo
       a los 10–15 minutos.
-- [ ] El comité puede desbloquear manualmente desde su panel; el desbloqueo queda en auditoría
+- [x] El comité puede desbloquear manualmente desde su panel; el desbloqueo queda en auditoría
       con autor y hora.
-- [ ] Bloquear una cuenta (automático o manual) invalida su sesión activa de inmediato — la
+- [x] Bloquear una cuenta (automático o manual) invalida su sesión activa de inmediato — la
       sesión vive en el servidor, no en un JWT sin estado (ADR-0004).
-- [ ] Todos los inicios y cierres de sesión, y los intentos fallidos, generan eventos de
+- [x] Todos los inicios y cierres de sesión, y los intentos fallidos, generan eventos de
       auditoría.
 
 ### Flujo 6 — Importación de padrón desde Excel
 
 > **Implementado (backlog #9).**
 
-- [ ] Un archivo con filas válidas e inválidas mezcladas importa todas las válidas y reporta
+- [x] Un archivo con filas válidas e inválidas mezcladas importa todas las válidas y reporta
       cada inválida con número de fila y motivo (DNI duplicado, correo inválido, fila vacía,
       formato).
-- [ ] El reporte de errores es descargable en CSV; la importación queda en auditoría con
+- [x] El reporte de errores es descargable en CSV; la importación queda en auditoría con
       conteos de válidas/erróneas.
-- [ ] Reimportar el mismo archivo no duplica usuarios (idempotencia por DNI/código).
+- [x] Reimportar el mismo archivo no duplica usuarios (idempotencia por DNI/código).
 
 ### Flujo 7 — Auditoría
 
-> **Parcialmente implementado.** El motor append-only (backlog #3) y los triggers anti
-> UPDATE/DELETE están hechos; la vista de auditoría de solo lectura (backlog #21) todavía no
-> existe — el módulo `auditoria` hoy solo escribe eventos (`auditoria.service.ts`), sin
-> controller que los exponga.
+> **Parcialmente implementado.** El motor append-only (backlog #3), los triggers anti
+> UPDATE/DELETE y el bloqueo estructural identidad↔elección en el payload (ADR-0016) están
+> hechos y todos los flujos registran sus eventos. Falta la **vista de auditoría de solo
+> lectura** (backlog #21): el módulo `auditoria` hoy solo escribe eventos
+> (`auditoria.service.ts`), sin controller que los exponga ni exportación. #21 es uno de los 3
+> ítems abiertos del backlog.
 
-- [ ] Ningún endpoint ni pantalla permite modificar o eliminar eventos de auditoría; los
+- [x] Ningún endpoint ni pantalla permite modificar o eliminar eventos de auditoría; los
       triggers de PostgreSQL rechazan UPDATE/DELETE incluso desde el rol de aplicación.
 - [ ] La vista de auditoría es solo lectura, filtrable por tipo (sesiones, votos, procesos,
       correos, reportes) y exportable a CSV/PDF; la exportación misma genera un evento.
       *(#21, pendiente)*
-- [ ] Ninguna vista ni exportación de auditoría vincula la identidad del votante con su
-      elección; la elección individual solo es visible para el propio votante en su comprobante
-      (ADR-0010).
+- [x] Ninguna vista ni exportación de auditoría vincula la identidad del votante con su
+      elección; el evento `VOTO` no lleva la elección por diseño (ADR-0016) y la elección
+      individual solo es visible para el propio votante en su comprobante (ADR-0010).
 - [ ] Para cualquier proceso cerrado, la cadena creación → apertura → votos/rechazos → cierre →
-      actas es reconstruible completa desde la auditoría. *(depende de #17 y #21, pendientes)*
+      actas es reconstruible completa desde una vista de auditoría. *(#17 hecho; falta la vista
+      de #21, pendiente)*
 
 ## Riesgos técnicos abiertos
 
@@ -303,11 +323,11 @@ Más granulares que los del PRD; verificables uno a uno.
   restauración a mitad de votación, anulación de códigos, revotos, extensión de cierre y acta de
   incidencias), no solo la restauración técnica. Corresponde a backlog **#23**, aún pendiente
   (depende de **#22**, contingencia de jornada, también pendiente).
-- **Prototipos HTML desactualizados tras el ADR-0011**: el `Design.md` ya refleja el flujo nuevo
-  (banda de calidad "Votando como padre de ▢", sin selección de estudiante ni salto multi-hijo,
-  tweak `calidadPadre`), pero los artefactos `SEEI Wireframes.dc.html` y `SEEI Votación.dc.html`
-  siguen sin existir en este repositorio; actualizarlos/crearlos sigue pendiente y no es parte
-  del backlog de specs.
+- **Prototipos HTML de la fase de wireframes**: `Design.md` se reescribió el 2026-08-31 como
+  documentación de la UI construida (20 pantallas reales, sistema visual Hanken Grotesk /
+  Institution Blue), superando la versión de wireframes de baja fidelidad. Los artefactos
+  `SEEI Wireframes.dc.html` / `SEEI Votación.dc.html` nunca existieron en este repositorio y
+  quedan fuera de alcance: la referencia viva es el código de `apps/frontend/` y `Design.md`.
 
 **Riesgo cerrado:** "Redacción del PRD sobre la copia por correo" — `PRD.md` ya documenta
 explícitamente el ADR-0009 en su sección de riesgos abiertos (línea 99: "decisión actualizada en

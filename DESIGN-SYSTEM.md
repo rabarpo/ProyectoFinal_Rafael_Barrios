@@ -1,5 +1,5 @@
 ---
-name: San Alfonso Academic Voting System
+name: SEEI — Sistema de Elecciones Electrónicas para Instituciones Educativas
 colors:
   surface: '#f9f9f9'
   surface-dim: '#dadada'
