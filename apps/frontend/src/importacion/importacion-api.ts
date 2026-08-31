@@ -65,3 +65,47 @@ export async function importarPadron(archivo: File): Promise<ResultadoApi<Result
     client().POST('/importaciones/padron', { body: body as never }),
   );
 }
+
+async function codigoDeRespuesta(res: Response): Promise<CodigoImportacion | undefined> {
+  try {
+    return extraerCodigo(await res.clone().json());
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * frontend-importacion-excel, PR4 (#29; design.md D4, tasks.md 4.1-4.2; Threat Matrix
+ * "Descarga / Content-Disposition"). `fetch` CRUDO: el contrato declara `content?: never` en las
+ * cuatro respuestas de `GET /importaciones/{id}/errores.csv`, así que el cliente tipado no aporta
+ * ningún tipo — sería `as never` en `params` y en el parseo, cero seguridad a cambio de ruido.
+ *
+ * El nombre del archivo se CONSTRUYE en el cliente (`importacion-${id}-errores.csv`): el header
+ * `Content-Disposition` nunca se parsea, así ningún `filename` hostil del servidor llega al disco.
+ * `encodeURIComponent(importacionId)` impide que un id manipulado escape del path.
+ * `URL.revokeObjectURL` corre en `finally` (cierra la referencia siempre). Devuelve
+ * `ResultadoApi<void>` para que el `404` por TTL vencido sea un dato, no una excepción.
+ */
+export async function descargarCsvErrores(importacionId: string): Promise<ResultadoApi<void>> {
+  let url: string | undefined;
+  try {
+    const res = await fetch(
+      `${baseUrl()}/importaciones/${encodeURIComponent(importacionId)}/errores.csv`,
+    );
+    if (!res.ok) {
+      return { ok: false, status: res.status, codigo: await codigoDeRespuesta(res) };
+    }
+    url = URL.createObjectURL(await res.blob());
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `importacion-${importacionId}-errores.csv`;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  } finally {
+    if (url) URL.revokeObjectURL(url);
+  }
+}

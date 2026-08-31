@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ImportacionExcelPage } from './ImportacionExcelPage';
 import { SesionContext } from '../auth/sesion-context';
 import type { ContextoSesion } from '../auth/sesion-context';
-import { importarPadron } from './importacion-api';
+import { descargarCsvErrores, importarPadron } from './importacion-api';
 import type { ResultadoImportacionDto } from './importacion-api';
 
 // [design.md D5/D6/D8/D9; tasks.md 3.5-3.6] `vi.mock('./importacion-api')`: intercepta el módulo
@@ -13,10 +13,11 @@ import type { ResultadoImportacionDto } from './importacion-api';
 // `ConfiguracionPage.spec.tsx`.
 vi.mock('./importacion-api', async () => {
   const actual = await vi.importActual<typeof import('./importacion-api')>('./importacion-api');
-  return { ...actual, importarPadron: vi.fn() };
+  return { ...actual, importarPadron: vi.fn(), descargarCsvErrores: vi.fn() };
 });
 
 const importarPadronMock = vi.mocked(importarPadron);
+const descargarCsvErroresMock = vi.mocked(descargarCsvErrores);
 
 const acciones = { login: vi.fn(), google: vi.fn(), logout: vi.fn(), alRecibir401: vi.fn() };
 
@@ -51,6 +52,7 @@ function seleccionarArchivo(archivo: File) {
 
 beforeEach(() => {
   importarPadronMock.mockReset();
+  descargarCsvErroresMock.mockReset();
 });
 
 afterEach(() => {
@@ -133,6 +135,53 @@ describe('ImportacionExcelPage', () => {
       expect(screen.getByText('Filas totales').parentElement).toHaveTextContent('99'),
     );
     expect(importarPadronMock).toHaveBeenCalledTimes(2);
+  });
+
+  // [design.md D4/D10; tasks.md 4.5-4.6; spec "Descarga del CSV con manejo de reporte vencido"]
+  it('con filas_invalidas > 0 muestra la tabla de errores y el botón de descarga', async () => {
+    importarPadronMock.mockResolvedValue({ ok: true, data: RESULTADO });
+
+    render(proveer(contextoConRol('administrador')));
+    seleccionarArchivo(new File(['ok'], 'padron.xlsx'));
+    fireEvent.click(screen.getByRole('button', { name: /importar/i }));
+
+    expect(await screen.findByRole('button', { name: /descargar csv de errores/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Valor recibido' })).toBeInTheDocument();
+  });
+
+  it('con filas_invalidas === 0 no muestra tabla de errores ni botón de descarga', async () => {
+    importarPadronMock.mockResolvedValue({
+      ok: true,
+      data: { ...RESULTADO, filas_invalidas: 0, errores: [] },
+    });
+
+    render(proveer(contextoConRol('administrador')));
+    seleccionarArchivo(new File(['ok'], 'padron.xlsx'));
+    fireEvent.click(screen.getByRole('button', { name: /importar/i }));
+
+    await screen.findByText('Filas totales');
+    expect(screen.queryByRole('button', { name: /descargar csv de errores/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Valor recibido' })).not.toBeInTheDocument();
+  });
+
+  it('un 404 de descarga muestra el aviso de reporte vencido conservando resumen y tabla', async () => {
+    importarPadronMock.mockResolvedValue({ ok: true, data: RESULTADO });
+    descargarCsvErroresMock.mockResolvedValue({
+      ok: false,
+      status: 404,
+      codigo: 'REPORTE_NO_ENCONTRADO',
+    });
+
+    render(proveer(contextoConRol('administrador')));
+    seleccionarArchivo(new File(['ok'], 'padron.xlsx'));
+    fireEvent.click(screen.getByRole('button', { name: /importar/i }));
+
+    fireEvent.click(await screen.findByRole('button', { name: /descargar csv de errores/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/expir|vencid|disponible/i);
+    expect(descargarCsvErroresMock).toHaveBeenCalledWith('imp-1');
+    expect(screen.getByText('Filas totales')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Valor recibido' })).toBeInTheDocument();
   });
 
   it.each(['comite', 'docente', 'estudiante'])(

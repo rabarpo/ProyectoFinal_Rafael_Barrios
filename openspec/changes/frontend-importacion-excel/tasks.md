@@ -54,18 +54,18 @@ Estrategia TDD estricta: cada tarea GREEN va precedida por su tarea RED. Runner:
 
 ## Phase 4: Errores y descarga (PR4)
 
-- [ ] 4.1 RED `apps/frontend/src/importacion/importacion-api.spec.ts` (descargarCsvErrores): `vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })` + `vi.stubGlobal('fetch', ...)`; URL con `encodeURIComponent(importacionId)`; `200` => `createObjectURL` invocado, `<a download>` con nombre `importacion-${id}-errores.csv` ignorando un `Content-Disposition` hostil; `revokeObjectURL` invocado en exito y en fallo; `404` => `{ ok:false, status:404, codigo:'REPORTE_NO_ENCONTRADO' }` y sin `createObjectURL`; error de red => `{ ok:false }` sin excepcion (threat matrix Descarga / Content-Disposition)
-- [ ] 4.2 GREEN `descargarCsvErrores(importacionId)` en `importacion-api.ts`: `fetch` crudo => `res.blob()` => `<a download>` sintetico; `URL.revokeObjectURL` en `finally`; devuelve `ResultadoApi<void>`
-- [ ] 4.3 RED `apps/frontend/src/importacion/piezas/TablaErroresImportacion.spec.tsx`: 4 columnas `fila`/`campo`/`motivo`/`valor_recibido`, cero botones de accion, `motivo` traducido desde `MOTIVOS_FILA`, `valor_recibido` con `<script>` renderizado como texto (threat matrix, D10)
-- [ ] 4.4 GREEN `apps/frontend/src/importacion/piezas/TablaErroresImportacion.tsx`: `TablaGenerica` sin prop `acciones`, `claveFila = (e) => `${e.fila}-${e.campo}``
-- [ ] 4.5 RED `ImportacionExcelPage.spec.tsx`: `filas_invalidas > 0` => `TablaErroresImportacion` + boton "Descargar CSV de errores"; `filas_invalidas === 0` => sin tabla y sin boton; `404` de descarga => alerta de reporte vencido con el resumen y la tabla aun montados
-- [ ] 4.6 GREEN `ImportacionExcelPage.tsx`: boton de descarga condicional a `filas_invalidas > 0`, `TablaErroresImportacion`, error de descarga en estado aparte que no pisa `fase='resultado'` (satisface importacion-excel: Descarga del CSV con manejo de reporte vencido)
+- [x] 4.1 RED `apps/frontend/src/importacion/importacion-api.spec.ts` (descargarCsvErrores): `vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })` + `vi.stubGlobal('fetch', ...)`; URL con `encodeURIComponent(importacionId)`; `200` => `createObjectURL` invocado, `<a download>` con nombre `importacion-${id}-errores.csv` ignorando un `Content-Disposition` hostil; `revokeObjectURL` invocado en exito y en fallo; `404` => `{ ok:false, status:404, codigo:'REPORTE_NO_ENCONTRADO' }` y sin `createObjectURL`; error de red => `{ ok:false }` sin excepcion (threat matrix Descarga / Content-Disposition)
+- [x] 4.2 GREEN `descargarCsvErrores(importacionId)` en `importacion-api.ts`: `fetch` crudo => `res.blob()` => `<a download>` sintetico; `URL.revokeObjectURL` en `finally`; devuelve `ResultadoApi<void>`
+- [x] 4.3 RED `apps/frontend/src/importacion/piezas/TablaErroresImportacion.spec.tsx`: 4 columnas `fila`/`campo`/`motivo`/`valor_recibido`, cero botones de accion, `motivo` traducido desde `MOTIVOS_FILA`, `valor_recibido` con `<script>` renderizado como texto (threat matrix, D10)
+- [x] 4.4 GREEN `apps/frontend/src/importacion/piezas/TablaErroresImportacion.tsx`: `TablaGenerica` sin prop `acciones`, `claveFila = (e) => `${e.fila}-${e.campo}``
+- [x] 4.5 RED `ImportacionExcelPage.spec.tsx`: `filas_invalidas > 0` => `TablaErroresImportacion` + boton "Descargar CSV de errores"; `filas_invalidas === 0` => sin tabla y sin boton; `404` de descarga => alerta de reporte vencido con el resumen y la tabla aun montados
+- [x] 4.6 GREEN `ImportacionExcelPage.tsx`: boton de descarga condicional a `filas_invalidas > 0`, `TablaErroresImportacion`, error de descarga en estado aparte que no pisa `fase='resultado'` (satisface importacion-excel: Descarga del CSV con manejo de reporte vencido)
 
 ## Phase 5: Verificacion de cierre
 
-- [ ] 5.1 `pnpm turbo run test` completo en verde
-- [ ] 5.2 Confirmar que `apps/frontend/package.json` no incorpora `react-router-dom` ni libreria de routing (minimal-frontend-router: sin dependencia nueva)
-- [ ] 5.3 Typecheck y lint del frontend sin regresiones; `CampoArchivo.tsx` y `TablaGenerica.tsx` sin modificaciones
+- [x] 5.1 `pnpm turbo run test`: `@seei/frontend` 106 files / 794 tests en VERDE (baseline 784, +10 de PR4). Los unicos fallos son 4 suites de integracion Redis del backend (`session.service`, `bloqueo.service`, `recovery.service`, `importacion.service` — todas `ECONNREFUSED` de ioredis: no hay Redis local), preexistentes y ajenas a este change frontend-only que no toca backend ni contrato.
+- [x] 5.2 Confirmado: `apps/frontend/package.json` no incorpora `react-router-dom` ni ninguna libreria de routing (`grep -iE "react-router|wouter|@tanstack/react-router|history"` => sin coincidencias)
+- [x] 5.3 `pnpm --filter @seei/frontend typecheck` EXIT 0; lint es no-op en el paquete; `git diff HEAD -- CampoArchivo.tsx TablaGenerica.tsx` VACIO (sin modificaciones)
 
 ## Ejecucion paralela vs secuencial
 

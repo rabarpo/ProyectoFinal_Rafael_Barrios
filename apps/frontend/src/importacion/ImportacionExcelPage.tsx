@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useSesion } from '../auth/sesion-context';
 import { CampoArchivo } from '../candidatos/piezas/CampoArchivo';
-import { importarPadron } from './importacion-api';
+import { descargarCsvErrores, importarPadron } from './importacion-api';
 import type { ResultadoImportacionDto } from './importacion-api';
 import { validarArchivoPadron } from './validar-archivo-padron';
 import { mensajeDeError } from './mensajes-error';
 import { ResumenImportacion } from './piezas/ResumenImportacion';
+import { TablaErroresImportacion } from './piezas/TablaErroresImportacion';
 
 /**
  * frontend-importacion-excel, PR1 + PR3 (#29; design.md D5/D6/D8/D9, tasks.md 1.6, 3.5-3.6).
@@ -38,6 +39,9 @@ export function ImportacionExcelPage() {
 
   const [archivo, setArchivo] = useState<File | null>(null);
   const [estado, setEstado] = useState<EstadoImportacion>({ fase: 'inactivo' });
+  // El error de descarga vive APARTE (D4/D5): un `404` por reporte vencido NO pisa `fase='resultado'`,
+  // así el resumen y la tabla siguen montados (spec "Reporte de errores expirado").
+  const [errorDescarga, setErrorDescarga] = useState<string | null>(null);
 
   async function manejarImportar() {
     if (!archivo) {
@@ -51,6 +55,7 @@ export function ImportacionExcelPage() {
       return;
     }
 
+    setErrorDescarga(null);
     setEstado({ fase: 'enviando' });
     const resultado = await importarPadron(archivo);
 
@@ -63,6 +68,17 @@ export function ImportacionExcelPage() {
       fase: 'error',
       mensaje: mensajeDeError({ codigo: resultado.codigo, status: resultado.status }),
     });
+  }
+
+  async function manejarDescargar() {
+    if (estado.fase !== 'resultado') return;
+    setErrorDescarga(null);
+    const resultado = await descargarCsvErrores(estado.datos.importacion_id);
+    if (!resultado.ok) {
+      setErrorDescarga(
+        mensajeDeError({ codigo: resultado.codigo, status: resultado.status }),
+      );
+    }
   }
 
   if (!puedeImportar) {
@@ -112,7 +128,28 @@ export function ImportacionExcelPage() {
         </p>
       )}
 
-      {estado.fase === 'resultado' && <ResumenImportacion resultado={estado.datos} />}
+      {estado.fase === 'resultado' && (
+        <>
+          <ResumenImportacion resultado={estado.datos} />
+          {estado.datos.filas_invalidas > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={manejarDescargar}
+                className="w-fit rounded-control border border-primary px-4 py-2 text-label-md text-primary"
+              >
+                Descargar CSV de errores
+              </button>
+              {errorDescarga && (
+                <p role="alert" className="text-body-sm text-error">
+                  {errorDescarga}
+                </p>
+              )}
+              <TablaErroresImportacion errores={estado.datos.errores} />
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
