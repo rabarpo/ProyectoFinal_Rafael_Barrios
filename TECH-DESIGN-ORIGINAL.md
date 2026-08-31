@@ -29,15 +29,15 @@ TypeScript ([ADR-0002](adrs/0002-stack-typescript-full-stack.md)):
 └──────────────┬──────────────┘
                │ HTTPS · REST + OpenAPI (ADR-0004)
 ┌──────────────┴──────────────┐
-│ Backend NestJS (monolito    │  módulos: auth · users · academico · procesos
-│ modular)                    │  candidatos · votos · configuracion · importacion
-│                             │  auditoria · email · health
+│ Backend NestJS (monolito    │  módulos: auth · usuarios · académico · procesos
+│ modular)                    │  candidatos · padrón · votación · resultados
+│                             │  actas · reportes · auditoría · configuración
 └───┬──────────────┬──────────┘
     │              │ outbox → BullMQ (Redis)
 ┌───┴────────┐  ┌──┴───────────────┐
 │ PostgreSQL │  │ Worker Node.js   │ → SMTP (Google Workspace)
-│ (ADR-0003) │←─│  outbox · correos│
-└────────────┘  │  PDFs · export.  │
+│ (ADR-0003) │←─│  correos · PDFs  │
+└────────────┘  │  exportaciones   │
                 └──────────────────┘
 ```
 
@@ -46,16 +46,6 @@ TypeScript ([ADR-0002](adrs/0002-stack-typescript-full-stack.md)):
   ([ADR-0012](adrs/0012-outbox-correos-postgresql.md)) y comparte la base de datos.
 - Todo corre en un VPS con Docker Compose tras Caddy/Nginx con HTTPS
   ([ADR-0007](adrs/0007-despliegue-vps-docker-compose.md)).
-
-> **Nota (actualizado según el código real):** los módulos de backend implementados hoy son
-> `academico, auditoria, auth, candidatos, configuracion, email, health, importacion, procesos,
-> users, votos` (`apps/backend/src/`), más `apps/worker/src` con `outbox` y `processors`.
-> "Padrón" (`DerechoVoto`) y "resultados" no son módulos propios: viven dentro de `procesos`
-> (`GET /procesos/:id/resultados`, backlog #16). `auditoria` hoy solo escribe eventos
-> (`auditoria.service.ts`); no tiene controller ni vista de consulta — la vista de auditoría de
-> solo lectura (backlog #21) sigue pendiente. Los módulos `actas` y `reportes` **no existen
-> todavía como módulos de backend** (backlog #17 y #18, pendientes); `Acta` y `Notificacion` ya
-> están en el esquema Prisma desde `#2` pero sin ningún service/controller que los use.
 
 ## Decisiones de arquitectura
 
@@ -130,23 +120,11 @@ errores fila a fila):
 - `Configuración` — institución, logo, director, comité (nombres que se imprimen en actas), año
   activo, zona horaria, colores, SMTP, dominio Google Workspace.
 
-> **Nota:** todas las entidades de esta sección existen en `apps/backend/prisma/schema.prisma`
-> con nombres consistentes. Hay una tabla puente adicional no documentada aquí,
-> `ProcesoAula` (proceso ↔ aula para la creación en lote de #11/#12). `Acta` y `Notificacion`
-> están en el esquema desde `#2` pero sin ningún uso en `apps/backend/src` ni `apps/worker/src`
-> todavía — son placeholders hasta que se implementen backlog #17 y #19.
-
 ## Criterios de aceptación por flujo
 
 Más granulares que los del PRD; verificables uno a uno.
 
 ### Flujo 1 — Emisión del voto (3 pasos)
-
-> **Implementado (backlog #14).** Verificado en código: `@@unique([proceso_id,
-> derecho_voto_id])` (`apps/backend/prisma/schema.prisma`) y `GET
-> /votos/comprobante/:votoId`. El resto de los criterios abajo describe el contrato ya
-> construido; los que exigen validación con usuarios reales (último ítem) no se marcan porque
-> requieren una prueba fuera del código.
 
 - [ ] Un votante del padrón, con el proceso abierto, completa paso 1 → 2 → 3 y recibe pantalla
       de comprobante con código de voto y hora del servidor.
@@ -172,15 +150,9 @@ Más granulares que los del PRD; verificables uno a uno.
       la cuenta presenta por separado sus dos derechos (como estudiante y como padre) y cada
       voto consume solo el `DerechoVoto` de su calidad (ADR-0011).
 - [ ] El flujo completo (desde inicio de sesión hasta comprobante) es realizable en < 3 minutos
-      en un teléfono (validación con usuarios reales, criterio del PRD) — **pendiente de prueba
-      con usuarios reales**, no verificable por código.
+      en un teléfono (validación con usuarios reales, criterio del PRD).
 
 ### Flujo 2 — Correo de confirmación
-
-> **Implementado (backlog #15).** Verificado en código: `JobCorreo.voto_id` con FK + `UNIQUE`
-> (`apps/backend/prisma/schema.prisma`) confirma que el job nace atado a la misma transacción
-> del voto, y `apps/worker/src` tiene el dispatcher/processor del outbox. El ítem del contador
-> en el panel de jornada depende del panel (backlog #20, pendiente); se deja sin marcar.
 
 - [ ] La fila `JobCorreo` nace en la misma transacción que el voto (outbox): no puede existir un
       voto confirmado sin su job de correo, ni siquiera si el backend cae inmediatamente después
@@ -190,17 +162,12 @@ Más granulares que los del PRD; verificables uno a uno.
 - [ ] El enlace del correo exige sesión de la cuenta votante; autenticado, muestra el
       comprobante con la elección concreta.
 - [ ] Un fallo definitivo de envío (correo inválido/inexistente) genera evento
-      `CORREO_FALLIDO` y **no** altera el voto.
-- [ ] El fallo de envío incrementa el contador del panel de jornada — **pendiente**: el panel de
-      jornada (backlog #20) todavía no existe.
+      `CORREO_FALLIDO`, incrementa el contador del panel de jornada y **no** altera el voto.
 - [ ] El comprobante es accesible sin el correo desde "Mis votaciones" → `VOTADO`.
 - [ ] Los envíos masivos salen por lotes con ritmo configurable sin exceder los límites del
       proveedor SMTP.
 
 ### Flujo 3 — Creación y apertura de proceso
-
-> **Implementado (backlog #11, #13).** `ocultar_resultados` por defecto en `true` se confirmó en
-> el commit `8aedda7 fix(procesos): default ocultar_resultados to true (ADR-0008)`.
 
 - [ ] El asistente de 4 pasos calcula el padrón en vivo según público/nivel/grados/aulas y lo
       muestra antes de confirmar.
@@ -216,30 +183,22 @@ Más granulares que los del PRD; verificables uno a uno.
 
 ### Flujo 4 — Resultados, escrutinio y actas
 
-> **Parcialmente implementado.** Resultados en vivo (backlog #16) está hecho; cierre, escrutinio
-> y actas (backlog #17) siguen pendientes — la entidad `Acta` existe en el esquema Prisma desde
-> `#2` pero sin service/controller que la use todavía.
-
 - [ ] Con resultados ocultos, el endpoint de resultados devuelve solo participación — nunca
       conteos por candidato — para cualquier rol de votante; el comité ve el estado "ocultos".
 - [ ] Al cierre: votos por lista/opción + blancos + abstenciones = total del padrón congelado,
-      con nulos = 0 y nota explicativa en el acta. *(#17, pendiente)*
+      con nulos = 0 y nota explicativa en el acta.
 - [ ] El escrutinio es reproducible: un recuento directo sobre la tabla `Voto` coincide
       exactamente con el acta, y la cantidad y cronología de filas de `Voto` coinciden con los
-      eventos `VOTO` de auditoría — que no contienen la elección (ADR-0010). *(#17, pendiente)*
+      eventos `VOTO` de auditoría — que no contienen la elección (ADR-0010).
 - [ ] Un empate entre listas/opciones queda declarado en el acta de escrutinio, sin resolución
-      automática. *(#17, pendiente)*
+      automática.
 - [ ] Un candidato dado de baja con la votación abierta desaparece de la boleta para nuevos
-      votantes y conserva sus votos ya emitidos (backlog #12); que el acta refleje la baja queda
-      pendiente de #17.
+      votantes, conserva sus votos ya emitidos, y el acta refleja la baja y su momento.
 - [ ] Un proceso con participación cero cierra y genera sus actas reportando abstención total.
-      *(#17, pendiente)*
 - [ ] Las 4 actas (apertura, cierre, escrutinio, oficial) se generan en PDF por el worker,
-      descargables e imprimibles, y cada generación queda en auditoría. *(#17, pendiente)*
+      descargables e imprimibles, y cada generación queda en auditoría.
 
 ### Flujo 5 — Autenticación y desbloqueo
-
-> **Implementado (backlog #4, #5, #6).**
 
 - [ ] Google OAuth acepta solo cuentas del dominio institucional configurado; usuario/contraseña
       funciona como alternativa con recuperación de contraseña.
@@ -254,8 +213,6 @@ Más granulares que los del PRD; verificables uno a uno.
 
 ### Flujo 6 — Importación de padrón desde Excel
 
-> **Implementado (backlog #9).**
-
 - [ ] Un archivo con filas válidas e inválidas mezcladas importa todas las válidas y reporta
       cada inválida con número de fila y motivo (DNI duplicado, correo inválido, fila vacía,
       formato).
@@ -265,50 +222,39 @@ Más granulares que los del PRD; verificables uno a uno.
 
 ### Flujo 7 — Auditoría
 
-> **Parcialmente implementado.** El motor append-only (backlog #3) y los triggers anti
-> UPDATE/DELETE están hechos; la vista de auditoría de solo lectura (backlog #21) todavía no
-> existe — el módulo `auditoria` hoy solo escribe eventos (`auditoria.service.ts`), sin
-> controller que los exponga.
-
 - [ ] Ningún endpoint ni pantalla permite modificar o eliminar eventos de auditoría; los
       triggers de PostgreSQL rechazan UPDATE/DELETE incluso desde el rol de aplicación.
 - [ ] La vista de auditoría es solo lectura, filtrable por tipo (sesiones, votos, procesos,
       correos, reportes) y exportable a CSV/PDF; la exportación misma genera un evento.
-      *(#21, pendiente)*
 - [ ] Ninguna vista ni exportación de auditoría vincula la identidad del votante con su
       elección; la elección individual solo es visible para el propio votante en su comprobante
       (ADR-0010).
 - [ ] Para cualquier proceso cerrado, la cadena creación → apertura → votos/rechazos → cierre →
-      actas es reconstruible completa desde la auditoría. *(depende de #17 y #21, pendientes)*
+      actas es reconstruible completa desde la auditoría.
 
 ## Riesgos técnicos abiertos
 
 - **Prueba de carga pendiente**: el criterio de 1,000 votantes concurrentes debe validarse
   contra el tamaño de VPS elegido antes de la primera jornada real (ADR-0007); definir la
   herramienta (k6/artillery) y el escenario (ráfaga de `POST /votos` + polling del panel).
-  Corresponde a backlog **#23**, aún pendiente.
 - **Protección de datos de menores en la nube**: fotos, DNI y correos residen en el proveedor
   del VPS; revisar los requisitos de la Ley de Protección de Datos Personales del Perú (región
   del datacenter, cifrado en reposo, consentimiento de las familias). La retención de la
   auditoría ya quedó definida (ADR-0010: inmutable + anonimización tras impugnación); quedan
-  pendientes región, cifrado y consentimiento — riesgo heredado del PRD, ligado a la revisión
-  legal de backlog **#21** (auditoría), aún pendiente.
+  pendientes región, cifrado y consentimiento — riesgo heredado del PRD.
+- **Redacción del PRD sobre la copia por correo**: el ADR-0009 matiza la decisión original
+  (elección visible solo tras autenticarse, no en el cuerpo del correo); actualizar el PRD y las
+  bases del proceso electoral para que declaren el mecanismo real.
 - **Suplantación por custodia de credenciales**: sin biometría (fuera de alcance), el voto es
   tan confiable como la credencial; mitigado con bloqueo, auditoría y OAuth de dominio, pero el
   riesgo residual persiste — en especial la cuenta compartida padre/estudiante que el PRD ya
-  registra como aceptada. Riesgo residual permanente, no cerrable por una spec del backlog.
+  registra como aceptada.
 - **Restauración de respaldos no ensayada**: el plan de respaldos del ADR-0007 exige un ensayo
   de restauración completa antes de la primera elección; un respaldo no probado no cuenta. El
   ensayo debe ejecutar el procedimiento de contingencia de jornada completo (ADR-0013:
   restauración a mitad de votación, anulación de códigos, revotos, extensión de cierre y acta de
-  incidencias), no solo la restauración técnica. Corresponde a backlog **#23**, aún pendiente
-  (depende de **#22**, contingencia de jornada, también pendiente).
-- **Prototipos HTML desactualizados tras el ADR-0011**: el `Design.md` ya refleja el flujo nuevo
-  (banda de calidad "Votando como padre de ▢", sin selección de estudiante ni salto multi-hijo,
-  tweak `calidadPadre`), pero los artefactos `SEEI Wireframes.dc.html` y `SEEI Votación.dc.html`
-  siguen sin existir en este repositorio; actualizarlos/crearlos sigue pendiente y no es parte
-  del backlog de specs.
-
-**Riesgo cerrado:** "Redacción del PRD sobre la copia por correo" — `PRD.md` ya documenta
-explícitamente el ADR-0009 en su sección de riesgos abiertos (línea 99: "decisión actualizada en
-fase de arquitectura... aplica la mitigación..."); no requiere más acción.
+  incidencias), no solo la restauración técnica.
+- **Design.md desactualizado tras el ADR-0011**: la vista de selección de estudiante (`1d`), el
+  salto "votar por mi otro hijo" y el tweak `contextoPadre` del prototipo quedaron obsoletos; la
+  banda pasa a declarar la calidad ("Votando como padre de ▢"). Actualizar wireframes y
+  prototipo antes de implementar el flujo del votante.

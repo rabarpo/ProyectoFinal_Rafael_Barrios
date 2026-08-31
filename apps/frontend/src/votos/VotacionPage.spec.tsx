@@ -185,6 +185,25 @@ describe('VotacionPage', () => {
     expect(llamada.candidato_id).toBeUndefined();
   });
 
+  // confirmacion-voto-como-modal: `PasoConfirmacion` deja de reemplazar la pantalla al llegar al
+  // paso 3 — pasa a ser un diálogo modal superpuesto sobre `PasoBoleta` (paso 2), que sigue en el
+  // DOM (visible/oscurecido detrás del overlay) en vez de desmontarse.
+  it('en el paso 3, PasoBoleta sigue en el DOM detrás del diálogo modal de confirmación', async () => {
+    vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
+
+    render(conSesion(vi.fn(), <VotacionPage derechoVotoId="dv1" />));
+
+    await screen.findByText(/alcaldía escolar 2026/i);
+    fireEvent.click(screen.getByRole('button', { name: /comenzar votación/i }));
+    await screen.findByRole('radiogroup');
+    fireEvent.click(screen.getByRole('radio', { name: /lista a/i }));
+    fireEvent.click(screen.getByRole('button', { name: /siguiente paso/i }));
+
+    await screen.findByRole('dialog');
+    expect(screen.getByRole('radiogroup')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /lista a/i })).toBeChecked();
+  });
+
   it('[18.4] sin conexión al confirmar muestra el estado correspondiente, sin quedar en "Registrando…" para siempre', async () => {
     vi.mocked(votosApi.papeleta).mockResolvedValueOnce(papeletaMock());
     vi.mocked(votosApi.emitir).mockRejectedValueOnce(new TypeError('Failed to fetch'));

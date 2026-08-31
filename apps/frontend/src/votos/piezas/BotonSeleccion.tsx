@@ -28,8 +28,15 @@ interface BotonSeleccionProps {
  */
 export function BotonSeleccion({ texto, etiqueta, seleccionada, onSeleccionar }: BotonSeleccionProps) {
   return (
+    // bug reportado por el usuario (diagnosticado con datos reales de consola): sin
+    // `position: relative` acá, el `<input>` sr-only (`position: absolute`) no tiene un ancestro
+    // posicionado cerca — su "contenedor de posicionamiento" termina siendo `<html>`. Al enfocarlo
+    // (click/tab), el navegador hace scroll-into-view sobre ESE contenedor, moviendo `<html>`
+    // aunque tenga `overflow: hidden` (el CSS bloquea el scroll del usuario, no el programático).
+    // `relative` acá ancla el input a este `<label>` (ya visible, ya en pantalla), así que el
+    // navegador no tiene nada que "traer a la vista".
     <label
-      className={`flex w-full cursor-pointer items-center justify-center rounded-control bg-primary px-4 py-3 text-label-md text-on-primary transition-colors hover:bg-primary-container has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-primary has-[:focus-visible]:outline-offset-2`}
+      className={`relative flex w-full cursor-pointer items-center justify-center rounded-control bg-primary px-4 py-3 text-label-md text-on-primary transition-colors hover:bg-primary-container has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-primary has-[:focus-visible]:outline-offset-2`}
     >
       <input
         type="radio"

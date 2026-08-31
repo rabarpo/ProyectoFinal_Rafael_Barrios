@@ -3,10 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { PasoInformacionProceso } from './PasoInformacionProceso';
 
 // [design.md D4/D5/D8; spec vote-casting: "Paso 1 con reglas de votación e imagen institucional";
-// tasks.md 6.1-8.3] Rediseño de fidelidad del paso 1: badge de estado, hero con imagen de
-// `GET /configuracion/logo` y texto institucional superpuesto (con degradado y respaldo
-// `bg-primary` si no hay logo persistido, sin ocultar el bloque), 3 tarjetas de reglas con ícono
-// de `iconos-reglas.tsx`, y footer.
+// tasks.md 6.1-8.3] Rediseño de fidelidad del paso 1: badge de estado, hero con texto institucional
+// superpuesto (degradado + imagen FIJA `assets/images/8.webp`, no configurable — observación del
+// usuario), 3 tarjetas de reglas con ícono de `iconos-reglas.tsx`, y footer.
 describe('PasoInformacionProceso', () => {
   const proceso = {
     nombre: 'Alcaldía escolar 2026',
@@ -20,10 +19,10 @@ describe('PasoInformacionProceso', () => {
     expect(screen.getByText(/proceso activo/i)).toBeInTheDocument();
   });
 
-  it('[6.2] muestra la imagen hero de GET /configuracion/logo con el texto institucional superpuesto', () => {
+  it('[6.2] muestra la imagen hero fija con el texto institucional superpuesto', () => {
     render(<PasoInformacionProceso proceso={proceso} yaVoto={false} onContinuar={vi.fn()} />);
 
-    expect(screen.getByRole('img', { name: /logo institucional/i })).toBeInTheDocument();
+    expect(screen.getByTestId('hero-foto-respaldo')).toBeInTheDocument();
     expect(screen.getByText(/tu voz construye el futuro/i)).toBeInTheDocument();
   });
 
@@ -47,13 +46,11 @@ describe('PasoInformacionProceso', () => {
     expect(footer).toHaveTextContent(/seei/i);
   });
 
-  it('[6.5] sin logo institucional configurado (404), el hero no desaparece: se pinta el respaldo y el texto sigue visible', () => {
+  it('[6.5] la imagen del hero es siempre la misma foto fija, sin lógica de logo configurable', () => {
     render(<PasoInformacionProceso proceso={proceso} yaVoto={false} onContinuar={vi.fn()} />);
 
-    const logo = screen.getByRole('img', { name: /logo institucional/i });
-    fireEvent.error(logo);
-
     expect(screen.queryByRole('img', { name: /logo institucional/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('hero-foto-respaldo')).toBeInTheDocument();
     expect(screen.getByText(/tu voz construye el futuro/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /comenzar votación/i })).not.toBeDisabled();
   });

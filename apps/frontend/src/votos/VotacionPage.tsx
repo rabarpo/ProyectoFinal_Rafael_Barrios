@@ -247,29 +247,33 @@ export function VotacionPage({ derechoVotoId }: VotacionPageProps) {
     );
   }
 
-  if (paso === 2) {
+  if (paso === 2 || paso === 3) {
+    const opcionElegida =
+      seleccion?.tipo === 'opcion' ? datos.opciones.find((o) => o.id === seleccion.id) : undefined;
+    const resumenSeleccion = seleccion?.tipo === 'blanco' ? 'Voto en blanco' : (opcionElegida?.etiqueta ?? '');
+
     return (
-      <PasoBoleta
-        opciones={datos.opciones}
-        tipo={datos.proceso.tipo}
-        derechoVotoId={derechoVotoId}
-        seleccion={seleccion}
-        onSeleccionar={seleccionar}
-        onContinuar={() => irAPaso(3)}
-        onVolver={() => irAPaso(1)}
-      />
+      <>
+        <PasoBoleta
+          opciones={datos.opciones}
+          tipo={datos.proceso.tipo}
+          derechoVotoId={derechoVotoId}
+          seleccion={seleccion}
+          onSeleccionar={seleccionar}
+          onContinuar={() => irAPaso(3)}
+          onVolver={() => irAPaso(1)}
+        />
+        {paso === 3 && (
+          <PasoConfirmacion
+            resumenSeleccion={resumenSeleccion}
+            enviando={estado.fase === 'enviando'}
+            onConfirmar={() => seleccion && confirmar(datos, seleccion)}
+            onVolver={() => irAPaso(2)}
+          />
+        )}
+      </>
     );
   }
 
-  const opcionElegida = seleccion?.tipo === 'opcion' ? datos.opciones.find((o) => o.id === seleccion.id) : undefined;
-  const resumenSeleccion = seleccion?.tipo === 'blanco' ? 'Voto en blanco' : (opcionElegida?.etiqueta ?? '');
-
-  return (
-    <PasoConfirmacion
-      resumenSeleccion={resumenSeleccion}
-      enviando={estado.fase === 'enviando'}
-      onConfirmar={() => seleccion && confirmar(datos, seleccion)}
-      onVolver={() => irAPaso(2)}
-    />
-  );
+  return null;
 }

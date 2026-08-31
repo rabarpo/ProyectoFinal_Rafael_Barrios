@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { NavegacionPrincipal } from './NavegacionPrincipal';
 import { SesionContext } from '../auth/sesion-context';
 import type { ContextoSesion } from '../auth/sesion-context';
@@ -149,6 +149,79 @@ describe('NavegacionPrincipal', () => {
 
       expect(screen.getByRole('button', { name: /expandir menú/i })).toBeInTheDocument();
     });
+  });
+
+  // observación del usuario: colapsado + hover despliega temporalmente el menú (flyout), sin
+  // persistir el cambio — al sacar el mouse vuelve a colapsarse y `localStorage` sigue en '1'.
+  describe('flyout al pasar el mouse estando colapsado', () => {
+    function colapsar() {
+      fireEvent.click(screen.getByRole('button', { name: /colapsar menú/i }));
+    }
+
+    it('con el mouse encima, muestra las etiquetas de texto sin persistir el cambio', () => {
+      render(proveer('administrador'));
+      colapsar();
+      expect(screen.queryByText('Procesos')).not.toBeInTheDocument();
+
+      const aside = screen.getByRole('navigation', { name: /navegación principal/i }).closest('aside')!;
+      fireEvent.mouseEnter(aside);
+
+      expect(within(aside).getByText('Procesos')).toBeInTheDocument();
+      expect(window.localStorage.getItem('seei:sidebar-colapsado')).toBe('1');
+    });
+
+    it('al sacar el mouse, vuelve a ocultar las etiquetas', () => {
+      render(proveer('administrador'));
+      colapsar();
+      const aside = screen.getByRole('navigation', { name: /navegación principal/i }).closest('aside')!;
+      fireEvent.mouseEnter(aside);
+      expect(within(aside).getByText('Procesos')).toBeInTheDocument();
+
+      fireEvent.mouseLeave(aside);
+
+      expect(screen.queryByText('Procesos')).not.toBeInTheDocument();
+    });
+
+    it('si el menú ya está expandido (no colapsado), el hover no hace nada distinto', () => {
+      render(proveer('administrador'));
+      const aside = screen.getByRole('navigation', { name: /navegación principal/i }).closest('aside')!;
+
+      fireEvent.mouseEnter(aside);
+
+      expect(screen.getByText('Procesos')).toBeInTheDocument();
+    });
+
+    // observación del usuario: el botón expandir/colapsar debe obedecer siempre, incluso con el
+    // flyout de hover ya desplegado — antes quedaba deshabilitado en ese momento.
+    it('el botón "Expandir menú" funciona y persiste el cambio incluso con el flyout ya desplegado por hover', () => {
+      render(proveer('administrador'));
+      colapsar();
+      const aside = screen.getByRole('navigation', { name: /navegación principal/i }).closest('aside')!;
+      fireEvent.mouseEnter(aside);
+      expect(within(aside).getByText('Procesos')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /expandir menú/i }));
+
+      expect(window.localStorage.getItem('seei:sidebar-colapsado')).toBe('0');
+      expect(screen.getByRole('button', { name: /colapsar menú/i })).toBeInTheDocument();
+      // sigue expandido tras sacar el mouse, porque ya no está colapsado
+      fireEvent.mouseLeave(aside);
+      expect(screen.getByText('Procesos')).toBeInTheDocument();
+    });
+  });
+
+  // observación del usuario: para estudiante, "/" (ruta `inicio`) monta MisVotacionesPage
+  // (Enrutador.tsx) — el ítem "Mis votaciones" del menú debe verse activo ahí desde el inicio,
+  // aunque la URL siga siendo `inicio` y no `mis-votaciones`.
+  it('para estudiante, "Mis votaciones" aparece activo en la ruta raíz "/" desde el inicio', () => {
+    window.history.pushState(null, '', '/');
+
+    render(proveer('estudiante'));
+
+    expect(screen.getByRole('button', { name: /mis votaciones/i })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   it('resalta el item de la ruta actual con aria-current="page"', () => {

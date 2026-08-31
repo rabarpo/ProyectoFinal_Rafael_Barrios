@@ -1,9 +1,10 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Enrutador } from './Enrutador';
 import { AuthGuard } from '../auth/AuthGuard';
 import { SesionContext } from '../auth/sesion-context';
 import type { ContextoSesion } from '../auth/sesion-context';
+import * as votosApi from '../votos/votos-api';
 
 // [design.md D11; spec: minimal-frontend-router; threat matrix "Enrutamiento
 // (cliente)"] El enrutador se monta DENTRO de AuthGuard: la sesión, nunca la
@@ -54,6 +55,14 @@ vi.mock('../usuarios/CuentasBloqueadasPage', () => ({
 // enfocado en la resolución de rutas.
 vi.mock('../configuracion/ConfiguracionPage', () => ({
   ConfiguracionPage: () => <p data-testid="configuracion-page">ConfiguracionPage</p>,
+}));
+
+// estudiante-en-mis-votaciones: `MisVotacionesPage` real (#30) monta al resolver `inicio` para
+// el rol `estudiante` — se dobla `votos-api.misDerechos()` (su propio fetch/contenido se prueba
+// en `votos/MisVotacionesPage.spec.tsx`) para mantener este archivo enfocado en la resolución de
+// rutas.
+vi.mock('../votos/votos-api', () => ({
+  misDerechos: vi.fn(),
 }));
 
 const acciones = { login: vi.fn(), google: vi.fn(), logout: vi.fn(), alRecibir401: vi.fn() };
@@ -156,6 +165,29 @@ describe('Enrutador', () => {
     );
 
     expect(screen.getByTestId('inicio-page')).toBeInTheDocument();
+  });
+
+  // estudiante-en-mis-votaciones: para el rol `estudiante`, `inicio` monta `MisVotacionesPage`
+  // en vez de `InicioPage` — el resto de los roles no cambia (caso anterior con `administrador`).
+  it('con sesión de estudiante, / resuelve a MisVotacionesPage (no InicioPage)', async () => {
+    vi.mocked(votosApi.misDerechos).mockResolvedValueOnce({
+      data: [],
+      response: { status: 200 } as Response,
+    } as Awaited<ReturnType<typeof votosApi.misDerechos>>);
+    window.history.pushState(null, '', '/');
+
+    render(
+      proveer({
+        estado: 'autenticado',
+        sesion: { userId: 'u1', rol: 'estudiante', creadoEn: 1 },
+        ...acciones,
+      }),
+    );
+
+    expect(screen.queryByTestId('inicio-page')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /mis votaciones/i })).toBeInTheDocument(),
+    );
   });
 
   // menu-navegacion-post-login (#25; design.md D1, tasks.md 2.2). El asistente de creación de

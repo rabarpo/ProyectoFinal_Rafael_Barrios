@@ -21,13 +21,19 @@ interface TarjetaCandidatoProps extends TarjetaSeleccionableProps {
 export function TarjetaCandidato({ opcion, seleccionada, onSeleccionar, urlFoto }: TarjetaCandidatoProps) {
   return (
     <div
-      className={`overflow-hidden rounded-card bg-surface-white shadow-elevation transition-colors ${
+      className={`self-start overflow-hidden rounded-card bg-surface-white shadow-elevation transition-colors ${
         seleccionada ? 'border-2 border-primary' : 'border border-border-gray'
       }`}
     >
       <div className="relative">
+        {/* observación del usuario: las fotos de candidato son retrato (~3:4), no una franja
+            horizontal — aspect-[3/4] reserva el alto real en vez de recortar de más. El tope
+            max-h-64 se sacó (recortaba demasiado la parte superior de la foto): el bug real de
+            "doble scroll" que motivó ese tope ya se corrigió en AppShell (`min-h-0`), así que una
+            tarjeta más alta ya no rompe el layout. `self-start` en el contenedor de la tarjeta
+            sigue blindando contra el stretch por defecto de CSS grid. */}
         {urlFoto && (
-          <img src={urlFoto} alt={opcion.etiqueta} className="h-40 w-full object-cover" />
+          <img src={urlFoto} alt={opcion.etiqueta} className="aspect-[3/4] w-full object-cover" />
         )}
         {(opcion.cargo || seleccionada) && (
           <div className="absolute left-2 top-2 flex items-center gap-1 rounded-control bg-secondary px-2 py-1 text-label-md text-on-secondary">

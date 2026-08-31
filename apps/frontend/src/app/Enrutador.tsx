@@ -1,4 +1,5 @@
 import { useRuta } from './useRuta';
+import { useSesion } from '../auth/sesion-context';
 import { InicioPage } from './InicioPage';
 import { ProcesoWizardPage } from '../procesos/ProcesoWizardPage';
 import { ProcesosIndexPage } from '../procesos/ProcesosIndexPage';
@@ -42,6 +43,9 @@ import { MisVotacionesPage } from '../votos/MisVotacionesPage';
  * tasks.md 9.3). `proyeccion` monta `ProyeccionPage` real, siempre fuera de `AppShell` (D10,
  * `App.tsx`/`RUTAS_SIN_SHELL`, tasks.md 14.5) — el `Enrutador` no distingue el layout, sólo la
  * variante de `Ruta`.
+ * `estudiante`-en-mis-votaciones: el rol `estudiante` aterriza directo en `MisVotacionesPage` al
+ * resolver `inicio` (mismo componente que `mis-votaciones`) — el resto de los roles sigue viendo
+ * `InicioPage` sin cambios.
  */
 function VistaNoEncontrada() {
   return <p className="text-body-md text-on-surface">Página no encontrada.</p>;
@@ -49,10 +53,12 @@ function VistaNoEncontrada() {
 
 export function Enrutador() {
   const ruta = useRuta();
+  const contexto = useSesion();
+  const rol = contexto.estado === 'autenticado' ? contexto.sesion.rol : undefined;
 
   switch (ruta.nombre) {
     case 'inicio':
-      return <InicioPage />;
+      return rol === 'estudiante' ? <MisVotacionesPage /> : <InicioPage />;
     case 'proceso-nuevo':
       return <ProcesoWizardPage />;
     case 'procesos':

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import imagenColegio from '../assets/images/imagen-colegio.jpg';
-import logoColegio from '../assets/images/logo-colegio.jpg';
+import imagenColegio from '../assets/images/login.jpg';
+import logoColegio from '../assets/images/logo.jpg';
 import { BotonGoogle } from './BotonGoogle';
 import { DialogoVinculacion } from './DialogoVinculacion';
 import { FormularioCredenciales } from './FormularioCredenciales';
@@ -82,7 +82,9 @@ export function LoginPage() {
         className="relative hidden w-1/2 shrink-0 flex-col justify-end bg-cover bg-center px-10 py-10 md:flex"
         style={{ backgroundImage: `url(${imagenColegio})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/85 to-primary/30" />
+        {/* observación del usuario: mismo degradado que la zona azul del Paso 1 de votación
+            (PasoInformacionProceso) — parte superior transparente para que la foto se note más. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-transparent" />
         <div className="relative flex flex-col gap-4">
           <span className="h-1 w-12 rounded-full bg-inverse-primary" />
           <div>

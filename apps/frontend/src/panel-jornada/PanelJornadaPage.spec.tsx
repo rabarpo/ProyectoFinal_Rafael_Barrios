@@ -30,7 +30,14 @@ const RESPUESTA_INSTITUCION = {
 };
 
 const RESPUESTA_PROCESOS = {
-  data: [{ id: 'p1', nombre: 'Proceso 1', estado: 'abierto' }],
+  data: [
+    {
+      id: 'p1',
+      nombre: 'Municipio estudiantil 2026',
+      estado: 'abierto',
+      fecha_cierre_prevista: '2026-08-23T18:00:00.000Z',
+    },
+  ],
   response: { status: 200, ok: true },
 };
 
@@ -43,6 +50,9 @@ const RESPUESTA_RESUMEN = {
     correos_fallidos: 0,
     estado_visibilidad: 'visible',
     hora_servidor: '2026-08-23T12:00:00.000Z',
+    dimension: 'opcion',
+    desglose: [{ id: 'o1', etiqueta: 'Sí', votos: 5, estado: 'activo' }],
+    blancos: 0,
   },
   response: { status: 200, ok: true },
 };
@@ -63,9 +73,10 @@ function wrapper(queryClient: QueryClient) {
   );
 }
 
-// [design.md "Cambios de archivos"; tasks.md 12.1-12.3] Contenedor: sin proceso seleccionado,
-// sólo `TarjetasResumen` institucional + `SelectorProcesoActivo`; con proceso seleccionado,
-// monta `GraficoVotosPorHora`/`TablaAvanceAulas` scoped.
+// [dashboard-panel-jornada, rediseño visual — captura de referencia] Contenedor: sin proceso
+// seleccionado, sólo el encabezado institucional + selector, sin piezas scoped al proceso; con
+// proceso seleccionado, monta el resto del layout (fila de estado, métricas, distribución de
+// votos, votos por hora, avance por aula), todo scoped.
 describe('PanelJornadaPage', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -76,7 +87,7 @@ describe('PanelJornadaPage', () => {
     avanceAulasMock.mockReset().mockResolvedValue(RESPUESTA_AVANCE_AULAS);
   });
 
-  it('[12.1] sin proceso seleccionado: sólo institucional + selector, sin piezas scoped', async () => {
+  it('sin proceso seleccionado: encabezado institucional + selector, sin piezas scoped', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 0 } } });
     render(<PanelJornadaPage />, { wrapper: wrapper(queryClient) });
 
@@ -86,9 +97,10 @@ describe('PanelJornadaPage', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.queryByText('Votos por hora')).not.toBeInTheDocument();
     expect(screen.queryByText('Avance por aula')).not.toBeInTheDocument();
+    expect(screen.queryByText('Votantes Totales')).not.toBeInTheDocument();
   });
 
-  it('[12.2] con proceso seleccionado: monta GraficoVotosPorHora y TablaAvanceAulas scoped', async () => {
+  it('con proceso seleccionado: monta el layout completo scoped al proceso', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 0 } } });
     render(<PanelJornadaPage />, { wrapper: wrapper(queryClient) });
 
@@ -97,10 +109,38 @@ describe('PanelJornadaPage', () => {
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'p1' } });
     await vi.advanceTimersByTimeAsync(0);
 
+    expect(screen.getAllByText('Municipio estudiantil 2026').length).toBeGreaterThan(0);
+    expect(screen.getByText('Activo')).toBeInTheDocument();
+    expect(screen.getByText('Votantes Totales')).toBeInTheDocument();
+    expect(screen.getByText('Cierre Est.')).toBeInTheDocument();
     expect(screen.getByText('Votos por hora')).toBeInTheDocument();
     expect(screen.getByText('Avance por aula')).toBeInTheDocument();
     expect(resumenJornadaMock).toHaveBeenCalledWith('p1');
     expect(votosPorHoraMock).toHaveBeenCalledWith('p1');
     expect(avanceAulasMock).toHaveBeenCalledWith('p1');
+  });
+
+  it('resultados ocultos: PanelDistribucionVotos muestra el aviso, no el gráfico', async () => {
+    resumenJornadaMock.mockResolvedValue({
+      data: {
+        proceso_id: 'p1',
+        estado: 'abierto',
+        padron_total: 10,
+        votos_emitidos: 5,
+        correos_fallidos: 0,
+        estado_visibilidad: 'oculto',
+        hora_servidor: '2026-08-23T12:00:00.000Z',
+      },
+      response: { status: 200, ok: true },
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 0 } } });
+    render(<PanelJornadaPage />, { wrapper: wrapper(queryClient) });
+
+    await vi.advanceTimersByTimeAsync(0);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'p1' } });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(screen.getByText(/ocultos/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('grafico-pastel')).not.toBeInTheDocument();
   });
 });

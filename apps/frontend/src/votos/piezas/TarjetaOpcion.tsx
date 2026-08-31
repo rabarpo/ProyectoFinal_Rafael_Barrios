@@ -19,7 +19,7 @@ interface TarjetaOpcionProps extends TarjetaSeleccionableProps {
 export function TarjetaOpcion({ opcion, seleccionada, onSeleccionar }: TarjetaOpcionProps) {
   return (
     <div
-      className={`rounded-card bg-surface-white p-4 shadow-elevation transition-colors ${
+      className={`self-start rounded-card bg-surface-white p-4 shadow-elevation transition-colors ${
         seleccionada ? 'border-2 border-primary' : 'border border-border-gray'
       }`}
     >

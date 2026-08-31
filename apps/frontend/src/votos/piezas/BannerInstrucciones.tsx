@@ -9,14 +9,23 @@ import { IconoInformacion } from './iconos-reglas';
  * Sin `role="alert"`/`role="status"`: es contenido estático presente desde el montaje, no un
  * anuncio dinámico — un live region acá interrumpiría al lector de pantalla sin motivo.
  */
+// observación del usuario: color distintivo (mostaza) para diferenciar este banner del resto de
+// bloques en azul primario — ninguna clave del design system (primary/secondary/tertiary) cae en
+// esta familia de color, así que se define acá el par bg/texto con buen contraste (~8:1).
+const COLOR_FONDO_MOSTAZA = '#EAB308';
+const COLOR_TEXTO_MOSTAZA = '#422006';
+
 export function BannerInstrucciones() {
   return (
-    <div className="rounded-card bg-primary p-4 text-on-primary">
+    <div
+      className="rounded-card p-4"
+      style={{ backgroundColor: COLOR_FONDO_MOSTAZA, color: COLOR_TEXTO_MOSTAZA }}
+    >
       <div className="flex items-start gap-3">
         <IconoInformacion className="mt-0.5 h-5 w-5 shrink-0" />
         <div>
           <p className="text-label-md">Instrucciones de Votación</p>
-          <p className="text-body-md text-on-primary/90">
+          <p className="text-body-md opacity-90">
             Elegí una sola opción entre las disponibles. Revisá las propuestas antes de confirmar:
             una vez emitido, tu voto es secreto e irreversible.
           </p>

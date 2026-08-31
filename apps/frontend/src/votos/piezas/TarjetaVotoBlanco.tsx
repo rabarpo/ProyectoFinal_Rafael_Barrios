@@ -16,7 +16,7 @@ interface TarjetaVotoBlancoProps {
 export function TarjetaVotoBlanco({ seleccionada, onSeleccionar }: TarjetaVotoBlancoProps) {
   return (
     <div
-      className={`flex flex-col items-center gap-3 rounded-card bg-surface-white p-4 text-center shadow-elevation transition-colors ${
+      className={`self-start flex flex-col items-center gap-3 rounded-card bg-surface-white p-4 text-center shadow-elevation transition-colors ${
         seleccionada ? 'border-2 border-primary' : 'border border-border-gray'
       }`}
     >

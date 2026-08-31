@@ -100,14 +100,23 @@ export function RegistroCandidatoPage({ procesoId, candidatoId }: RegistroCandid
       </div>
 
       <div className="rounded-card border border-border-gray bg-surface-white p-6 shadow-elevation md:p-8">
-        <FormularioCandidato
-          modo={modo}
-          valoresIniciales={valoresIniciales}
-          listas={listas}
-          onEnviar={enviar}
-          enviando={enviando}
-          mensajeError={mensajeError}
-        />
+        {/* bug reportado por el usuario: `FormularioCandidato` inicializa su estado con
+            `useState(valoresIniciales?.nombres ?? '')`, que solo corre una vez al montar — si el
+            formulario se monta antes de que `obtenerCandidato()` resuelva, queda en blanco para
+            siempre aunque `valoresIniciales` llegue después. Fix: en modo edición, no montar el
+            formulario hasta tener los datos reales. */}
+        {modo === 'edicion' && !valoresIniciales ? (
+          <p className="text-body-md text-on-surface-variant">Cargando…</p>
+        ) : (
+          <FormularioCandidato
+            modo={modo}
+            valoresIniciales={valoresIniciales}
+            listas={listas}
+            onEnviar={enviar}
+            enviando={enviando}
+            mensajeError={mensajeError}
+          />
+        )}
       </div>
     </div>
   );

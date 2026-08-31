@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { urlLogo } from '../../configuracion/configuracion-api';
 import { BarraProgresoVotacion } from './BarraProgresoVotacion';
 import { IconoVotoSecreto, IconoUnaSolaVez, IconoIrreversible } from './iconos-reglas';
+import paso1Hero from '../../assets/images/8.webp';
 
 interface ProcesoInfo {
   nombre: string;
@@ -40,43 +39,44 @@ const TEXTO_HERO_SUBTITULO =
 /**
  * fidelidad-visual-boleta-votacion, PR2 (design.md D4/D5/D8, tasks.md 6.1-7.1). Reescritura de
  * fidelidad visual del paso 1 sobre lo entregado por rediseno-boleta-votacion (#31): badge de
- * estado del proceso, hero grande con la imagen ya configurada en Configuración General
- * (`GET /configuracion/logo`, misma fuente sin campo nuevo en `ProcesoElectoral`) con texto
- * institucional superpuesto sobre un degradado, 3 tarjetas de reglas fijas del dominio con ícono
- * propio (`iconos-reglas.tsx`), y footer. Cambio de comportamiento respecto de #31 (D4): si no hay
- * logo persistido (`GET /configuracion/logo` → 404), el bloque hero YA NO se oculta — se pinta un
- * respaldo `bg-primary` sólido detrás del degradado y el texto institucional permanece visible,
- * para que el layout de dos columnas nunca colapse.
+ * estado del proceso, hero grande con texto institucional superpuesto sobre un degradado, 3
+ * tarjetas de reglas fijas del dominio con ícono propio (`iconos-reglas.tsx`), y footer.
+ *
+ * observación del usuario: la imagen del hero es FIJA (`assets/images/8.webp`), no configurable —
+ * ya no depende de `GET /configuracion/logo` ni de un logo institucional cargable/roto. Deja de
+ * ser el fallback de un logo ausente para ser la imagen del Paso 1, punto.
  */
 export function PasoInformacionProceso({ proceso, yaVoto, onContinuar }: PasoInformacionProcesoProps) {
-  const [logoRoto, setLogoRoto] = useState(false);
-
   return (
     <div className="mx-auto w-full max-w-page px-5 md:px-12">
       <BarraProgresoVotacion pasoActual={1} totalPasos={3} />
 
-      <span className="mt-6 inline-block rounded-full bg-primary-fixed px-3 py-1 text-label-md text-on-primary-fixed">
-        Proceso Activo
-      </span>
+      {/* observación del usuario: badge y fecha de cierre pasan a compartir fila con el título y
+          la descripción, para que "Comenzar Votación" quede visible sin scroll vertical. */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-headline-lg-mobile text-primary md:text-headline-lg">{proceso.nombre}</h1>
+        <span className="inline-block shrink-0 rounded-full bg-primary-fixed px-3 py-1 text-label-md text-on-primary-fixed">
+          Proceso Activo
+        </span>
+      </div>
 
-      <h1 className="mt-3 text-headline-lg-mobile text-primary md:text-headline-lg">{proceso.nombre}</h1>
-      {proceso.descripcion && (
-        <p className="mt-2 text-body-md text-on-surface-variant">{proceso.descripcion}</p>
-      )}
-      <p className="mt-2 text-label-md text-on-surface-variant">
-        Cierra: {new Date(proceso.fecha_cierre_prevista).toLocaleString()}
-      </p>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        {proceso.descripcion && (
+          <p className="text-body-md text-on-surface-variant">{proceso.descripcion}</p>
+        )}
+        <p className="shrink-0 text-label-md text-on-surface-variant">
+          Cierra: {new Date(proceso.fecha_cierre_prevista).toLocaleString()}
+        </p>
+      </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <div className="relative aspect-[4/3] overflow-hidden rounded-card bg-primary">
-          {!logoRoto && (
-            <img
-              src={urlLogo()}
-              alt="Logo institucional"
-              onError={() => setLogoRoto(true)}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          )}
+          <img
+            src={paso1Hero}
+            alt=""
+            data-testid="hero-foto-respaldo"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
           <div
             aria-hidden="true"
             className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/30 to-transparent"

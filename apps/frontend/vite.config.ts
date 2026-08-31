@@ -18,6 +18,12 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000',
     },
+    // Docker Desktop en Windows no siempre propaga eventos nativos de fs para el bind mount
+    // (`apps/frontend` montado desde el host) — sin polling, Vite no detecta ediciones hechas
+    // desde el host y sirve el bundle viejo hasta un restart manual del contenedor.
+    watch: {
+      usePolling: true,
+    },
   },
   test: {
     environment: 'jsdom',

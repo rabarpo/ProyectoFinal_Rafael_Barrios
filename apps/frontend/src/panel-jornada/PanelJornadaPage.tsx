@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { listar } from '../procesos/procesos-api';
 import { useInstitucion, useResumenJornada, useVotosPorHora, useAvanceAulas } from './usePanelJornada';
-import { TarjetasResumen } from './piezas/TarjetasResumen';
+import { EncabezadoPanel } from './piezas/EncabezadoPanel';
+import { SelectorProcesoActivo } from './piezas/SelectorProcesoActivo';
+import { FilaEstadoProceso } from './piezas/FilaEstadoProceso';
+import { TarjetasMetricasProceso } from './piezas/TarjetasMetricasProceso';
+import { PanelDistribucionVotos } from './piezas/PanelDistribucionVotos';
 import { GraficoVotosPorHora } from './piezas/GraficoVotosPorHora';
 import { TablaAvanceAulas } from './piezas/TablaAvanceAulas';
-import { SelectorProcesoActivo } from './piezas/SelectorProcesoActivo';
 
 async function obtenerProcesosAbiertos() {
   const { data, response } = await listar({ estado: 'abierto' });
@@ -16,12 +19,14 @@ async function obtenerProcesosAbiertos() {
 }
 
 /**
- * dashboard-panel-jornada (Backlog #20, PR3; design.md "Cambios de archivos", tasks.md
- * 12.1-12.3). Contenedor: la selección de proceso vive en estado de componente (`useState`),
- * nunca en la URL (D-piezas). `TarjetasResumen` institucional + `SelectorProcesoActivo` se
- * montan siempre; `GraficoVotosPorHora`/`TablaAvanceAulas` sólo aparecen scoped a un
- * `procesoId` una vez elegido (spec: "Procesos activos reutiliza el endpoint existente" — sin
- * endpoint nuevo, `GET /procesos?estado=abierto`).
+ * dashboard-panel-jornada (Backlog #20; rediseño visual sobre la captura de referencia del
+ * dashboard de elecciones — sólo visual, reusando datos ya disponibles, sin endpoints nuevos).
+ * Contenedor: la selección de proceso vive en estado de componente (`useState`), nunca en la URL
+ * (D-piezas). `EncabezadoPanel` + `SelectorProcesoActivo` se montan siempre; el resto del layout
+ * (`FilaEstadoProceso`, `TarjetasMetricasProceso`, `PanelDistribucionVotos`,
+ * `GraficoVotosPorHora`, `TablaAvanceAulas`) sólo aparece scoped a un `procesoId` una vez elegido.
+ * `fecha_cierre_prevista` (tarjeta "Cierre Est.") sale del mismo `GET /procesos?estado=abierto`
+ * que ya resuelve `procesosQuery` — ningún fetch nuevo.
  */
 export function PanelJornadaPage() {
   const [procesoId, setProcesoId] = useState<string | undefined>(undefined);
@@ -48,16 +53,29 @@ export function PanelJornadaPage() {
     );
   }
 
-  const procesos = (procesosQuery.data ?? []).map((proceso) => ({ id: proceso.id, nombre: proceso.nombre }));
+  const procesos = (procesosQuery.data ?? []).map((proceso) => ({
+    id: proceso.id,
+    nombre: proceso.nombre,
+    fechaCierrePrevista: proceso.fecha_cierre_prevista,
+  }));
+  const procesoSeleccionado = procesos.find((proceso) => proceso.id === procesoId);
 
   return (
     <div className="mx-auto w-full max-w-page space-y-6 px-5 md:px-12">
+      <EncabezadoPanel nombreProceso={procesoSeleccionado?.nombre} institucion={institucionQuery.data} />
+
       <SelectorProcesoActivo procesos={procesos} procesoId={procesoId} onSeleccionar={setProcesoId} />
 
-      <TarjetasResumen
-        institucion={institucionQuery.data}
-        resumen={procesoId ? resumenQuery.data : undefined}
-      />
+      {procesoId && resumenQuery.data ? (
+        <>
+          <FilaEstadoProceso resumen={resumenQuery.data} />
+          <TarjetasMetricasProceso
+            resumen={resumenQuery.data}
+            fechaCierrePrevista={procesoSeleccionado?.fechaCierrePrevista}
+          />
+          <PanelDistribucionVotos resumen={resumenQuery.data} />
+        </>
+      ) : null}
 
       {procesoId && votosPorHoraQuery.data ? (
         <GraficoVotosPorHora franjas={votosPorHoraQuery.data.franjas} />

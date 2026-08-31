@@ -1,8 +1,27 @@
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { VotosPorHoraDto } from '../panel-jornada-api';
 
 interface GraficoVotosPorHoraProps {
   franjas: VotosPorHoraDto['franjas'];
+}
+
+// observación del usuario: paleta más llamativa para "Votos por Hora". Es magnitud (conteo de
+// votos por franja), no identidad, así que en vez de recolorear cada barra con un color distinto
+// (eso confundiría "más colorido" con "más categorías", cuando en realidad es la MISMA métrica en
+// el tiempo) se usa una rampa SECUENCIAL de un solo matiz, clara→oscura, del skill de dataviz
+// (references/palette.md, rampa "azul"): la franja con más votos se pinta más intensa, la de menos
+// vota más clara — sigue siendo vistoso y además la intensidad ahora comunica el pico de la
+// jornada, en vez de ser puramente decorativo.
+const RAMPA_SECUENCIAL = [
+  '#cde2fb', '#b7d3f6', '#9ec5f4', '#86b6ef', '#6da7ec', '#5598e7',
+  '#3987e5', '#2a78d6', '#256abf', '#1c5cab', '#184f95', '#104281', '#0d366b',
+];
+
+function colorPorMagnitud(votos: number, maxVotos: number): string {
+  if (maxVotos <= 0) return RAMPA_SECUENCIAL[0];
+  const t = Math.min(1, Math.max(0, votos / maxVotos));
+  const indice = Math.round(t * (RAMPA_SECUENCIAL.length - 1));
+  return RAMPA_SECUENCIAL[indice];
 }
 
 /**
@@ -13,9 +32,11 @@ interface GraficoVotosPorHoraProps {
  * componente NUNCA reordena.
  */
 export function GraficoVotosPorHora({ franjas }: GraficoVotosPorHoraProps) {
+  const maxVotos = franjas.reduce((max, franja) => Math.max(max, franja.votos), 0);
   const datosGrafico = franjas.map((franja) => ({
     etiqueta: new Date(franja.hora_inicio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     votos: franja.votos,
+    color: colorPorMagnitud(franja.votos, maxVotos),
   }));
 
   return (
@@ -28,7 +49,11 @@ export function GraficoVotosPorHora({ franjas }: GraficoVotosPorHoraProps) {
             <XAxis dataKey="etiqueta" />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="votos" isAnimationActive={false} fill="var(--color-primary)" />
+            <Bar dataKey="votos" isAnimationActive={false}>
+              {datosGrafico.map((fila) => (
+                <Cell key={fila.etiqueta} fill={fila.color} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

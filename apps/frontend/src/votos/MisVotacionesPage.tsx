@@ -70,12 +70,18 @@ export function MisVotacionesPage() {
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {estado.derechos.map((derecho) =>
             derecho.ya_voto ? (
+              // observación del usuario: el gris punteado sobre fondo claro se confundía con el
+              // fondo de la página — fondo sólido (`bg-surface-dim`, token más oscuro que
+              // `surface-container-low`) + badge "Ya votaste" con ✓ para que se note a simple
+              // vista que está inactiva, sin necesitar leer el texto.
               <div
                 key={derecho.derecho_voto_id}
-                className="rounded-card border border-dashed border-border-gray bg-surface-container-low p-6 text-left"
+                className="rounded-card border border-border-gray bg-surface-dim p-6 text-left"
               >
                 <p className="text-label-md text-on-surface-variant">{derecho.proceso.nombre}</p>
-                <p className="mt-1 text-caption text-on-surface-variant">Ya votaste</p>
+                <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-on-surface-variant/15 px-2 py-1 text-caption text-on-surface-variant">
+                  <span aria-hidden="true">✓</span> Ya votaste
+                </p>
               </div>
             ) : (
               <button

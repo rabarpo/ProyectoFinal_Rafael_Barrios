@@ -27,6 +27,28 @@ describe('RegistroCandidatoPage', () => {
     vi.clearAllMocks();
   });
 
+  it('modo edición: precarga los datos reales del candidato en el formulario, no lo deja en blanco', async () => {
+    mockListasVacias();
+    vi.mocked(candidatosApi.obtenerCandidato).mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'c1',
+        proceso_id: 'p1',
+        nombres: 'Sebastián Chávez Rojas',
+        cargo: 'Representante de Aula',
+        foto_presente: true,
+        estado: 'activo',
+      },
+    });
+
+    render(<RegistroCandidatoPage procesoId="p1" candidatoId="c1" />);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/nombres/i)).toHaveValue('Sebastián Chávez Rojas'),
+    );
+    expect(screen.getByLabelText(/cargo postulado/i)).toHaveValue('Representante de Aula');
+  });
+
   it('modo creación: submit sin foto no invoca crearCandidato', async () => {
     mockListasVacias();
     render(<RegistroCandidatoPage procesoId="p1" />);
