@@ -1,0 +1,84 @@
+# Deploy a producción — SEEI (ver DEPLOY-PLAN.md, "Deploy gates").
+#
+# Este workflow ES el gate real de release (no un check informativo):
+#   1. Solo se dispara a mano (workflow_dispatch) con un tag.
+#   2. Verifica que el workflow `CI` haya terminado en `success` para ese commit.
+#   3. El job `deploy` usa el Environment `production`, que debe configurarse en
+#      Settings → Environments → production con "Required reviewers". GitHub pausa el job
+#      hasta que un revisor autorizado lo aprueba: esa aprobación es la autorización humana
+#      explícita por deploy que exigen ADR-0007 y el skill deploy-pass.
+#   4. El deploy real lo hace `infra/scripts/deploy.sh` por SSH en el VPS (backup previo,
+#      chequeo de jornada abierta y rollback automático viven en ese script, no acá).
+#
+# Secrets del Environment `production` (Settings → Environments → production → Secrets):
+#   SSH_HOST            IP o hostname del VPS
+#   SSH_USER            usuario de deploy (no root; en el grupo docker)
+#   SSH_PRIVATE_KEY     clave privada OpenSSH del usuario de deploy
+#   SSH_KNOWN_HOSTS     línea de known_hosts del VPS (ssh-keyscan <host>)
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag de git a desplegar (debe existir y tener CI verde)"
+        required: true
+        type: string
+      force:
+        description: "Omitir el chequeo de jornada abierta (solo emergencias autorizadas)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (solo para resolver el tag)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: El tag existe
+        run: git rev-parse -q --verify "refs/tags/${{ inputs.tag }}^{commit}"
+
+      - name: CI verde para ese commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHA="$(git rev-parse "refs/tags/${{ inputs.tag }}^{commit}")"
+          echo "Commit del tag: $SHA"
+          CONCLUSION="$(gh run list --workflow=CI --commit "$SHA" \
+            --json conclusion,status --jq '[.[] | select(.status=="completed")][0].conclusion')"
+          echo "Conclusión de CI: ${CONCLUSION:-<sin runs>}"
+          if [[ "$CONCLUSION" != "success" ]]; then
+            echo "::error::CI no está en 'success' para $SHA. No se despliega." && exit 1
+          fi
+
+  deploy:
+    needs: gate
+    runs-on: ubuntu-latest
+    environment: production      # <- pausa acá hasta la aprobación de un revisor
+    steps:
+      - name: Configurar SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Ejecutar deploy.sh en el VPS
+        run: |
+          FORCE_ARG=""
+          [[ "${{ inputs.force }}" == "true" ]] && FORCE_ARG="--force"
+          ssh -i ~/.ssh/id_deploy "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "cd /opt/seei && infra/scripts/deploy.sh '${{ inputs.tag }}' $FORCE_ARG"

@@ -1,0 +1,21 @@
+# Crontab de SEEI en el VPS. Instalar como root:
+#
+#   crontab -u root /opt/seei/infra/scripts/seei-cron
+#
+# Los caminos son absolutos a propósito: cron corre con un PATH mínimo.
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# ── Respaldo diario, 03:15 UTC (fuera de horario escolar en Perú, UTC-5) ────
+15 3 * * *   /opt/seei/infra/scripts/backup.sh >> /opt/seei/backups/cron.log 2>&1
+
+# ── Respaldo horario DURANTE UNA JORNADA ───────────────────────────────────
+# backup.sh no distingue jornada; este job corre siempre en horas hábiles y es barato
+# (pg_dump incremental en tamaño). Para las jornadas reales, ADR-0007 pide respaldo horario:
+# esta línea lo cubre en la ventana 07:00–20:00 hora Perú (12:00–01:00 UTC).
+0 12-23,0 * * *   /opt/seei/infra/scripts/backup.sh >> /opt/seei/backups/cron.log 2>&1
+
+# ── Prune de imágenes Docker viejas, domingos 04:00 UTC ────────────────────
+# Conserva la imagen del deploy actual y la inmediatamente anterior (rollback rápido).
+0 4 * * 0   /usr/bin/docker image prune -af --filter "until=168h" >> /opt/seei/backups/cron.log 2>&1

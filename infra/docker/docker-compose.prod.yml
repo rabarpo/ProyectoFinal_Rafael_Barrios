@@ -1,0 +1,103 @@
+# Overlay de PRODUCCIÓN — se usa junto con docker-compose.yml, nunca solo:
+#
+#   docker compose -f infra/docker/docker-compose.yml -f infra/docker/docker-compose.prod.yml up -d --wait
+#
+# (el script infra/scripts/deploy.sh ya arma esta invocación).
+#
+# ADITIVO al compose base. NO reescribe su endurecimiento de red: Caddy sigue siendo el único
+# servicio que publica puertos; postgres/redis siguen solo en la red interna `seei`.
+#
+# Diferencias frente a docker-compose.dev.yml:
+#   - `restart: unless-stopped` en todo lo que es de larga vida (dev no reinicia nada).
+#   - Caddyfile de producción (dominio real + Let's Encrypt) en vez del `tls internal` del base.
+#   - Rotación de logs `json-file` (sin esto, /var/lib/docker/containers crece sin techo en el VPS).
+#   - Límites de memoria por servicio, calibrados para un VPS de 8 GB.
+#   - `pull_policy: build` explícito: las imágenes se construyen en el VPS, nunca se bajan de un registry.
+#
+# NO hay volumen de archivos: fotos, planes de trabajo, actas y reportes se guardan como columnas
+# `Bytes` en PostgreSQL (ver DEPLOY-PLAN.md, "Almacenamiento de archivos"). `pg_dump` es el respaldo
+# completo.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  caddy:
+    restart: unless-stopped
+    logging: *default-logging
+    volumes:
+      # Reemplaza el Caddyfile del base (`tls internal` / seei.localhost) por el de producción.
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+
+  frontend:
+    restart: unless-stopped
+    logging: *default-logging
+    pull_policy: build
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  backend:
+    restart: unless-stopped
+    logging: *default-logging
+    pull_policy: build
+    environment:
+      NODE_ENV: production
+      APP_BASE_URL: ${APP_BASE_URL:?APP_BASE_URL es obligatorio en produccion}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID es obligatorio en produccion}
+      GOOGLE_HOSTED_DOMAINS: ${GOOGLE_HOSTED_DOMAINS:?GOOGLE_HOSTED_DOMAINS es obligatorio en produccion}
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  worker:
+    restart: unless-stopped
+    logging: *default-logging
+    pull_policy: build
+    environment:
+      NODE_ENV: production
+      SMTP_USER: ${SMTP_USER:?SMTP_USER es obligatorio en produccion}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?SMTP_PASSWORD es obligatorio en produccion}
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # Servicio de un solo uso (hereda del base: `prisma migrate deploy` con seei_migrator).
+  # `restart: "no"` ya viene del base; acá solo se le agrega rotación de logs.
+  migrate:
+    logging: *default-logging
+    pull_policy: build
+
+  postgres:
+    restart: unless-stopped
+    logging: *default-logging
+    # `postgres:16-alpine` (del base). shm por defecto (64M) alcanza para esta carga; subir a 256M
+    # si una prueba de carga muestra "could not resize shared memory segment".
+    shm_size: 256mb
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+
+  redis:
+    restart: unless-stopped
+    logging: *default-logging
+    # Colas BullMQ: si Redis se cae, los despachadores de outbox reencolan desde Postgres.
+    # `appendonly` da durabilidad razonable sin el costo de RDB+AOF combinados.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction"]
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+volumes:
+  caddy_logs:
